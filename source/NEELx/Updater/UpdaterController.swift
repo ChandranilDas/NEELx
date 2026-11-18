@@ -272,6 +272,11 @@ final class UpdaterController {
                     return false
                 }
 
+                // If this Mac has its own free local `Apple Development:` (or `Developer ID Application:`)
+                // certificate installed, re-sign the updated bundle locally with that stable identity so
+                // macOS preserves Accessibility & Keychain permissions silently across auto-updates.
+                Self.reSignWithLocalUserCertIfAvailable(appURL: stagingApp)
+
                 do {
                     if FileManager.default.fileExists(atPath: currentApp.path) {
                         try FileManager.default.moveItem(at: currentApp, to: backupApp)
@@ -319,6 +324,72 @@ final class UpdaterController {
                 NSWorkspace.shared.open(url)
             }
         }
+    }
+
+    /// Re-signs `appURL` using the user's own local `Developer ID Application:` or `Apple Development:`
+    /// certificate if Xcode/CLT is already installed. Strictly checks for `codesign_allocate` first so
+    /// non-developer Macs never see an "Install Command Line Tools" popup.
+    private nonisolated static func reSignWithLocalUserCertIfAvailable(appURL: URL) {
+        let fm = FileManager.default
+        let hasCodesignTools = fm.isExecutableFile(atPath: "/Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate")
+            || fm.isExecutableFile(atPath: "/Library/Developer/CommandLineTools/usr/bin/codesign_allocate")
+        guard hasCodesignTools else { return }
+
+        let sec = Process()
+        sec.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        sec.arguments = ["find-identity", "-v", "-p", "codesigning"]
+        let pipe = Pipe()
+        sec.standardOutput = pipe
+        sec.standardError = Pipe()
+        guard (try? sec.run()) != nil else { return }
+        sec.waitUntilExit()
+        guard sec.terminationStatus == 0 else { return }
+
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let lines = output.components(separatedBy: .newlines)
+
+        func firstIdentityHash(matching needle: String) -> String? {
+            for line in lines where line.contains(needle) {
+                let parts = line.trimmingCharacters(in: .whitespaces).components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+                if parts.count >= 2, parts[1].count == 40 {
+                    return parts[1]
+                }
+            }
+            return nil
+        }
+
+        guard let identity = firstIdentityHash(matching: "Developer ID Application:")
+            ?? firstIdentityHash(matching: "Apple Development:") else {
+            return
+        }
+
+        let entitlementsURL = fm.temporaryDirectory.appendingPathComponent("neelx-entitlements-\(UUID().uuidString).plist")
+        let entitlementsXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>com.apple.security.device.camera</key>
+            <true/>
+        </dict>
+        </plist>
+        """
+        defer { try? fm.removeItem(at: entitlementsURL) }
+        guard (try? entitlementsXML.write(to: entitlementsURL, atomically: true, encoding: .utf8)) != nil else { return }
+
+        let xattr = Process()
+        xattr.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+        xattr.arguments = ["-cr", appURL.path]
+        try? xattr.run()
+        xattr.waitUntilExit()
+
+        let sign = Process()
+        sign.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        sign.arguments = ["--force", "--sign", identity, "--entitlements", entitlementsURL.path, appURL.path]
+        sign.standardOutput = Pipe()
+        sign.standardError = Pipe()
+        try? sign.run()
+        sign.waitUntilExit()
     }
 
     // MARK: - SemVer Comparison (`2.0.0-beta.1` < `2.0.0-beta.2` < `2.0.0` < `2.0.1`)

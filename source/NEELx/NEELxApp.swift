@@ -142,6 +142,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         await self?.environment.pocController.unlockSession()
                     }
                 }
+                // After an ad-hoc auto-update, macOS may invalidate the previous Accessibility grant.
+                // Detect that immediately on launch and guide the user with a 1-click Settings shortcut.
+                if SecureCredentialManager.hasStoredPassword(), !KeystrokeInjector.isAccessibilityTrusted() {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                        self?.promptAccessibilityRecoveryIfNeeded()
+                    }
+                }
             } else {
                 // Upgraded from a version before the notice existed — show it once, standalone.
                 presentPostUpdateSecurityNotice()
@@ -154,6 +161,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// First-run gate: onboarding lives entirely in the notch, so this stays accessory. Called once at launch if onboarding
     /// isn't done, and again from `revealSettingsWindow()` if the user reaches Settings mid-flow. Closing any main window here
     /// is defense in depth against SwiftUI's `.suppressed` scene timing not being guaranteed.
+    private func promptAccessibilityRecoveryIfNeeded() {
+        guard !KeystrokeInjector.isAccessibilityTrusted() else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = "Re-enable Accessibility After Update"
+        alert.informativeText = "macOS reset Accessibility permission for NEELx after updating.\n\nIn System Settings → Privacy & Security → Accessibility, toggle NEELx off and back on once so Face Unlock can unlock your Mac."
+        alert.addButton(withTitle: "Open Accessibility Settings")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal() == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+
     private func presentOnboardingGate() {
         for window in NSApp.windows where window.canBecomeMain {
             window.close()

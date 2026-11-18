@@ -1,6 +1,6 @@
 cask "neelx" do
   version "2.0.0-beta.3"
-  sha256 "2fb5d0a5a0884e6d5665849ce2e001bd63c2158760cfecc9261f2a01551e30cd"
+  sha256 "3cc4fb723f4152492e2867005a872dfd6b8f09ae15927046bd7c99188a350d11"
 
   url "https://github.com/ChandranilDas/NEELx/releases/download/v#{version}/NEELx-v#{version}-universal-lite.dmg"
   name "NEELx"
@@ -20,6 +20,27 @@ cask "neelx" do
     system_command "/usr/bin/xattr",
                    args: ["-cr", "#{appdir}/NEELx.app"],
                    sudo: false
+
+    # If the user already has Xcode/CLT + their own free local Apple Development certificate,
+    # re-sign NEELx.app locally so macOS preserves Accessibility & Keychain across future upgrades.
+    has_tools = File.executable?("/Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate") ||
+                File.executable?("/Library/Developer/CommandLineTools/usr/bin/codesign_allocate")
+    if has_tools
+      identities = `/usr/bin/security find-identity -v -p codesigning 2>/dev/null`
+      match = identities.match(/\)\s+([0-9A-F]{40})\s+"(?:Developer ID Application|Apple Development):/)
+      if match
+        entitlements = "/tmp/neelx-cask-entitlements.plist"
+        File.write(entitlements, <<~XML)
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>com.apple.security.device.camera</key><true/></dict></plist>
+        XML
+        system_command "/usr/bin/codesign",
+                       args: ["--force", "--sign", match[1], "--entitlements", entitlements, "#{appdir}/NEELx.app"],
+                       sudo: false
+        File.delete(entitlements) if File.exist?(entitlements)
+      end
+    end
   end
 
   zap trash: [
