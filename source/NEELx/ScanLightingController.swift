@@ -29,6 +29,35 @@ final class ScanLightingController {
     private var currentBoostLevel: Double = 0 // 0.0 (off) ... 1.0 (max dark-room boost)
     private var lastAdjustmentAt: CFAbsoluteTime = 0
 
+    /// Shared preview controller so the user can admire the Studio Light & spectral rim directly from Settings.
+    private static let previewController = ScanLightingController()
+    private static var previewTask: Task<Void, Never>?
+
+    /// Plays a smooth 2.4s live visual preview of NEELx's Studio Light rim (and optional Chromatic Prism) from Settings.
+    static func previewStudioLight() {
+        previewTask?.cancel()
+        previewController.hide()
+        previewController.begin(forEnrollment: false, allowWhenUnlocked: true)
+        previewTask = Task { @MainActor in
+            previewController.applyBoost(level: 0.72)
+            try? await Task.sleep(for: .milliseconds(950))
+            guard !Task.isCancelled else { return }
+            if NEELxSettings.shared.chromaticFlashEnabled {
+                previewController.flashChallenge(tint: .cyan)
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
+                previewController.flashChallenge(tint: .magenta)
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
+                previewController.clearFlashChallenge()
+            } else {
+                try? await Task.sleep(for: .milliseconds(700))
+            }
+            guard !Task.isCancelled else { return }
+            previewController.hide()
+        }
+    }
+
     /// Active brightness animation task — cancelled cleanly whenever a new target arrives.
     private var brightnessAnimTask: Task<Void, Never>?
     /// Delayed orderOut task when fading out gracefully — cancelled if a new scan starts mid-fade.
@@ -340,9 +369,9 @@ private enum DisplayBrightnessBridge {
     }
 }
 
-/// Refined Apple Studio Light perimeter aura: keeps the screen center crisp & unobstructed while
-/// smoothly feathering a warm champagne-white fill glow (or soft spectral rim veil for Chromatic Flash)
-/// along the display perimeter with zero harsh bands or abrupt edges.
+/// Luxury Apple Studio Light perimeter softbox & Siri-grade spectral chromatic rim:
+/// draws a silky feathered rounded-display border light (crystal-clear screen center, luminous
+/// multi-layered edge bloom + delicate hairline specular lip) with zero boxy edges or harsh neon slabs.
 @MainActor
 private final class ScanLightHaloView: NSView {
     var intensity: CGFloat = 0.4
@@ -357,44 +386,69 @@ private final class ScanLightHaloView: NSView {
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let isChallenge = challengeColor != nil
-        // Warm studio champagne white (3800K softbox feel) instead of stark clinical blue-white;
-        // chromatic flash blends softly with warm white so it feels refined rather than harsh neon.
-        let baseColor: NSColor
+
+        // Warm 3800K champagne-ivory Studio Light for dark/backlit rooms;
+        // refined pastel-blended spectral rim for Chromatic Flash.
+        let primaryColor: NSColor
+        let secondaryColor: NSColor
         if let challengeColor {
-            baseColor = challengeColor.blended(withFraction: 0.28, of: .white) ?? challengeColor
+            primaryColor = challengeColor.blended(withFraction: 0.34, of: .white) ?? challengeColor
+            secondaryColor = challengeColor.blended(withFraction: 0.62, of: .white) ?? .white
         } else {
-            baseColor = NSColor(calibratedRed: 1.0, green: 0.965, blue: 0.905, alpha: 1.0)
+            primaryColor = NSColor(calibratedRed: 1.0, green: 0.968, blue: 0.915, alpha: 1.0)
+            secondaryColor = NSColor(calibratedRed: 1.0, green: 0.985, blue: 0.955, alpha: 1.0)
         }
 
-        let c0: CGFloat = isChallenge ? 0.14 : (forEnrollment ? 0.0 : intensity * 0.08)
-        let c1: CGFloat = isChallenge ? 0.32 : (forEnrollment ? intensity * 0.12 : intensity * 0.24)
-        let c2: CGFloat = isChallenge ? 0.62 : (forEnrollment ? intensity * 0.34 : intensity * 0.56)
-        let c3: CGFloat = isChallenge ? 0.86 : min(0.90, 0.38 + intensity * 0.50)
+        // 1. Soft atmospheric radial falloff (keeps center almost completely transparent & clean)
+        let c0: CGFloat = isChallenge ? 0.04 : (forEnrollment ? 0.0 : intensity * 0.03)
+        let c1: CGFloat = isChallenge ? 0.16 : (forEnrollment ? intensity * 0.06 : intensity * 0.12)
+        let c2: CGFloat = isChallenge ? 0.46 : (forEnrollment ? intensity * 0.28 : intensity * 0.44)
+        let c3: CGFloat = isChallenge ? 0.80 : min(0.86, 0.34 + intensity * 0.48)
 
         let colors = [
-            baseColor.withAlphaComponent(c0).cgColor,
-            baseColor.withAlphaComponent(c1).cgColor,
-            baseColor.withAlphaComponent(c2).cgColor,
-            baseColor.withAlphaComponent(c3).cgColor,
+            primaryColor.withAlphaComponent(c0).cgColor,
+            primaryColor.withAlphaComponent(c1).cgColor,
+            primaryColor.withAlphaComponent(c2).cgColor,
+            primaryColor.withAlphaComponent(c3).cgColor,
         ] as CFArray
 
-        guard let gradient = CGGradient(
+        if let gradient = CGGradient(
             colorsSpace: colorSpace,
             colors: colors,
-            locations: [0.0, 0.44, 0.76, 1.0]
-        ) else { return }
+            locations: [0.0, 0.48, 0.80, 1.0]
+        ) {
+            let center = CGPoint(x: bounds.midX, y: bounds.midY)
+            let outerRadius = hypot(bounds.width * 0.5, bounds.height * 0.5)
+            let innerRadius = min(bounds.width, bounds.height) * 0.28
 
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        let outerRadius = hypot(bounds.width * 0.5, bounds.height * 0.5)
-        let innerRadius = min(bounds.width, bounds.height) * 0.22
+            ctx.drawRadialGradient(
+                gradient,
+                startCenter: center,
+                startRadius: innerRadius,
+                endCenter: center,
+                endRadius: outerRadius,
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+        }
 
-        ctx.drawRadialGradient(
-            gradient,
-            startCenter: center,
-            startRadius: innerRadius,
-            endCenter: center,
-            endRadius: outerRadius,
-            options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
-        )
+        // 2. Sculpted rounded-display Studio Light softbox rim (concentrates clean illumination around the bezel)
+        let cornerRadius: CGFloat = 24
+        let rimLayers: [(inset: CGFloat, width: CGFloat, alpha: CGFloat)] = isChallenge
+            ? [(6, 18, 0.42), (16, 36, 0.24), (32, 68, 0.12)]
+            : [(6, 16, min(0.55, 0.20 + intensity * 0.35)),
+               (18, 38, min(0.32, 0.10 + intensity * 0.22)),
+               (38, 76, min(0.16, 0.05 + intensity * 0.11))]
+
+        for layer in rimLayers {
+            let rect = bounds.insetBy(dx: layer.inset, dy: layer.inset)
+            guard rect.width > 40, rect.height > 40 else { continue }
+            let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+            ctx.saveGState()
+            ctx.addPath(path)
+            ctx.setStrokeColor(secondaryColor.withAlphaComponent(layer.alpha).cgColor)
+            ctx.setLineWidth(layer.width)
+            ctx.strokePath()
+            ctx.restoreGState()
+        }
     }
 }

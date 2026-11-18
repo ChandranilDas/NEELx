@@ -1,0 +1,137 @@
+<Window x:Class="NEELx.Windows.UI.PrismHorizonOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NEELx Prism Horizon"
+        Width="440"
+        Height="92"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+
+    <Grid Margin="12,10,12,12">
+        <!-- Distinct Windows 11 Fluent Prism Horizon Blade (NOT circular Mac/iPhone Face ID) -->
+        <Border x:Name="BladeBorder"
+                CornerRadius="16"
+                Background="#E811141B"
+                BorderThickness="1"
+                BorderBrush="#3838BDF8">
+            <Border.Effect>
+                <DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="8" Opacity="0.65"/>
+            </Border.Effect>
+
+            <Grid ClipToBounds="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="3"/>
+                </Grid.RowDefinitions>
+
+                <!-- Atmospheric Prism Rim Glow inside the top edge -->
+                <Rectangle Grid.Row="0" Height="1" VerticalAlignment="Top" Opacity="0.7">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#0038BDF8" Offset="0"/>
+                            <GradientStop x:Name="TopRimStopA" Color="#FF38BDF8" Offset="0.35"/>
+                            <GradientStop x:Name="TopRimStopB" Color="#FF818CF8" Offset="0.65"/>
+                            <GradientStop Color="#00818CF8" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Grid Grid.Row="0" Margin="16,0,16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="46"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Bespoke Faceted Crystalline Diamond-Iris Aperture -->
+                    <Canvas Grid.Column="0" Width="38" Height="38" VerticalAlignment="Center" HorizontalAlignment="Left">
+                        <!-- Outer rotating prism diamond -->
+                        <Polygon x:Name="OuterPrism"
+                                 Points="19,2 36,19 19,36 2,19"
+                                 Stroke="#CC38BDF8"
+                                 StrokeThickness="1.5"
+                                 Fill="#1A38BDF8"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Polygon.RenderTransform>
+                                <RotateTransform x:Name="OuterPrismRotate" Angle="0"/>
+                            </Polygon.RenderTransform>
+                        </Polygon>
+
+                        <!-- Counter-rotating faceted inner crystal -->
+                        <Polygon x:Name="InnerPrism"
+                                 Points="19,8 30,19 19,30 8,19"
+                                 Stroke="#DD818CF8"
+                                 StrokeThickness="1.3"
+                                 Fill="#24818CF8"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Polygon.RenderTransform>
+                                <RotateTransform x:Name="InnerPrismRotate" Angle="45"/>
+                            </Polygon.RenderTransform>
+                        </Polygon>
+
+                        <!-- Center biometric core spark -->
+                        <Polygon x:Name="CoreDiamond"
+                                 Points="19,14 24,19 19,24 14,19"
+                                 Fill="#FF38BDF8"/>
+                    </Canvas>
+
+                    <!-- Telemetry Title & Subtitle -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,10,0">
+                        <TextBlock x:Name="PrimaryStatusText"
+                                   Text="NEELx Prism · Scanning 3D Depth"
+                                   Foreground="#FFF5F7FA"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI"
+                                   FontSize="13.5"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock x:Name="SecondaryStatusText"
+                                   Text="DirectML GPU · Multi-frame geometry verification"
+                                   Foreground="#FF9AA3B2"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI"
+                                   FontSize="11"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <!-- Right status chip -->
+                    <Border x:Name="StatusPill"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            CornerRadius="9"
+                            Padding="9,4"
+                            Background="#1E38BDF8"
+                            BorderBrush="#4438BDF8"
+                            BorderThickness="1">
+                        <TextBlock x:Name="StatusPillText"
+                                   Text="PRISM 3D"
+                                   Foreground="#FF7DD3FC"
+                                   FontFamily="Consolas, Segoe UI"
+                                   FontSize="10"
+                                   FontWeight="Bold"/>
+                    </Border>
+                </Grid>
+
+                <!-- Horizontal Laser Horizon Sweep Track -->
+                <Canvas Grid.Row="1" Height="3" Background="#16FFFFFF" ClipToBounds="True">
+                    <Rectangle x:Name="HorizonLaserBeam"
+                               Width="140"
+                               Height="3"
+                               RadiusX="1.5"
+                               RadiusY="1.5"
+                               Canvas.Left="0">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#0038BDF8" Offset="0"/>
+                                <GradientStop x:Name="LaserCoreStop" Color="#FF38BDF8" Offset="0.5"/>
+                                <GradientStop Color="#00818CF8" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Canvas>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

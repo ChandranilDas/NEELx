@@ -327,24 +327,39 @@ struct EnrollStepView: View {
     }
 
     private var instructionLabel: some View {
-        Text(controller.enrollmentInstruction)
-            .font(NEELxTheme.Font.instruction)
-            .foregroundStyle(.white)
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .minimumScaleFactor(0.8)
-            .id(controller.enrollmentInstruction)
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.2), value: controller.enrollmentInstruction)
-            .opacity(controller.guideVisible ? 1 : 0)
-            .animation(
-                .easeInOut(
-                    duration: controller.guideVisible
-                        ? OnboardingMetrics.enrollInstructionFadeIn
-                        : OnboardingMetrics.enrollInstructionFadeOut
-                ),
-                value: controller.guideVisible
-            )
+        VStack(spacing: 6) {
+            Text(controller.enrollmentInstruction)
+                .font(NEELxTheme.Font.instruction)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+                .id(controller.enrollmentInstruction)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: controller.enrollmentInstruction)
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(controller.lightingState.color)
+                    .frame(width: 6, height: 6)
+                Text(controller.lightingState.label)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.68))
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 3)
+            .background(Color.white.opacity(0.08))
+            .clipShape(Capsule())
+        }
+        .opacity(controller.guideVisible ? 1 : 0)
+        .animation(
+            .easeInOut(
+                duration: controller.guideVisible
+                    ? OnboardingMetrics.enrollInstructionFadeIn
+                    : OnboardingMetrics.enrollInstructionFadeOut
+            ),
+            value: controller.guideVisible
+        )
     }
 }
 

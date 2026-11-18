@@ -389,6 +389,8 @@ final class FaceUnlockCoordinator {
         let scanStartedAt = Date()
         var consecutiveWrongFaceFrames = 0
         var matchedNonSpoofFrames = 0
+        /// Rolling buffer for Multi-Frame Temporal Depth Consistency (prevents single-frame depth flicker/curved-print bypasses).
+        var recentDepthReadings: [NeuralDepthReading] = []
 
         /// Cleared the moment a detected face fails to match, so a latched match can't be handed to whoever steps in next.
         var readyMatch: ScoredIdentity?
@@ -554,15 +556,33 @@ final class FaceUnlockCoordinator {
                 confirmingCue = cue
             case .pending:
                 if let depthReading {
+                    recentDepthReadings.append(depthReading)
+                    if recentDepthReadings.count > 3 { recentDepthReadings.removeFirst() }
+
                     let profileMatches = depthProfileSimilarity.map { $0 >= 0.40 } ?? false
+                    let strongProfileMatches = depthProfileSimilarity.map { $0 >= 0.56 } ?? false
                     let baselineMatches = enrolledBaseline.map {
                         $0.medianNoseProtrusion >= 0.020 && depthReading.noseProtrusion >= $0.medianNoseProtrusion * 0.55
                     } ?? false
                     let reliefConfirmed = depthReading.depth3DScore >= LivenessTuning.default.neuralDepth3DLevel
                         || baselineMatches
-                    // Confirm immediately when genuine 3D depth, personal baseline, or 9-zone 3D profile matches;
-                    // or after 2 clean non-spoof frames (prevents low-light stall while flat 2D spoofs are caught & denied).
-                    if attentionVerified && !flatSpoofSuspected && (reliefConfirmed || profileMatches || matchedNonSpoofFrames >= 2) {
+
+                    // Multi-Frame Temporal Depth Consistency: require 2 consecutive physically consistent 3D readings
+                    // (stable nose protrusion & non-flickering depth cliff) OR an ultra-strong personal 9-zone profile match.
+                    let temporallyConsistent: Bool = {
+                        guard recentDepthReadings.count >= 2 else { return false }
+                        let prev = recentDepthReadings[recentDepthReadings.count - 2]
+                        let noseStable = abs(depthReading.noseProtrusion - prev.noseProtrusion) < 0.065
+                        let bothPositiveNose = depthReading.noseProtrusion > 0.012 && prev.noseProtrusion > 0.012
+                        let cliffConsistent = abs(depthReading.backgroundCliff - prev.backgroundCliff) < 0.25
+                        return noseStable && bothPositiveNose && cliffConsistent
+                    }()
+
+                    if attentionVerified && !flatSpoofSuspected && (
+                        (reliefConfirmed && (temporallyConsistent || strongProfileMatches))
+                        || (profileMatches && temporallyConsistent)
+                        || matchedNonSpoofFrames >= 3
+                    ) {
                         livenessConfirmed = true
                         confirmingCue = .neuralDepth3D
                     }
@@ -606,8 +626,9 @@ final class FaceUnlockCoordinator {
                     return .injectionBlocked(blockDetail)
                 }
 
-                // Begin smooth backlight & halo dissolve immediately in sync with macOS unlocking the desktop
+                // Begin smooth backlight & halo dissolve + crisp haptic & optional muted glass chime
                 scanLighting.hide()
+                NEELxSettings.shared.playUnlockFeedback()
 
                 // Log verified unlock & silently learn high-confidence appearance drift (glasses/beard/lighting)
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: summary)

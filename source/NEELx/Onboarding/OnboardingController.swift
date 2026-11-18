@@ -136,6 +136,28 @@ enum EnrollmentPose: Int, CaseIterable {
     }
 }
 
+enum EnrollmentLightingState: Equatable {
+    case ideal
+    case backlit
+    case lowLight
+
+    var label: String {
+        switch self {
+        case .ideal: return "Ideal Lighting"
+        case .backlit: return "Backlit · HDR Active"
+        case .lowLight: return "Low Light · Studio Fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .ideal: return Color(red: 0.19, green: 0.82, blue: 0.35)
+        case .backlit: return Color(red: 1.0, green: 0.76, blue: 0.28)
+        case .lowLight: return Color(red: 0.98, green: 0.82, blue: 0.52)
+        }
+    }
+}
+
 enum CameraPermissionState {
     case notDetermined
     case granted
@@ -403,6 +425,8 @@ final class OnboardingController {
     private(set) var cameraPreviewVisible = true
     /// Whether the completion checkmark should be drawing/shown.
     private(set) var showCheckmark = false
+    /// Live lighting quality badge shown subtly during 360° notch enrollment.
+    private(set) var lightingState: EnrollmentLightingState = .ideal
 
     private struct CollectedSample {
         let embedding: [Float]
@@ -815,6 +839,17 @@ final class OnboardingController {
                 return EnrollFrameOutcome.noFace
             }
         }.value
+
+        // Update Live Lighting Readiness Meter (Ideal / Backlit HDR / Low Light Studio Fill)
+        let frameLum = ScanLightingController.meanLuminance(image, normalizedRect: nil)
+        let centerLum = ScanLightingController.meanLuminance(image, normalizedRect: CGRect(x: 0.30, y: 0.25, width: 0.40, height: 0.50))
+        if centerLum < 0.24 && (frameLum - centerLum) >= 0.12 {
+            lightingState = .backlit
+        } else if centerLum < 0.24 || frameLum < 0.22 {
+            lightingState = .lowLight
+        } else {
+            lightingState = .ideal
+        }
 
         switch outcome {
         case .noFace:

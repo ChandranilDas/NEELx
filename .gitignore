@@ -6,8 +6,13 @@ xcuserdata/
 ModuleCache/
 xcode-build/
 *.app/
+!windows/src/NEELx.App/
 *.dmg
 *.zip
+
+# .NET / Windows build outputs
+windows/**/bin/
+windows/**/obj/
 
 # Intermediate Core ML compiler products & downloaded large depth weights
 # (Fetch DepthAnythingV2SmallF16 via: python3 source/tools/fetch_depth_model.py)

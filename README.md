@@ -3,27 +3,28 @@
 **NEELx** brings fast, natural, iPhone-style Face Unlock to macOS using your Mac's built-in camera and Apple Neural Engine — **100% offline, encrypted at rest, and open-source.**
 
 > **Official Website:** [https://chandranildas.github.io/NEELx/](https://chandranildas.github.io/NEELx/)  
-> Built for macOS 15+ (Apple Silicon & Intel). Runs entirely on-device with zero network connections, zero telemetry, and hardware-backed macOS Keychain protection.
+> Built for **macOS 15+ (Apple Silicon M1 & newer — M1, M2, M3, M4, M5+, plus Intel)** and **Windows 11 (`windows/` Edition)**. Runs 100% offline on-device with zero telemetry and hardware-backed encryption.
 
 ---
 
 ## ✨ Key Features
 
-- **Smooth 360° Circular Face Enrollment + 3D Depth Profile**: Just like Face ID on iPhone and iPad Pro — slowly roll your head in a single natural circle to capture all 8 compass sectors, 512-D ArcFace embeddings, and your personal **9-zone 3D facial depth profile** in 1–2 seconds.
-- **Instant Sub-200ms Unlock**: Strict ArcFace cosine-similarity matching (`≥ 0.63` threshold) accelerated on the Apple Neural Engine (ANE) paired with ultra-fast 3ms keystroke dispatch.
-- **Stage 3 Neural 3D Depth Anti-Spoofing (Apple Neural Engine)**: Powered by Apple's official Core ML `DepthAnythingV2SmallF16` running in FP16 (~22ms on Apple Silicon ANE). Validates **3D nose protrusion**, **non-planar facial curvature**, and your enrolled **9-zone 3D depth profile** — rejecting flat photos and phone/tablet screens.
-- **Active Chromatic Flash Challenge (Anti-4K Video Replay)**: Optional randomized ~110ms cyan/amber reflection challenge that verifies live skin color shift in real time — defeating pre-recorded video replay attacks.
-- **Attention & Eye Gaze Verification**: "Require Attention for Face ID" — checks that your eyes are open (Eye Aspect Ratio) and you are actively facing the screen before unlocking.
-- **Closed-Loop Adaptive Dark-Room Illumination**: Dynamically steps up both your MacBook's real display backlight and a warm TrueTone soft-box glow until your face is clearly visible (during both enrollment and lock-screen unlock), then immediately restores your original screen brightness.
+- **Smooth 360° Circular Face Enrollment + Live Lighting Readiness Meter**: Guided notch onboarding just like Face ID on iPhone and iPad Pro — slowly roll your head in one natural circle while a live lighting meter (`Ideal Lighting` / `Backlit · HDR Active` / `Low Light · Studio Fill`) guides optimal capture of your 512-D ArcFace template and **9-zone 3D facial depth profile**.
+- **Face ID for System Touch ID & Password Prompts**: Automatically replaces macOS password/Touch ID authorization prompts (System Settings Privacy & Security toggles, Keychain/Saved Passwords, App Store/Installer auth, and standard admin sheets) with hands-free 3D Face ID — while strictly excluding Apple Pay, payments, FileVault, and sensitive financial dialogs.
+- **Stage 3 Neural 3D Depth + Multi-Frame Temporal Consistency (Apple Neural Engine)**: Powered by Apple's Core ML `DepthAnythingV2SmallF16` running in FP16 (~22ms on Apple Silicon ANE). Validates **3D nose protrusion**, **non-planar facial curvature**, **head-to-background depth cliff**, and requires **2 consecutive physically consistent 3D depth frames** — rejecting flat photos, phone/tablet screens, and transient OLED glare.
+- **Backlit Window HDR Shadow Recovery**: Detects silhouetted backlit scenes (bright window behind your head, dark face in front) and applies GPU `CIHighlightShadowAdjust` shadow lift before face detection — seamlessly recovering darkened faces without waiting for dark-room mode.
+- **Luxury Studio Light & Spectral Chromatic Rim (with Live Preview)**: Redesigned dark-room softbox fills your display perimeter with an even 3800K warm champagne frame while keeping the center crystal clear, paired with a refined pastel-blended cyan/magenta reflection check against 4K video replays. Test it anytime via **Settings → General → Preview**.
+- **Subtle Spatial Haptic + Optional Soft Glass Sound Cue**: Crisp Force Touch trackpad `.alignment` haptic and optional whisper-soft unlock chime synced with the Face ID emerald checkmark dissolve.
+- **Attention & Eye Gaze Verification**: "Require Attention for Face ID" — checks Eye Aspect Ratio (`EAR`) and head orientation before unlocking.
 - **Silent Adaptive Learning**: Automatically adapts to gradual changes (glasses, beard, lighting drift) from high-confidence 3D-verified unlocks.
 - **Encrypted Intruder & Security Audit Log**: Records unlock attempts and AES-256-GCM encrypted snapshots of blocked intruders/spoofs strictly offline under your Touch ID key.
-- **Walk-Away Auto-Lock (Presence Lock)**: Optional zero-drain idle presence check that locks your Mac automatically if you step away from your desk.
+- **Walk-Away Auto-Lock (Presence Lock)**: Optional zero-drain idle presence check that locks your Mac automatically when you step away.
 - **Smart Clamshell / Multi-Camera Auto-Switching**: Automatically switches to an external webcam or iPhone Continuity Camera when your MacBook lid is closed.
-- **Live 3D Depth Heatmap in Face Lab & 1-Click Diagnostics**: Inspect live Inferno-colorized 3D depth maps in Face Lab (tap the icon 5× in About) and copy privacy-scrubbed diagnostics for GitHub Issues in one click.
-- **Zero-Cloud Privacy & Hardware Encryption**:
+- **Windows 11 Edition (`windows/`) — Fluent Prism Horizon**: Native `.NET 8` WPF + **ONNX Runtime DirectML** + **Windows DPAPI** + `ICredentialProvider` lock-screen architecture for Windows 11 laptops and desktops with standard RGB webcams, featuring a bespoke Windows-native **Fluent Prism Horizon** faceted diamond-iris & laser sweep animation (intentionally distinct from macOS/iPhone's circular Face ID).
+- **Zero-Cloud Privacy & Local Signing**:
   - Touch ID (`LocalAuthentication`) gates access to your session key.
-  - A 256-bit AES-GCM symmetric key stored in macOS Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`) encrypts your login credential, face embeddings, and audit log.
-  - Plaintext password buffers are explicitly zeroed in memory immediately after unlock.
+  - 256-bit AES-GCM key in macOS Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`) encrypts credentials, embeddings, and audit logs.
+  - Auto-preserves your own free local `Apple Development` certificate on updates so macOS Accessibility permissions survive seamlessly.
 
 ---
 
@@ -43,7 +44,11 @@ brew install --cask neelx
 
 ### Or Download the DMG Directly
 
-Download `NEELx-v2.0.0-beta.3-universal-lite.dmg` (13.6 MB, 1-click in-app 3D Depth download) or the full offline DMG from the [**Official Website**](https://chandranildas.github.io/NEELx/) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
+Download `NEELx-v2.0.0-beta.5-universal-lite.dmg` (Universal Apple Silicon M1 & newer + Intel, 1-click in-app 3D Depth download) or the full offline DMG from the [**Official Website**](https://chandranildas.github.io/NEELx/) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
+
+### Windows 11 Edition (`windows/`)
+
+See [`windows/README.md`](windows/README.md) for the native `.NET 8` WPF + DirectML GPU/NPU + DPAPI + WinLogon `ICredentialProvider` implementation featuring the bespoke **Fluent Prism Horizon** unlock blade.
 
 ### Or Build From Source
 
@@ -88,19 +93,21 @@ During onboarding, NEELx requests two standard macOS permissions:
 
 ## 🗺️ Roadmap
 
-- [x] 360° Circular Face Enrollment (iPhone/iPad Pro style)
+- [x] 360° Circular Face Enrollment + Live Lighting Readiness Meter
 - [x] Sub-200ms Unlock Pipeline + 3ms Keystroke Injection
 - [x] Eye Gaze & Attention Verification
-- [x] Adaptive TrueTone Low-Light Illumination
-- [x] Ad-hoc Open-Source Build without Paid Developer Entitlements
-- [x] **Stage 3 Neural Depth**: Core ML *Depth Anything V2 Small* monocular 3D curvature & nose protrusion validation on Apple Silicon ANE
-- [ ] **Apple Watch & Continuity Proximity** secondary factor
+- [x] Luxury Studio Light Softbox & Spectral Chromatic Rim (with Live Preview)
+- [x] Backlit Window HDR Shadow Recovery
+- [x] Face ID for System Touch ID & Password Prompts
+- [x] **Stage 3 Neural Depth + Multi-Frame Temporal Consistency** (Core ML *Depth Anything V2 Small* on Apple Silicon ANE)
+- [x] Subtle Spatial Haptic + Optional Soft Glass Sound Cue
+- [x] **NEELx for Windows 11 (`windows/`)** — Fluent Prism Horizon UI + DirectML + DPAPI
 
 ---
 
 ## 🤝 Contributing & Feedback
 
-Contributions, bug reports, security audits, and test results across different Mac models (M1/M2/M3/M4, Intel, Studio Display, external webcams) are very welcome!
+Contributions, bug reports, security audits, and test results across all Mac models (**Apple Silicon M1, M2, M3, M4, M5 & newer**, Intel Macs, Studio Display, external webcams) and Windows 11 laptops are very welcome!
 1. Fork the repository
 2. Run `./build.sh` to verify your local build
 3. Open a Pull Request or Issue with your Mac model, macOS version, and feedback

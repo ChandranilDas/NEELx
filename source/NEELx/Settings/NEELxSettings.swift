@@ -6,6 +6,7 @@
 //  writes through immediately, so there's no explicit "save" step.
 //
 
+import AppKit
 import Foundation
 import Observation
 
@@ -111,6 +112,7 @@ final class NEELxSettings {
         static let faceDetectionSeconds = "NEELxSettings.faceDetectionSeconds"
         static let autoRetryOnce = "NEELxSettings.autoRetryOnce"
         static let hapticFeedbackEnabled = "NEELxSettings.hapticFeedbackEnabled"
+        static let unlockSoundEnabled = "NEELxSettings.unlockSoundEnabled"
         static let preferredDisplayID = "NEELxSettings.preferredDisplayID"
         static let preferredDisplayName = "NEELxSettings.preferredDisplayName"
         static let autoLockIntervalDays = "NEELxSettings.autoLockIntervalDays"
@@ -351,6 +353,7 @@ final class NEELxSettings {
             ?? 5
         autoRetryOnce = defaults.object(forKey: Key.autoRetryOnce) as? Bool ?? false
         hapticFeedbackEnabled = defaults.object(forKey: Key.hapticFeedbackEnabled) as? Bool ?? true
+        unlockSoundEnabled = defaults.object(forKey: Key.unlockSoundEnabled) as? Bool ?? false
         preferredDisplayID = defaults.string(forKey: Key.preferredDisplayID)
         preferredDisplayName = defaults.string(forKey: Key.preferredDisplayName)
 
@@ -370,5 +373,23 @@ final class NEELxSettings {
         // Push into the nonisolated mirror immediately, or FaceRecognitionPipeline
         // would keep its own default until the slider is first touched.
         FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
+    }
+
+    /// Optional muted Apple-style soft glass sound cue timed with the green Face ID checkmark (off by default).
+    var unlockSoundEnabled: Bool {
+        didSet { defaults.set(unlockSoundEnabled, forKey: Key.unlockSoundEnabled) }
+    }
+
+    /// Plays spatial Trackpad haptic tap + optional soft muted glass chime synchronized with the unlock checkmark.
+    func playUnlockFeedback() {
+        if hapticFeedbackEnabled {
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        }
+        if unlockSoundEnabled {
+            if let sound = NSSound(named: NSSound.Name("Glass")) {
+                sound.volume = 0.22
+                sound.play()
+            }
+        }
     }
 }

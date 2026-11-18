@@ -11,7 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$SCRIPT_DIR/source/NEELx"
 ARCH="$(uname -m)"
-VERSION="${NEELX_VERSION:-2.0.0-beta.4}"
+VERSION="${NEELX_VERSION:-2.0.0-beta.5}"
 IS_LITE=false
 IS_UNIVERSAL=false
 DO_NOTARIZE=false

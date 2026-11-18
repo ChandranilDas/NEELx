@@ -303,9 +303,7 @@ final class SystemAuthPromptCoordinator {
                 lastStatus = detail
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: detail)
                 if showsUI { NotchOverlayController.shared.finish(success: true) }
-                if NEELxSettings.shared.hapticFeedbackEnabled {
-                    NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-                }
+                NEELxSettings.shared.playUnlockFeedback()
             } else {
                 lastStatus = "Couldn't enter password into \(prompt.ownerName) — use Touch ID manually."
                 if showsUI { NotchOverlayController.shared.finish(success: false) }

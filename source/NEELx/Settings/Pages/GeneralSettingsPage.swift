@@ -113,10 +113,24 @@ struct GeneralSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
-                    title: "Adaptive dark-room illumination",
-                    subtitle: "Smoothly raises screen brightness and warm TrueTone glow until your face is visible, then restores your original brightness."
+                    title: "Adaptive Studio Light illumination",
+                    subtitle: "Smoothly raises screen brightness and a warm perimeter Studio Light rim in dark or backlit rooms, then restores your original brightness."
                 ) {
-                    NEELxToggle(isOn: $scanLightEnabled)
+                    HStack(spacing: 10) {
+                        Button("Preview") {
+                            ScanLightingController.previewStudioLight()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        NEELxToggle(isOn: $scanLightEnabled)
+                    }
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Subtle unlock chime",
+                    subtitle: "Plays a soft muted glass cue timed with the Face ID checkmark and Trackpad haptic."
+                ) {
+                    NEELxToggle(isOn: $settings.unlockSoundEnabled)
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
