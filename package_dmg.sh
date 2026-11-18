@@ -85,16 +85,24 @@ if [[ "$IS_LITE" == "true" ]]; then
     rm -rf "$STAGE_DIR/NEELx.app/Contents/Resources/DepthAnythingV2SmallF16.mlmodelc"
 fi
 
-# Re-sign staged app cleanly after any Universal/Lite modification
-SIGN_IDENTITY="${NEELX_SIGN_IDENTITY:-}"
+# Public distribution DMGs must ONLY use a real "Developer ID Application:" cert — NEVER a personal
+# "Apple Development:" cert (which can trigger AMFI signature rejections on other users' Macs).
+# When no Developer ID cert is installed, ad-hoc '-' runs cleanly on every Mac after Right-Click -> Open.
+SIGN_IDENTITY="${NEELX_DIST_SIGN_IDENTITY:-}"
 if [ -z "$SIGN_IDENTITY" ]; then
-    SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | grep -E "Developer ID Application:|Apple Development:" | head -n 1 | awk '{print $2}' || true)"
+    SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application:" | head -n 1 | awk '{print $2}' || true)"
 fi
 [ -z "$SIGN_IDENTITY" ] && SIGN_IDENTITY="-"
+echo "Public DMG signing identity: $SIGN_IDENTITY"
 
 xattr -cr "$STAGE_DIR/NEELx.app" 2>/dev/null || true
-codesign --force --sign "$SIGN_IDENTITY" --options runtime --strip-disallowed-xattrs \
-    --entitlements "$SRC_DIR/NEELx.entitlements" "$STAGE_DIR/NEELx.app"
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    codesign --force --sign - --strip-disallowed-xattrs \
+        --entitlements "$SRC_DIR/NEELx.entitlements" "$STAGE_DIR/NEELx.app"
+else
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp --strip-disallowed-xattrs \
+        --entitlements "$SRC_DIR/NEELx.entitlements" "$STAGE_DIR/NEELx.app"
+fi
 codesign --verify --deep --strict "$STAGE_DIR/NEELx.app"
 
 ln -s /Applications "$STAGE_DIR/Applications"

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEELx — Hardened 3D Biometric Face Unlock for macOS</title>
+  <meta name="description" content="NEELx brings sub-200ms Face Unlock to macOS with iPhone-style 360° circular enrollment, Apple Neural Engine 3D depth anti-spoofing, and 100% offline hardware-backed Keychain encryption." />
+  <link rel="icon" type="image/svg+xml" href="assets/neelx-logo.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <img src="assets/neelx-logo.svg" alt="NEELx Logo" />
+        <span>NEELx</span>
+        <span class="brand-tag" data-release-version>v2.0.0-beta.2</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#depth-lab">3D Depth Engine</a>
+        <a href="#architecture">Security</a>
+        <a href="#download">Download</a>
+        <a href="#feedback">Feedback</a>
+        <a href="https://github.com/ChandranilDas/NEELx" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <a id="btnNavDownload" href="#download" class="nav-cta">Download for Mac</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            <span>Apple Silicon ANE &amp; Intel · macOS 15+ · 100% Offline</span>
+          </div>
+          <h1>Face ID precision.<br />Engineered for Mac.</h1>
+          <p class="hero-sub">
+            NEELx unlocks your Mac in under 200 ms using on-device 512-D ArcFace matching, Apple Core ML 3D monocular depth anti-spoofing, and eye-gaze attention verification — with zero cloud calls.
+          </p>
+          <div class="hero-actions">
+            <a id="btnHeroDownload" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal-lite.dmg">
+              Download Beta (<span data-release-version>v2.0.0-beta.2</span>)
+            </a>
+            <a class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx" target="_blank" rel="noopener">
+              View Open Source
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span>Universal Binary (arm64 + x86_64)</span>
+            <span>MIT License</span>
+            <span>Auto-Updates Built In</span>
+          </div>
+        </div>
+
+        <!-- Interactive MacBook Notch & 360° Ring Simulator -->
+        <div class="hardware-stage">
+          <div class="mac-notch-housing">
+            <div class="camera-lens"></div>
+            <div id="notchSimStatus" class="notch-status">360° CIRCULAR CAPTURE READY</div>
+          </div>
+          <div class="ring-interactive-wrap">
+            <canvas id="enrollmentCanvas" aria-label="Interactive 360 degree Face ID circular enrollment ring"></canvas>
+            <div class="sim-controls">
+              <span id="sectorProgressText">0/8 compass sectors · drag in a circle</span>
+              <button id="btnAutoDemo" class="sim-btn" type="button">Auto-Demo 360°</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Measured Benchmarks Strip -->
+    <section class="metrics-strip">
+      <div class="container metrics-grid">
+        <div class="metric-item">
+          <div class="metric-val">22.4 ms</div>
+          <div class="metric-label">DepthAnythingV2 FP16 latency on Apple M4 ANE</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val">512-D</div>
+          <div class="metric-label">ArcFace embeddings + 9-zone personal 3D profile</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val">AES-256</div>
+          <div class="metric-label">GCM encryption under Touch ID-gated Keychain key</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val">0 bytes</div>
+          <div class="metric-label">Biometric data ever sent off your Mac</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Stage 3 Neural 3D Depth Lab -->
+    <section id="depth-lab" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">Stage 3 Neural 3D Depth</div>
+          <h2>Sees 3D facial relief, not flat screens.</h2>
+          <p>
+            NEELx runs Apple's official Core ML <code>DepthAnythingV2SmallF16</code> model directly on the Neural Engine. Toggle between a live 3D head and a 2D phone spoof to inspect how NEELx fits a least-squares plane <code>z = ax + by + c</code> to separate real geometry from flat displays.
+          </p>
+        </div>
+
+        <div class="depth-lab">
+          <div class="depth-lab-bar">
+            <div class="mode-switch" role="tablist" aria-label="3D Depth simulation mode">
+              <button id="btnModeReal" class="mode-btn active" type="button">Real 3D Human Face</button>
+              <button id="btnModeSpoof" class="mode-btn spoof" type="button">2D Phone / Photo Spoof</button>
+            </div>
+            <span id="depthVerdict" class="verdict-pill">UNLOCK VERIFIED · 22.4 ms ANE</span>
+          </div>
+
+          <div class="depth-lab-body">
+            <div class="depth-canvas-box">
+              <canvas id="depthHeatmapCanvas" aria-label="Live simulated Depth Anything V2 Inferno heatmap and elevation cross-section"></canvas>
+              <div class="heatmap-legend">
+                <span>Far (room)</span>
+                <div class="legend-bar"></div>
+                <span>Near (nose tip)</span>
+              </div>
+            </div>
+
+            <div class="telemetry-panel">
+              <div class="telemetry-row">
+                <div class="telemetry-top">
+                  <span>Nose Protrusion (above cheek plane)</span>
+                  <strong id="mProtrusionVal">+0.068</strong>
+                </div>
+                <div class="telemetry-track"><div id="mProtrusionBar" class="telemetry-fill" style="width: 88%; background: #34d399;"></div></div>
+              </div>
+
+              <div class="telemetry-row">
+                <div class="telemetry-top">
+                  <span>Non-Planar Curvature Residual</span>
+                  <strong id="mPlanarityVal">0.049 RMSE</strong>
+                </div>
+                <div class="telemetry-track"><div id="mPlanarityBar" class="telemetry-fill" style="width: 82%; background: #38bdf8;"></div></div>
+              </div>
+
+              <div class="telemetry-row">
+                <div class="telemetry-top">
+                  <span>Head-to-Background Depth Cliff</span>
+                  <strong id="mCliffVal">+0.42</strong>
+                </div>
+                <div class="telemetry-track"><div id="mCliffBar" class="telemetry-fill" style="width: 86%; background: #34d399;"></div></div>
+              </div>
+
+              <div class="telemetry-row">
+                <div class="telemetry-top">
+                  <span>Flat 2D Spoof Confidence</span>
+                  <strong id="mSpoofVal">0% (Live 3D)</strong>
+                </div>
+                <div class="telemetry-track"><div id="mSpoofBar" class="telemetry-fill" style="width: 4%; background: #34d399;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real Measured Latency Breakdown -->
+        <div class="pipeline-card">
+          <div class="section-kicker" style="margin-bottom: 4px;">Measured Lock-Screen Pipeline (MacBook Air M4)</div>
+          <h3 style="font-size: 18px; letter-spacing: -0.02em;">End-to-end verification in ~85 ms compute + ~40 ms unlock</h3>
+          <div class="pipeline-list">
+            <div class="pipe-row">
+              <span>1. Vision 5-Point Face Alignment</span>
+              <div class="pipe-bar-wrap"><div class="pipe-bar" style="width: 14%;"></div></div>
+              <span class="pipe-ms">~8 ms</span>
+            </div>
+            <div class="pipe-row">
+              <span>2. ArcFace 512-D Embedding (ANE)</span>
+              <div class="pipe-bar-wrap"><div class="pipe-bar" style="width: 20%;"></div></div>
+              <span class="pipe-ms">~11 ms</span>
+            </div>
+            <div class="pipe-row">
+              <span>3. DepthAnythingV2SmallF16 (ANE)</span>
+              <div class="pipe-bar-wrap"><div class="pipe-bar" style="width: 39%;"></div></div>
+              <span class="pipe-ms">22.4 ms</span>
+            </div>
+            <div class="pipe-row">
+              <span>4. Attention, Gaze &amp; Glare/Bezel Guard</span>
+              <div class="pipe-bar-wrap"><div class="pipe-bar" style="width: 9%;"></div></div>
+              <span class="pipe-ms">~4 ms</span>
+            </div>
+            <div class="pipe-row">
+              <span>5. AES-256 Decrypt + 3 ms Keystroke Dispatch</span>
+              <div class="pipe-bar-wrap"><div class="pipe-bar" style="width: 68%;"></div></div>
+              <span class="pipe-ms">~40 ms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security & Features Bento -->
+    <section id="architecture" class="section" style="padding-top: 24px;">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">Defense in Depth</div>
+          <h2>Built like a system utility, not a prototype.</h2>
+          <p>Every layer runs natively in Swift, Core ML, and Vision with strict memory hygiene and zero network dependencies.</p>
+        </div>
+
+        <div class="bento-grid">
+          <article class="card">
+            <span class="card-badge">01 · ILLUMINATION</span>
+            <h3>Cinema-Smooth Dark-Room Lighting</h3>
+            <p>Closed-loop 60fps cubic-eased backlight breathing paired with a feathered TrueTone ambient halo illuminates your face in pitch darkness, then dissolves back to your exact original screen brightness.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-badge">02 · ANTI-VIDEO REPLAY</span>
+            <h3>Active Chromatic Flash</h3>
+            <p>Optional randomized Cyan/Magenta reflection challenge verifies live photometric skin response in dim rooms — defeating even 4K OLED video replay attacks.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-badge">03 · ATTENTION</span>
+            <h3>Require Attention &amp; Eye Gaze</h3>
+            <p>Measures Eye Aspect Ratio (EAR) and 3D head pose so your Mac stays locked while your eyes are closed or you're looking away from the screen.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-badge">04 · VAULT</span>
+            <h3>Encrypted Security Audit Log</h3>
+            <p>Records unlock events and compact JPEG snapshots of blocked intruders or spoofs encrypted with AES-256-GCM under your Touch ID-gated session key.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-badge">05 · ADAPTATION</span>
+            <h3>Silent Adaptive Learning</h3>
+            <p>Gradually adapts to glasses, beard growth, and seasonal lighting from high-confidence, 3D-verified unlocks — capped safely to protect your core 360° anchor.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-badge">06 · DESK PRESENCE</span>
+            <h3>Walk-Away Auto-Lock &amp; Clamshell</h3>
+            <p>Optional zero-drain Presence Lock checks once after idle and locks your Mac if you stepped away, plus smart automatic switching to external or Continuity cameras when docked.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Downloads -->
+    <section id="download" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">Universal macOS Installers</div>
+          <h2>Download NEELx <span data-release-version>v2.0.0-beta.2</span></h2>
+          <p>Runs natively on Apple Silicon (M1–M4) and Intel Macs running macOS 15 Sequoia or later. Includes built-in 1-click GitHub Releases auto-updates.</p>
+        </div>
+
+        <div class="download-grid">
+          <div class="dl-card featured">
+            <div class="dl-top">
+              <h3>Universal Lite DMG</h3>
+              <span id="liteSize" class="dl-size">13.6 MB · Universal</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 14px;">
+              Recommended for fast download. Includes the full NEELx app and lets you enable Stage 3 Neural 3D Depth with a 1-click in-app download inside Settings (zero Xcode needed).
+            </p>
+            <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal-lite.dmg">
+              Download Lite DMG
+            </a>
+            <div class="sha-box">SHA-256: fde732c4583b0f0c1065ef4eba9f98a2a799823e28d88257cae2bbcd53786b58</div>
+          </div>
+
+          <div class="dl-card">
+            <div class="dl-top">
+              <h3>Universal Full DMG</h3>
+              <span id="fullSize" class="dl-size">58.3 MB · Universal</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 14px;">
+              Complete all-in-one offline installer with Apple's compiled <code>DepthAnythingV2SmallF16</code> Core ML 3D depth engine already bundled inside the app.
+            </p>
+            <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal.dmg">
+              Download Full Offline DMG
+            </a>
+            <div class="sha-box">SHA-256: f5dcc3281f8023f132c1fc580dbf236c7c541e61ecf34aff23d1527b83687f12</div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <span style="color: var(--text-dim);"># Or build directly from pure Swift source on your Mac:</span><br />
+          git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install
+        </div>
+      </div>
+    </section>
+
+    <!-- Feedback -->
+    <section id="feedback" class="section" style="padding-top: 24px;">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">Beta Tester Feedback</div>
+          <h2>Tested NEELx on your Mac? Tell us how it feels.</h2>
+          <p>Report unlock speed, lighting behavior, external webcam results, or feature ideas. You can also send feedback directly inside NEELx via <strong>Menu Bar → Send Feedback…</strong></p>
+        </div>
+
+        <form id="feedbackForm" class="feedback-box">
+          <div class="form-grid">
+            <select id="fbCategory" aria-label="Feedback category">
+              <option value="Unlock Experience">Unlock Experience</option>
+              <option value="Bug Report">Bug Report</option>
+              <option value="Feature Idea">Feature Idea</option>
+            </select>
+            <select id="fbRating" aria-label="Smoothness rating">
+              <option value="5/5">★★★★★ (5/5 — Feels native)</option>
+              <option value="4/5">★★★★☆ (4/5 — Great, minor tweaks)</option>
+              <option value="3/5">★★★☆☆ (3/5 — Needs polish)</option>
+              <option value="2/5">★★☆☆☆ (2/5 — Hit issues)</option>
+              <option value="1/5">★☆☆☆☆ (1/5 — Didn't work)</option>
+            </select>
+          </div>
+          <div style="margin-bottom: 14px;">
+            <input id="fbMac" type="text" placeholder="Your Mac & macOS version (e.g. MacBook Air M4 · macOS 15.3)" />
+          </div>
+          <textarea id="fbMessage" placeholder="Share your unlock speed, dark-room lighting results, spoof test notes, or feature ideas…"></textarea>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Send Feedback</button>
+            <button id="btnFeedbackGitHub" type="button" class="btn btn-secondary">Open GitHub Issue</button>
+            <button id="btnFeedbackEmail" type="button" class="btn btn-secondary">Email Directly</button>
+            <span id="feedbackStatus" class="form-status"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div class="brand" style="font-size: 14px;">
+        <img src="assets/neelx-logo.svg" alt="NEELx" style="width: 22px; height: 22px;" />
+        <span>NEELx · Built by Chandranil Das</span>
+      </div>
+      <div>
+        MIT License · Built upon <a href="https://github.com/jonnyoo/glance" target="_blank" rel="noopener" style="text-decoration: underline;">Glance</a> ·
+        <a href="https://github.com/ChandranilDas/NEELx" target="_blank" rel="noopener" style="text-decoration: underline;">GitHub</a> ·
+        <a href="mailto:chandranildas925@gmail.com" style="text-decoration: underline;">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

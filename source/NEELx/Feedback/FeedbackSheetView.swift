@@ -158,15 +158,19 @@ struct FeedbackSheetView: View {
 
                 Spacer()
 
-                Button("GitHub Issue") { openPreFilledGitHubIssue() }
-                    .disabled(!canSubmit)
-
                 if hasWebhook {
+                    Button("GitHub Issue") { openPreFilledGitHubIssue() }
+                        .disabled(!canSubmit)
+
                     Button(isSubmitting ? "Sending…" : "Send Directly") {
                         Task { await submitToWebhook() }
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!canSubmit)
+                } else {
+                    Button("GitHub Issue") { openPreFilledGitHubIssue() }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!canSubmit)
                 }
             }
         }

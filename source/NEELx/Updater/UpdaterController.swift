@@ -215,40 +215,19 @@ final class UpdaterController {
         do {
             try fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-            var req = URLRequest(url: downloadURL)
-            req.setValue("NEELx-Updater/2.0", forHTTPHeaderField: "User-Agent")
-            let (asyncBytes, response) = try await URLSession.shared.bytes(for: req)
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                throw NSError(domain: "NEELx.Updater", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to download update DMG."])
-            }
-
-            let expected = Double(response.expectedContentLength > 0 ? response.expectedContentLength : Int64(max(asset.size, 1)))
-            fm.createFile(atPath: dmgURL.path, contents: nil)
-            let handle = try FileHandle(forWritingTo: dmgURL)
-            defer { try? handle.close() }
-
-            var buffer = Data()
-            buffer.reserveCapacity(256 * 1024)
-            var received = 0.0
-            var lastTick = CFAbsoluteTimeGetCurrent()
-
-            for try await byte in asyncBytes {
-                buffer.append(byte)
-                if buffer.count >= 128 * 1024 {
-                    try handle.write(contentsOf: buffer)
-                    received += Double(buffer.count)
-                    buffer.removeAll(keepingCapacity: true)
-                    let now = CFAbsoluteTimeGetCurrent()
-                    if now - lastTick >= 0.15 {
-                        lastTick = now
-                        let pct = Int(min(received * 100.0 / expected, 99.0))
-                        statusText = "Downloading update… \(pct)%"
-                    }
+            let expectedFallback = Double(max(asset.size, 1))
+            let downloader = FastFileDownloader()
+            let downloadedTemp = try await downloader.download(from: downloadURL, userAgent: "NEELx-Updater/2.0") { [weak self] written, expected in
+                let denom = expected > 0 ? Double(expected) : expectedFallback
+                let pct = Int(min(Double(written) * 100.0 / denom, 99.0))
+                Task { @MainActor [weak self] in
+                    self?.statusText = "Downloading update… \(pct)%"
                 }
             }
-            if !buffer.isEmpty {
-                try handle.write(contentsOf: buffer)
+            if fm.fileExists(atPath: dmgURL.path) {
+                try fm.removeItem(at: dmgURL)
             }
+            try fm.moveItem(at: downloadedTemp, to: dmgURL)
 
             statusText = "Installing update…"
             try fm.createDirectory(at: mountDir, withIntermediateDirectories: true)
