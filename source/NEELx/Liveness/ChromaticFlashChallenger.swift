@@ -95,20 +95,25 @@ nonisolated enum ChromaticFlashChallenger {
     }
 
     /// Evaluates whether the reflected color shift on skin matches the randomized screen flash tint.
+    /// Accounts for Apple Silicon FaceTime ISP Auto-White-Balance (AWB) which can rapidly counter-shift
+    /// cool cyan tints toward warm red in moderately lit rooms while still showing a strong synchronized
+    /// photometric reflectance jump on live skin.
     static func evaluate(
         baseline: FaceRGBSample,
         flashed: FaceRGBSample,
         tint: ChromaticFlashTint
     ) -> ChromaticFlashVerdict {
-        // When strong external light (room lamps, sunlight, external flash) already illuminates the face,
-        // a laptop display's brief tint cannot physically overpower it — abstain safely rather than false-denying.
-        if baseline.luminance >= 0.42 {
+        // When ambient room lighting already illuminates the face clearly (>= 0.34),
+        // a brief display edge tint is overpowered by room light & ISP AWB — abstain safely
+        // and let Stage 3 Neural 3D Depth + 9-Zone Profile + Attention govern liveness.
+        if baseline.luminance >= 0.34 {
             return .abstained
         }
 
         let deltaR = flashed.r - baseline.r
         let deltaG = flashed.g - baseline.g
         let deltaB = flashed.b - baseline.b
+        let deltaLum = flashed.luminance - baseline.luminance
 
         // Positive signed shift along the expected challenge axis
         let signedShift: Double
@@ -121,10 +126,22 @@ nonisolated enum ChromaticFlashChallenger {
             signedShift = 0.5 * (deltaR + deltaB) - deltaG
         }
 
-        // Total photometric energy shift (accounts for camera AWB partially neutralizing hue while boosting luminance)
+        // Total photometric energy shift across RGB channels
         let totalShift = abs(deltaR) + abs(deltaG) + abs(deltaB)
-        if signedShift >= 0.0025 || (signedShift >= -0.002 && totalShift >= 0.012) {
+
+        // 1. Direct chromatic axis match (ideal dim-room reflection)
+        if signedShift >= 0.0020 {
             return .passed(shift: signedShift)
+        }
+        // 2. Mild AWB dampening with clear synchronized photometric response
+        if signedShift >= -0.0035 && totalShift >= 0.012 {
+            return .passed(shift: signedShift)
+        }
+        // 3. Strong synchronized photometric flash reflection (e.g. M4 ISP AWB neutralizing cyan hue
+        //    while skin luminance & total RGB energy clearly jump in phase with the display pulse).
+        //    A self-emissive phone/tablet playing a pre-recorded video does not brighten synchronously.
+        if totalShift >= 0.024 && deltaLum >= 0.006 {
+            return .passed(shift: totalShift)
         }
         return .failed(shift: signedShift)
     }

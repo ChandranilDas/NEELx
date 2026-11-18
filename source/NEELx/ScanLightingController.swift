@@ -207,32 +207,29 @@ final class ScanLightingController {
             currentHardwareBrightness = current
         }
         if let base = savedBrightness {
-            animateHardwareBrightness(to: max(base, 0.88), duration: 0.12)
+            animateHardwareBrightness(to: max(base, 0.90), duration: 0.06)
         }
         ensureOverlayVisible()
         guard let panel, let lightView else { return }
         lightView.challengeColor = tint.nsColor
         lightView.needsDisplay = true
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.10
+            ctx.duration = 0.045
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 0.88
+            panel.animator().alphaValue = 0.92
         }
         panel.displayIfNeeded()
     }
 
-    /// Smoothly clears the chromatic tint back to the ambient halo (or off).
+    /// Immediately clears the chromatic tint back to the ambient halo (or off) so subsequent frames never inherit stale tint.
     func clearFlashChallenge() {
         guard let panel, let lightView else { return }
         lightView.challengeColor = nil
         lightView.needsDisplay = true
         if currentBoostLevel == 0 {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.18
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().alphaValue = 0
-            }
+            panel.alphaValue = 0
         }
+        panel.displayIfNeeded()
     }
 
     /// Gracefully dissolves the halo and smoothly eases hardware backlight back to your exact original level.
@@ -392,18 +389,21 @@ private final class ScanLightHaloView: NSView {
         let primaryColor: NSColor
         let secondaryColor: NSColor
         if let challengeColor {
-            primaryColor = challengeColor.blended(withFraction: 0.34, of: .white) ?? challengeColor
-            secondaryColor = challengeColor.blended(withFraction: 0.62, of: .white) ?? .white
+            // Higher spectral purity during the brief ~120ms pulse so cyan/magenta cleanly
+            // registers on skin before Apple's ISP Auto-White-Balance compensates.
+            primaryColor = challengeColor.blended(withFraction: 0.12, of: .white) ?? challengeColor
+            secondaryColor = challengeColor.blended(withFraction: 0.28, of: .white) ?? challengeColor
         } else {
             primaryColor = NSColor(calibratedRed: 1.0, green: 0.968, blue: 0.915, alpha: 1.0)
             secondaryColor = NSColor(calibratedRed: 1.0, green: 0.985, blue: 0.955, alpha: 1.0)
         }
 
-        // 1. Soft atmospheric radial falloff (keeps center almost completely transparent & clean)
-        let c0: CGFloat = isChallenge ? 0.04 : (forEnrollment ? 0.0 : intensity * 0.03)
-        let c1: CGFloat = isChallenge ? 0.16 : (forEnrollment ? intensity * 0.06 : intensity * 0.12)
-        let c2: CGFloat = isChallenge ? 0.46 : (forEnrollment ? intensity * 0.28 : intensity * 0.44)
-        let c3: CGFloat = isChallenge ? 0.80 : min(0.86, 0.34 + intensity * 0.48)
+        // 1. Soft atmospheric radial falloff (keeps Studio Light center crystal clear;
+        //    gives the brief Chromatic Flash enough uniform spectral fill to register reliably)
+        let c0: CGFloat = isChallenge ? 0.22 : (forEnrollment ? 0.0 : intensity * 0.03)
+        let c1: CGFloat = isChallenge ? 0.36 : (forEnrollment ? intensity * 0.06 : intensity * 0.12)
+        let c2: CGFloat = isChallenge ? 0.62 : (forEnrollment ? intensity * 0.28 : intensity * 0.44)
+        let c3: CGFloat = isChallenge ? 0.90 : min(0.86, 0.34 + intensity * 0.48)
 
         let colors = [
             primaryColor.withAlphaComponent(c0).cgColor,
