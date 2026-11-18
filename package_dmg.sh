@@ -43,7 +43,7 @@ echo "   Packaging $DMG_NAME"
 echo "=========================================="
 
 # 1. Build base NEELx.app
-"$SCRIPT_DIR/build.sh" "${BUILD_ARGS[@]}"
+"$SCRIPT_DIR/build.sh" ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}
 
 rm -rf "$STAGE_DIR" "$DMG_PATH"
 mkdir -p "$STAGE_DIR"
