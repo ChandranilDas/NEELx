@@ -1,0 +1,29 @@
+name: Feature Idea & Beta Feedback
+description: Share suggestions, UX polish ideas, or security enhancements for NEELx
+title: "[Feedback]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Overall Unlock Smoothness & Experience
+      options:
+        - "★★★★★ (5/5 — Feels native)"
+        - "★★★★☆ (4/5 — Great, minor tweaks)"
+        - "★★★☆☆ (3/5 — Works, needs polish)"
+        - "★★☆☆☆ (2/5 — Hit issues)"
+        - "★☆☆☆☆ (1/5 — Didn't work)"
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Your Idea or Feedback
+      placeholder: What would make NEELx feel even faster, smoother, or more secure on your Mac?
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac Model & macOS Version
+      placeholder: e.g., MacBook Air M4 · macOS 15.3

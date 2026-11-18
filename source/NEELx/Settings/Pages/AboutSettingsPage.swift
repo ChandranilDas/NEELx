@@ -1,0 +1,115 @@
+//
+//  AboutSettingsPage.swift
+//  NEELx
+//
+
+import SwiftUI
+import AppKit
+
+struct AboutSettingsPage: View {
+    @Bindable var updater: UpdaterController
+    let environment: AppEnvironment
+
+    /// Secret-tap state for revealing the Debug/Face Lab sidebar section —
+    /// see `AppEnvironment.isDebugSectionRevealed`. A pause over a second
+    /// resets the count, so this requires 5 *consecutive* taps.
+    @State private var iconTapCount = 0
+    @State private var lastTapDate: Date?
+    @State private var didCopyDiagnostics = false
+    @State private var showFeedbackSheet = false
+    private let requiredTapCount = 5
+    private let tapResetInterval: TimeInterval = 1.0
+
+    private var versionString: String {
+        NEELxConfig.versionString
+    }
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .frame(width: 80, height: 80)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: handleIconTap)
+
+            Text("NEELx")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(SettingsMetrics.textPrimary)
+
+            Text(versionString)
+                .font(.system(size: 12))
+                .foregroundStyle(SettingsMetrics.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 16)
+
+        SettingsGroup {
+            SettingsActionRowContent(
+                title: "Send Feedback or Report Bug",
+                buttonTitle: "Send Feedback"
+            ) {
+                showFeedbackSheet = true
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
+                title: "Copy Diagnostics for GitHub Issue",
+                buttonTitle: didCopyDiagnostics ? "Copied!" : "Copy"
+            ) {
+                copyDiagnosticsToClipboard()
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
+                title: "Check for Updates",
+                buttonTitle: "Check",
+                isEnabled: updater.canCheckForUpdates
+            ) {
+                updater.checkForUpdates()
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
+                title: "Based on Glance · MIT license",
+                buttonTitle: "Source"
+            ) {
+                if let url = URL(string: "https://github.com/jonnyoo/glance") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
+        .sheet(isPresented: $showFeedbackSheet) {
+            FeedbackSheetView {
+                showFeedbackSheet = false
+            }
+        }
+    }
+
+    /// Copies a strictly privacy-scrubbed Markdown environment summary (zero names, passwords, or biometric data)
+    /// so open-source testers can paste actionable device info into GitHub Issues in one click.
+    private func copyDiagnosticsToClipboard() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(NEELxConfig.diagnosticsMarkdown(), forType: .string)
+        didCopyDiagnostics = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            didCopyDiagnostics = false
+        }
+    }
+
+    private func handleIconTap() {
+        let now = Date()
+        if let lastTapDate, now.timeIntervalSince(lastTapDate) > tapResetInterval {
+            iconTapCount = 0
+        }
+        lastTapDate = now
+        iconTapCount += 1
+        guard iconTapCount >= requiredTapCount else { return }
+        iconTapCount = 0
+        environment.isDebugSectionRevealed = true
+    }
+}

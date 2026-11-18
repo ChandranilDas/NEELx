@@ -1,0 +1,32 @@
+# Xcode & Swift build products
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+ModuleCache/
+xcode-build/
+*.app/
+*.dmg
+*.zip
+
+# Intermediate Core ML compiler products & downloaded large depth weights
+# (Fetch DepthAnythingV2SmallF16 via: python3 source/tools/fetch_depth_model.py)
+*.mlmodelc
+DepthAnythingV2SmallF16.mlpackage/
+Assets.car
+.vscode/
+
+# Python caches
+.venv/
+__pycache__/
+*.pyc
+
+# macOS system metadata
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Sensitive test files and logs
+*.log
+*.enc

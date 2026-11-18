@@ -1,0 +1,34 @@
+name: Bug Report
+description: Report an unlock issue, crash, camera quirk, or lighting bug in NEELx
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing NEELx! Tip: Open **NEELx → Settings → About → Copy Diagnostics** and paste below.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      placeholder: Describe what happened and how to reproduce it (e.g., bright room, dark room, clamshell mode, external webcam)...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: NEELx Diagnostics (Privacy-Scrubbed)
+      description: Paste output from NEELx → Settings → About → Copy Diagnostics
+      placeholder: |
+        - App Version:
+        - Mac Model:
+        - macOS:
+        - Active Camera:
+        - 3D Neural Depth (ANE):
+    validations:
+      required: false
+  - type: textarea
+    id: audit
+    attributes:
+      label: Encrypted Security Audit Log Entry (Optional)
+      description: If unlock failed, paste the exact text shown in Settings → Recognition → Encrypted Security Audit Log (no photos needed).
