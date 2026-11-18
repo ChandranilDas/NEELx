@@ -23,6 +23,7 @@ final class ScanLightingController {
 
     private var isActive = false
     private var forEnrollment = false
+    private var allowWhenUnlocked = false
     private var savedBrightness: Float?
     private var currentHardwareBrightness: Float?
     private var currentBoostLevel: Double = 0 // 0.0 (off) ... 1.0 (max dark-room boost)
@@ -37,7 +38,7 @@ final class ScanLightingController {
     private let targetLuminance: Double = 0.33
     private let adjustCooldown: TimeInterval = 0.24
 
-    func begin(forEnrollment: Bool = false) {
+    func begin(forEnrollment: Bool = false, allowWhenUnlocked: Bool = false) {
         fadeOutTask?.cancel()
         fadeOutTask = nil
         brightnessAnimTask?.cancel()
@@ -45,6 +46,7 @@ final class ScanLightingController {
 
         self.isActive = true
         self.forEnrollment = forEnrollment
+        self.allowWhenUnlocked = allowWhenUnlocked
         self.currentBoostLevel = 0
         self.lastAdjustmentAt = 0
         if let lightView {
@@ -55,14 +57,15 @@ final class ScanLightingController {
         panel?.alphaValue = 0
     }
 
-    /// Closed-loop per-frame controller: evaluates live frame/face brightness and smoothly
-    /// breathes up hardware backlight + feathered TrueTone halo until the face is clearly visible.
+    /// Closed-loop per-frame controller: evaluates live frame/face brightness AND backlit
+    /// silhouette contrast (bright window behind a darkened face), then smoothly breathes up
+    /// hardware backlight + Studio Light rim halo until the face is clearly illuminated.
     func consider(_ image: CGImage, faceVisible: Bool = false, faceBox: CGRect? = nil) {
         guard isActive else { return }
         guard UserDefaults.standard.object(forKey: "NEELxSecurity.scanLightEnabled") as? Bool ?? true else {
             return
         }
-        if !forEnrollment {
+        if !forEnrollment && !allowWhenUnlocked {
             guard LockMonitor.isScreenActuallyLocked() else { return }
         }
 
@@ -70,21 +73,28 @@ final class ScanLightingController {
         guard now - lastAdjustmentAt >= adjustCooldown else { return }
 
         let frameLum = Self.meanLuminance(image, normalizedRect: nil)
+        let centerRect = CGRect(x: 0.30, y: 0.25, width: 0.40, height: 0.50)
         let effectiveLum: Double
+        let isBacklitSilhouette: Bool
+
         if let faceBox, faceVisible {
             let faceLum = Self.meanLuminance(image, normalizedRect: faceBox)
-            effectiveLum = 0.7 * faceLum + 0.3 * frameLum
+            isBacklitSilhouette = faceLum < 0.24 && (frameLum - faceLum) >= 0.12
+            // When backlit, prioritize the face's own darkness rather than letting the sunlit window hide it
+            effectiveLum = isBacklitSilhouette ? faceLum : (0.75 * faceLum + 0.25 * frameLum)
         } else {
-            effectiveLum = frameLum
+            let centerLum = Self.meanLuminance(image, normalizedRect: centerRect)
+            isBacklitSilhouette = centerLum < 0.26 && (frameLum - centerLum) >= 0.12
+            effectiveLum = min(centerLum, frameLum)
         }
 
-        // Naturally well-lit room -> stay completely invisible
-        if currentBoostLevel == 0 && effectiveLum >= darkTriggerLuminance && (faceVisible || frameLum >= targetLuminance) {
+        // Naturally well-lit non-backlit room -> stay completely invisible
+        if currentBoostLevel == 0 && !isBacklitSilhouette && effectiveLum >= darkTriggerLuminance && (faceVisible || frameLum >= targetLuminance) {
             return
         }
 
         // Face is clearly illuminated -> hold comfortably steady without further changes
-        if faceVisible && effectiveLum >= targetLuminance {
+        if faceVisible && !isBacklitSilhouette && effectiveLum >= targetLuminance {
             return
         }
 
@@ -330,7 +340,9 @@ private enum DisplayBrightnessBridge {
     }
 }
 
-/// Softly feathered, Gaussian-like TrueTone ambient edge halo (zero hard borders or boxy lines).
+/// Refined Apple Studio Light perimeter aura: keeps the screen center crisp & unobstructed while
+/// smoothly feathering a warm champagne-white fill glow (or soft spectral rim veil for Chromatic Flash)
+/// along the display perimeter with zero harsh bands or abrupt edges.
 @MainActor
 private final class ScanLightHaloView: NSView {
     var intensity: CGFloat = 0.4
@@ -344,28 +356,37 @@ private final class ScanLightHaloView: NSView {
         ctx.clear(bounds)
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let baseColor = challengeColor ?? NSColor(calibratedRed: 1.0, green: 0.96, blue: 0.89, alpha: 1.0)
-        let centerAlpha: CGFloat = challengeColor != nil
-            ? 0.36
-            : (forEnrollment ? intensity * 0.08 : intensity * 0.28)
-        let midAlpha: CGFloat = challengeColor != nil
-            ? 0.62
-            : (forEnrollment ? intensity * 0.30 : intensity * 0.52)
-        let edgeAlpha: CGFloat = challengeColor != nil ? 0.92 : min(0.95, 0.45 + intensity * 0.50)
+        let isChallenge = challengeColor != nil
+        // Warm studio champagne white (3800K softbox feel) instead of stark clinical blue-white;
+        // chromatic flash blends softly with warm white so it feels refined rather than harsh neon.
+        let baseColor: NSColor
+        if let challengeColor {
+            baseColor = challengeColor.blended(withFraction: 0.28, of: .white) ?? challengeColor
+        } else {
+            baseColor = NSColor(calibratedRed: 1.0, green: 0.965, blue: 0.905, alpha: 1.0)
+        }
 
-        let cCenter = baseColor.withAlphaComponent(centerAlpha).cgColor
-        let cMid = baseColor.withAlphaComponent(midAlpha).cgColor
-        let cEdge = baseColor.withAlphaComponent(edgeAlpha).cgColor
+        let c0: CGFloat = isChallenge ? 0.14 : (forEnrollment ? 0.0 : intensity * 0.08)
+        let c1: CGFloat = isChallenge ? 0.32 : (forEnrollment ? intensity * 0.12 : intensity * 0.24)
+        let c2: CGFloat = isChallenge ? 0.62 : (forEnrollment ? intensity * 0.34 : intensity * 0.56)
+        let c3: CGFloat = isChallenge ? 0.86 : min(0.90, 0.38 + intensity * 0.50)
+
+        let colors = [
+            baseColor.withAlphaComponent(c0).cgColor,
+            baseColor.withAlphaComponent(c1).cgColor,
+            baseColor.withAlphaComponent(c2).cgColor,
+            baseColor.withAlphaComponent(c3).cgColor,
+        ] as CFArray
 
         guard let gradient = CGGradient(
             colorsSpace: colorSpace,
-            colors: [cCenter, cMid, cEdge] as CFArray,
-            locations: [0.0, 0.58, 1.0]
+            colors: colors,
+            locations: [0.0, 0.44, 0.76, 1.0]
         ) else { return }
 
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         let outerRadius = hypot(bounds.width * 0.5, bounds.height * 0.5)
-        let innerRadius = min(bounds.width, bounds.height) * 0.18
+        let innerRadius = min(bounds.width, bounds.height) * 0.22
 
         ctx.drawRadialGradient(
             gradient,

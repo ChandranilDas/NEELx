@@ -126,8 +126,8 @@ struct RecognitionSettingsPage: View {
                     SettingsGroupDivider()
 
                     SettingsRowContent(
-                        title: "Face ID for Installs & Saved Passwords",
-                        subtitle: "Automatically approves macOS Touch ID & password prompts (app installs, System Settings, Saved Passwords) with Face ID when you look at your Mac.",
+                        title: "Face ID for System Touch ID & Password Prompts",
+                        subtitle: "Approves macOS Touch ID & password popups everywhere (System Settings, installs, Saved Passwords, Finder, Keychain) — automatically excludes Apple Pay & payments.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
                         NEELxToggle(isOn: $settings.systemAuthPromptsEnabled)

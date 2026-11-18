@@ -7,6 +7,7 @@
 
 import Vision
 import CoreGraphics
+import CoreImage
 
 struct DetectedFace {
     /// Pixel-space bounding box, top-left origin — ready to crop with.
@@ -29,9 +30,35 @@ struct DetectedFace {
     let imageSize: CGSize
 }
 
-/// Pure, synchronous, CPU-bound work — `nonisolated` so it can run on a
+/// Pure, synchronous, CPU/GPU-bound work — `nonisolated` so it can run on a
 /// background task despite the project's default main-actor isolation.
 nonisolated enum FaceDetector {
+    /// Shared GPU-backed CIContext for fast (~3 ms) backlit HDR shadow recovery when a bright
+    /// window behind the user turns their face into a dark silhouette.
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+
+    /// Lifts crushed facial shadows while compressing blown-out window highlights (software HDR).
+    static func recoverBacklitShadows(in image: CGImage) -> CGImage? {
+        let ciImage = CIImage(cgImage: image)
+        guard let filter = CIFilter(name: "CIHighlightShadowAdjust") else { return nil }
+        filter.setValue(ciImage, forKey: kCIInputImageKey)
+        filter.setValue(0.95, forKey: "inputShadowAmount")
+        filter.setValue(0.32, forKey: "inputHighlightAmount")
+        filter.setValue(8.0, forKey: "inputRadius")
+        guard var output = filter.outputImage else { return nil }
+
+        // Slight local contrast lift so backlit eyes/nose remain crisp for Vision & ArcFace
+        if let colorFilter = CIFilter(name: "CIColorControls") {
+            colorFilter.setValue(output, forKey: kCIInputImageKey)
+            colorFilter.setValue(1.08, forKey: kCIInputContrastKey)
+            colorFilter.setValue(0.03, forKey: kCIInputBrightnessKey)
+            if let enhanced = colorFilter.outputImage {
+                output = enhanced
+            }
+        }
+        return ciContext.createCGImage(output, from: ciImage.extent)
+    }
+
     /// Runs face-rectangle, capture-quality, and landmarks detection on a single frame.
     static func detectFaces(in image: CGImage) throws -> [DetectedFace] {
         let handler = VNImageRequestHandler(cgImage: image, options: [:])

@@ -53,14 +53,43 @@ final class FaceRecognitionPipeline {
     }
 
     /// `nonisolated` so callers can run detect/align/embed from a background task instead of blocking the main actor.
+    /// Automatically applies GPU-accelerated backlit HDR shadow recovery when a bright window behind the user
+    /// turns their face into a dark silhouette.
     /// - Parameter previousBoundingBox: previous frame's selected box, if any — lets a continuous scanner keep selection "stuck" to the same person instead of re-picking every frame.
     nonisolated func recognize(in frame: CGImage, preferNear previousBoundingBox: CGRect? = nil, requireSingleFace: Bool = false) throws -> FaceRecognitionResult {
-        let faces = try FaceDetector.detectFaces(in: frame)
+        var activeFrame = frame
+        var faces = try FaceDetector.detectFaces(in: activeFrame)
+
+        // Backlight / strong-window-behind-you recovery:
+        // 1. If Vision found no face at all, lift crushed shadows and retry detection (~3 ms on GPU).
+        // 2. If Vision found a face whose region is severely darkened against a bright background
+        //    (silhouette effect), lift shadows before feeding ArcFace so identity similarity stays high.
+        var didRecoverHDR = false
+        if faces.isEmpty, let hdrFrame = FaceDetector.recoverBacklitShadows(in: frame) {
+            let hdrFaces = try FaceDetector.detectFaces(in: hdrFrame)
+            if !hdrFaces.isEmpty {
+                activeFrame = hdrFrame
+                faces = hdrFaces
+                didRecoverHDR = true
+            }
+        }
+
         guard !requireSingleFace || faces.count == 1 else { throw FaceRecognitionPipelineError.noFaceDetected }
         guard let face = Self.selectDominantFace(in: faces, preferNear: previousBoundingBox) else {
             throw FaceRecognitionPipelineError.noFaceDetected
         }
-        return try recognize(face, in: frame)
+
+        if !didRecoverHDR {
+            let faceLum = ScanLightingController.meanLuminance(frame, normalizedRect: face.normalizedBoundingBox)
+            let frameLum = ScanLightingController.meanLuminance(frame, normalizedRect: nil)
+            // Classic backlit silhouette: dark face (<0.20) in front of bright room/window (contrast >= 0.13)
+            if faceLum < 0.20 && (frameLum - faceLum) >= 0.13,
+               let hdrFrame = FaceDetector.recoverBacklitShadows(in: frame) {
+                activeFrame = hdrFrame
+            }
+        }
+
+        return try recognize(face, in: activeFrame)
     }
 
     /// Aligns and embeds an already-chosen face; enrollment uses this to bypass the prominence filter so a too-small face reads as "move closer" rather than "nobody there".

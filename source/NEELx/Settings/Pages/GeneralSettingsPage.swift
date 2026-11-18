@@ -54,6 +54,13 @@ struct GeneralSettingsPage: View {
                 NEELxToggle(isOn: $coordinator.isEnabled)
             }
             SettingsGroupDivider()
+            SettingsRowContent(
+                title: "Face ID for System Touch ID & Password Prompts",
+                subtitle: "Automatically approves macOS Touch ID & password popups everywhere (System Settings, installs, Saved Passwords, Finder, Keychain) — excludes Apple Pay & payments."
+            ) {
+                NEELxToggle(isOn: $settings.systemAuthPromptsEnabled)
+            }
+            SettingsGroupDivider()
             UnlockTriggerPicker(selection: $settings.unlockTriggers, isEnabled: coordinator.isEnabled)
             SettingsGroupDivider()
             displayPicker()

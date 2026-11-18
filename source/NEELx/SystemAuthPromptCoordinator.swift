@@ -2,17 +2,10 @@
 //  SystemAuthPromptCoordinator.swift
 //  NEELx
 //
-//  iPad Pro / iPhone-style Face ID for macOS system Touch ID & password authorization prompts
-//  (app installers, System Settings admin locks, Saved Passwords in Safari/Chrome/Passwords app, Keychain).
-//
-//  Security & Safety Guarantees:
-//    1. Strictly allowlisted to Apple's system authentication agents (`SecurityAgent`, `coreautha` /
-//       `LocalAuthentication.UIAgent`, `LocalAuthenticationRemoteService`, `CoreServicesUIAgent`).
-//    2. Never triggers on NEELx's own Touch ID session unlock prompt.
-//    3. Runs full biometric + Stage 3 Neural 3D Depth + Attention verification BEFORE touching the prompt.
-//    4. Only types the decrypted password after verifying an active `AXSecureTextField` inside that
-//       exact Apple Auth process PID (switching from "Use Password…" automatically if on Touch ID mode),
-//       and immediately zeroes the plaintext buffer in memory.
+//  iPad Pro / iPhone-style Face ID for macOS system Touch ID & password popups everywhere:
+//  System Settings toggles, app/pkg installations, Saved Passwords (Safari/Chrome/Passwords app),
+//  Finder admin actions, Keychain prompts, and Terminal `sudo` — while strictly excluding
+//  Apple Pay, purchases/payments, web page forms, and NEELx's own session unlock prompt.
 //
 
 import AppKit
@@ -29,37 +22,61 @@ final class SystemAuthPromptCoordinator {
     private let scanLighting = ScanLightingController()
 
     private(set) var isScanningPrompt = false
-    private(set) var lastStatus: String = "Idle"
+    private(set) var lastStatus: String = "Watching for macOS Touch ID & password prompts"
 
     private var monitorTask: Task<Void, Never>?
     private var activeScanTask: Task<Void, Never>?
 
-    /// Cooldown per window ID so dismissing/canceling a prompt never causes a retry loop on the same dialog.
-    private var handledWindowIDs: [CGWindowID: Date] = [:]
+    /// Cooldown per prompt signature so canceling or touching Touch ID manually never re-triggers the same dialog.
+    private var handledPromptKeys: [String: Date] = [:]
     private let promptCooldown: TimeInterval = 12.0
 
-    private nonisolated static let allowedBundleIDs: Set<String> = [
+    private nonisolated static let allowedAuthBundleIDs: Set<String> = [
         "com.apple.SecurityAgent",
         "com.apple.LocalAuthentication.UIAgent",
         "com.apple.LocalAuthenticationRemoteService",
         "com.apple.AuthenticationServices.Agent",
         "com.apple.coreservices.uiagent",
+        "com.apple.CoreAuthentication",
+        "com.apple.UserNotificationCenter",
     ]
 
-    private nonisolated static let allowedOwnerNames: Set<String> = [
+    private nonisolated static let allowedAuthOwnerNames: Set<String> = [
         "SecurityAgent",
         "coreautha",
+        "CoreAuthentication",
+        "LocalAuthentication",
         "LocalAuthenticationRemoteService",
         "AuthenticationServicesAgent",
         "CoreServicesUIAgent",
     ]
 
-    private struct DetectedAuthPrompt: Sendable {
-        let windowID: CGWindowID
+    /// High-security / financial prompts that must ALWAYS remain Touch ID / manual password only.
+    private nonisolated static let excludedPromptKeywords: [String] = [
+        "apple pay",
+        "pay with touch id",
+        "touch id to pay",
+        "double click to pay",
+        "confirm payment",
+        "payment",
+        "purchase",
+        "checkout",
+        "apple card",
+        "card ending",
+        "wallet",
+        "app store",
+        "filevault",
+        "recovery key",
+        "erase all content",
+        "neelx",
+    ]
+
+    private struct DetectedAuthPrompt {
+        let key: String
+        let windowID: CGWindowID?
         let pid: pid_t
         let ownerName: String
-        let hasPasswordField: Bool
-        let hasUsePasswordButton: Bool
+        let rootElement: AXUIElement
     }
 
     init(pocController: POCController) {
@@ -71,7 +88,7 @@ final class SystemAuthPromptCoordinator {
         monitorTask?.cancel()
         monitorTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(450))
+                try? await Task.sleep(for: .milliseconds(400))
                 guard let self, !Task.isCancelled else { break }
                 self.pollForSystemAuthPrompt()
             }
@@ -95,14 +112,13 @@ final class SystemAuthPromptCoordinator {
         let overlay = NotchOverlayController.shared
         guard !overlay.isArmed, overlay.phase == .closed else { return }
 
-        // Prune expired cooldown entries
         let now = Date()
-        handledWindowIDs = handledWindowIDs.filter { now.timeIntervalSince($0.value) < promptCooldown }
+        handledPromptKeys = handledPromptKeys.filter { now.timeIntervalSince($0.value) < promptCooldown }
 
         guard let prompt = Self.detectActiveAuthPrompt() else { return }
-        if handledWindowIDs[prompt.windowID] != nil { return }
+        if handledPromptKeys[prompt.key] != nil { return }
 
-        handledWindowIDs[prompt.windowID] = now
+        handledPromptKeys[prompt.key] = now
         beginPromptAuthentication(for: prompt)
     }
 
@@ -126,13 +142,13 @@ final class SystemAuthPromptCoordinator {
 
         await camera.start()
         guard !Task.isCancelled, camera.errorMessage == nil else { return }
-        guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid) else { return }
+        guard Self.isPromptStillPresent(prompt) else { return }
 
         let showsUI = NEELxSettings.shared.effectiveUnlockAnimationStyle != .none
         if showsUI {
             NotchOverlayController.shared.present()
         }
-        scanLighting.begin(forEnrollment: false)
+        scanLighting.begin(forEnrollment: false, allowWhenUnlocked: true)
 
         let deadline = Date().addingTimeInterval(Double(NEELxSettings.shared.faceDetectionSeconds))
         let threshold = NEELxSettings.shared.matchThreshold
@@ -146,7 +162,7 @@ final class SystemAuthPromptCoordinator {
 
         while Date() < deadline, !Task.isCancelled {
             // Stop immediately if user already touched Touch ID, typed password, or closed the prompt
-            guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid),
+            guard Self.isPromptStillPresent(prompt),
                   !LockMonitor.isScreenActuallyLocked(),
                   SecureCredentialManager.isSessionUnlocked else {
                 if showsUI { NotchOverlayController.shared.disarm() }
@@ -277,8 +293,8 @@ final class SystemAuthPromptCoordinator {
 
             guard livenessConfirmed, attentionVerified else { continue }
 
-            // Face verified! Now safely switch Touch ID modal to password field (if needed), verify
-            // the AXSecureTextField belongs to this exact Apple Auth PID, and submit.
+            // Face verified! Safely transition Touch ID dialog to Password mode (if needed),
+            // verify the AXSecureTextField inside that exact auth dialog, and submit.
             let approved = await approveSystemPrompt(prompt: prompt)
             if approved {
                 let depthNote = depthReading.map { String(format: "3D Depth %.0f%% (%.0fms ANE)", $0.depth3DScore * 100, $0.inferenceMs) }
@@ -291,13 +307,12 @@ final class SystemAuthPromptCoordinator {
                     NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
                 }
             } else {
-                lastStatus = "Couldn't enter password into \(prompt.ownerName) — use Touch ID or password manually."
+                lastStatus = "Couldn't enter password into \(prompt.ownerName) — use Touch ID manually."
                 if showsUI { NotchOverlayController.shared.finish(success: false) }
             }
             return
         }
 
-        // Timed out without matching — retract cleanly so user can use Touch ID undisturbed
         if showsUI {
             NotchOverlayController.shared.disarm()
         }
@@ -305,24 +320,24 @@ final class SystemAuthPromptCoordinator {
 
     // MARK: - Safe Accessibility Prompt Approval
 
-    /// Switches a Touch ID prompt to password entry (if needed), verifies an `AXSecureTextField`
-    /// inside the exact allowlisted Apple Auth PID, focuses it, and injects the decrypted password + Return.
     private func approveSystemPrompt(prompt: DetectedAuthPrompt) async -> Bool {
-        guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid) else { return false }
+        guard Self.isPromptStillPresent(prompt) else { return false }
 
-        // Ensure the Apple Auth dialog is active so keystrokes land inside it
         NSRunningApplication(processIdentifier: prompt.pid)?.activate(options: [])
 
-        // Step 1: Locate existing password field, OR press "Use Password…" button on Touch ID sheet
-        var secureField = Self.findSecureTextField(inPID: prompt.pid)
+        // Step 1: Locate existing AXSecureTextField, or click "Use Password…" on Touch ID sheet
+        var secureField = Self.findSecureTextField(in: prompt.rootElement)
+            ?? Self.findSecureTextField(in: AXUIElementCreateApplication(prompt.pid))
+
         if secureField == nil {
-            if let usePasswordBtn = Self.findUsePasswordButton(inPID: prompt.pid) {
+            if let usePasswordBtn = Self.findUsePasswordButton(in: prompt.rootElement)
+                ?? Self.findUsePasswordButton(in: AXUIElementCreateApplication(prompt.pid)) {
                 AXUIElementPerformAction(usePasswordBtn, kAXPressAction as CFString)
-                // Wait up to 800ms for the Touch ID modal to transition to the password text field
-                for _ in 0..<16 {
+                for _ in 0..<18 {
                     try? await Task.sleep(for: .milliseconds(50))
-                    guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid) else { return false }
-                    if let found = Self.findSecureTextField(inPID: prompt.pid) {
+                    guard Self.isPromptStillPresent(prompt) else { return false }
+                    if let found = Self.findSecureTextField(in: prompt.rootElement)
+                        ?? Self.findSecureTextField(in: AXUIElementCreateApplication(prompt.pid)) {
                         secureField = found
                         break
                     }
@@ -330,23 +345,31 @@ final class SystemAuthPromptCoordinator {
             }
         }
 
-        // Strict safety guard: NEVER type the user's password unless we verified an actual AXSecureTextField
-        // inside the allowlisted Apple Authentication Agent process!
+        // Strict safety guard: NEVER type the Mac password unless a verified AXSecureTextField is present!
         guard let targetField = secureField else { return false }
-        guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid) else { return false }
+        guard Self.isPromptStillPresent(prompt) else { return false }
 
         NSRunningApplication(processIdentifier: prompt.pid)?.activate(options: [])
         AXUIElementSetAttributeValue(targetField, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         try? await Task.sleep(for: .milliseconds(70))
 
-        guard Self.isWindowStillOnScreen(windowID: prompt.windowID, pid: prompt.pid) else { return false }
+        guard Self.isPromptStillPresent(prompt) else { return false }
 
         return await pocController.injectStoredPassword(requireAuthoritativeLock: false)
     }
 
-    // MARK: - Window & Accessibility Inspection (Strict Apple-Only Allowlist)
+    // MARK: - Broad System Auth Prompt Detection (with Strict Payment & Web Exclusion)
 
     private static func detectActiveAuthPrompt() -> DetectedAuthPrompt? {
+        // Channel 1: Inspect the currently focused macOS window/sheet via AXSystemWide.
+        // Catches Touch ID / Password sheets hosted by coreautha, SecurityAgent, System Settings,
+        // Installer, Passwords, Finder, Chrome/Safari system modals, etc.
+        if let focusedPrompt = detectFromFocusedSystemWindow() {
+            return focusedPrompt
+        }
+
+        // Channel 2: Scan all on-screen windows owned by Apple's system authentication agents
+        // (covers non-activating floating Touch ID panels).
         guard let windowList = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements],
             kCGNullWindowID
@@ -363,82 +386,186 @@ final class SystemAuthPromptCoordinator {
 
             let pid = pid_t(pidNum)
             let bundleID = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-            guard allowedBundleIDs.contains(bundleID) || allowedOwnerNames.contains(ownerName) else {
-                continue
-            }
+            let isAppleAuth = allowedAuthBundleIDs.contains(bundleID) || allowedAuthOwnerNames.contains(ownerName)
+            guard isAppleAuth else { continue }
 
-            // Ignore tiny invisible helper windows or status items
             if let bounds = info[kCGWindowBounds as String] as? [String: Any],
                let w = bounds["Width"] as? Double,
                let h = bounds["Height"] as? Double,
-               (w < 180 || h < 100) {
+               (w < 160 || h < 90) {
                 continue
             }
 
-            // Never intercept NEELx's own Touch ID session unlock prompt
-            if dialogMentionsNEELx(pid: pid) {
-                continue
-            }
+            let appRoot = AXUIElementCreateApplication(pid)
+            let textBlob = collectDialogText(in: appRoot).lowercased()
+            if isExcludedHighSecurityOrPayment(textBlob) { continue }
 
-            let hasField = findSecureTextField(inPID: pid) != nil
-            let hasUsePwd = findUsePasswordButton(inPID: pid) != nil
+            let hasField = findSecureTextField(in: appRoot) != nil
+            let hasUsePwd = findUsePasswordButton(in: appRoot) != nil
             if hasField || hasUsePwd {
                 return DetectedAuthPrompt(
+                    key: "win-\(winID)-\(pid)",
                     windowID: winID,
                     pid: pid,
                     ownerName: ownerName,
-                    hasPasswordField: hasField,
-                    hasUsePasswordButton: hasUsePwd
+                    rootElement: appRoot
                 )
             }
         }
+
         return nil
     }
 
-    private static func isWindowStillOnScreen(windowID: CGWindowID, pid: pid_t) -> Bool {
-        guard let windowList = CGWindowListCopyWindowInfo(
-            [.optionOnScreenOnly, .excludeDesktopElements],
-            kCGNullWindowID
-        ) as? [[String: Any]] else {
-            return false
+    private static func detectFromFocusedSystemWindow() -> DetectedAuthPrompt? {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedAppRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &focusedAppRef) == .success,
+              let focusedApp = focusedAppRef else {
+            return nil
         }
-        return windowList.contains { info in
-            let w = info[kCGWindowNumber as String] as? CGWindowID
-            let p = info[kCGWindowOwnerPID as String] as? Int32
-            return w == windowID && p == pid
+        let appElement = focusedApp as! AXUIElement
+
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(appElement, &pid) == .success, pid > 0 else { return nil }
+
+        let runningApp = NSRunningApplication(processIdentifier: pid)
+        let bundleID = runningApp?.bundleIdentifier ?? ""
+        let ownerName = runningApp?.localizedName ?? bundleID
+
+        // Grab focused window or attached modal sheet (e.g. System Settings Touch ID sheet)
+        var targetRoot: AXUIElement?
+        var focusedWinRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &focusedWinRef) == .success,
+           let win = focusedWinRef {
+            let winEl = win as! AXUIElement
+            // Prefer an attached AXSheet if one is currently presented over the window
+            var sheetsRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(winEl, kAXChildrenAttribute as CFString, &sheetsRef) == .success,
+               let children = sheetsRef as? [AXUIElement],
+               let sheet = children.first(where: { axString($0, kAXRoleAttribute) == kAXSheetRole }) {
+                targetRoot = sheet
+            } else {
+                targetRoot = winEl
+            }
         }
+        let root = targetRoot ?? appElement
+
+        // Never touch web page content (prevents ever confusing a website login box with a macOS auth prompt)
+        if containsWebArea(in: root) { return nil }
+
+        let textBlob = collectDialogText(in: root).lowercased()
+        if isExcludedHighSecurityOrPayment(textBlob) { return nil }
+
+        let isAppleAuthProcess = allowedAuthBundleIDs.contains(bundleID) || allowedAuthOwnerNames.contains(ownerName)
+        let hasField = findSecureTextField(in: root) != nil
+        let hasUsePwd = findUsePasswordButton(in: root) != nil
+
+        // Trigger if:
+        //  (a) It's an Apple authentication daemon with a password field or "Use Password…" button, OR
+        //  (b) It's a native macOS Touch ID modal/sheet (contains "touch id" + "use password"/"enter password"/password field)
+        let looksLikeTouchIDModal = textBlob.contains("touch id") && (hasUsePwd || hasField)
+        let looksLikeAdminPasswordSheet = (axString(root, kAXRoleAttribute) == kAXSheetRole || axString(root, kAXSubroleAttribute) == kAXSystemDialogSubrole)
+            && hasField
+            && (textBlob.contains("enter your password") || textBlob.contains("allow this") || textBlob.contains("administrator") || textBlob.contains("make changes"))
+
+        guard (isAppleAuthProcess && (hasField || hasUsePwd)) || looksLikeTouchIDModal || looksLikeAdminPasswordSheet else {
+            return nil
+        }
+
+        let winTitle = axString(root, kAXTitleAttribute) ?? "modal"
+        let key = "ax-\(pid)-\(winTitle)-\(textBlob.prefix(48))"
+        return DetectedAuthPrompt(
+            key: key,
+            windowID: nil,
+            pid: pid,
+            ownerName: ownerName,
+            rootElement: root
+        )
     }
 
-    private static func findSecureTextField(inPID pid: pid_t) -> AXUIElement? {
-        let app = AXUIElementCreateApplication(pid)
-        return bfsFind(root: app, maxNodes: 160) { el in
+    private static func isPromptStillPresent(_ prompt: DetectedAuthPrompt) -> Bool {
+        if let winID = prompt.windowID {
+            guard let windowList = CGWindowListCopyWindowInfo(
+                [.optionOnScreenOnly, .excludeDesktopElements],
+                kCGNullWindowID
+            ) as? [[String: Any]] else { return false }
+            return windowList.contains { info in
+                (info[kCGWindowNumber as String] as? CGWindowID) == winID
+                    && (info[kCGWindowOwnerPID as String] as? Int32) == prompt.pid
+            }
+        }
+        // AX-detected sheet/dialog: check that either the password field or "Use Password…" button still exists
+        return findSecureTextField(in: prompt.rootElement) != nil
+            || findUsePasswordButton(in: prompt.rootElement) != nil
+            || findSecureTextField(in: AXUIElementCreateApplication(prompt.pid)) != nil
+            || findUsePasswordButton(in: AXUIElementCreateApplication(prompt.pid)) != nil
+    }
+
+    private static func isExcludedHighSecurityOrPayment(_ lowercasedText: String) -> Bool {
+        for keyword in excludedPromptKeywords {
+            if lowercasedText.contains(keyword) { return true }
+        }
+        return false
+    }
+
+    private static func containsWebArea(in root: AXUIElement) -> Bool {
+        bfsFind(root: root, maxNodes: 80) { el in
+            axString(el, kAXRoleAttribute) == "AXWebArea"
+        } != nil
+    }
+
+    private static func findSecureTextField(in root: AXUIElement) -> AXUIElement? {
+        bfsFind(root: root, maxNodes: 180) { el in
             let role = axString(el, kAXRoleAttribute)
             let subrole = axString(el, kAXSubroleAttribute)
             return role == kAXTextFieldRole && subrole == kAXSecureTextFieldSubrole
         }
     }
 
-    private static func findUsePasswordButton(inPID pid: pid_t) -> AXUIElement? {
-        let app = AXUIElementCreateApplication(pid)
-        return bfsFind(root: app, maxNodes: 160) { el in
+    private static func findUsePasswordButton(in root: AXUIElement) -> AXUIElement? {
+        bfsFind(root: root, maxNodes: 180) { el in
             guard axString(el, kAXRoleAttribute) == kAXButtonRole else { return false }
             let title = (axString(el, kAXTitleAttribute) ?? "").lowercased()
             let desc = (axString(el, kAXDescriptionAttribute) ?? "").lowercased()
             let combined = title + " " + desc
-            return combined.contains("use password") || combined.contains("enter password")
+            return combined.contains("use password")
+                || combined.contains("enter password")
+                || title == "password…"
+                || title == "password..."
+                || title == "password"
         }
     }
 
-    private static func dialogMentionsNEELx(pid: pid_t) -> Bool {
-        let app = AXUIElementCreateApplication(pid)
-        return bfsFind(root: app, maxNodes: 120) { el in
-            let text = [
-                axString(el, kAXValueAttribute),
-                axString(el, kAXTitleAttribute),
-                axString(el, kAXDescriptionAttribute),
-            ].compactMap { $0 }.joined(separator: " ").lowercased()
-            return text.contains("neelx")
-        } != nil
+    private static func collectDialogText(in root: AXUIElement) -> String {
+        var parts: [String] = []
+        var queue: [AXUIElement] = [root]
+        var idx = 0
+        while idx < queue.count, idx < 120 {
+            let current = queue[idx]
+            idx += 1
+            for attr in [kAXTitleAttribute, kAXValueAttribute, kAXDescriptionAttribute] {
+                if let s = axString(current, attr), !s.isEmpty, s.count < 240 {
+                    parts.append(s)
+                }
+            }
+            var childrenRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(current, kAXChildrenAttribute as CFString, &childrenRef) == .success,
+               let children = childrenRef as? [AXUIElement] {
+                for child in children where queue.count < 120 {
+                    queue.append(child)
+                }
+            }
+            if idx == 1 {
+                var windowsRef: CFTypeRef?
+                if AXUIElementCopyAttributeValue(current, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+                   let windows = windowsRef as? [AXUIElement] {
+                    for win in windows where queue.count < 120 {
+                        queue.append(win)
+                    }
+                }
+            }
+        }
+        return parts.joined(separator: " ")
     }
 
     private static func bfsFind(
@@ -461,12 +588,11 @@ final class SystemAuthPromptCoordinator {
                     queue.append(child)
                 }
             }
-            // Also check AXWindows on the root application element
             if idx == 1 {
                 var windowsRef: CFTypeRef?
                 if AXUIElementCopyAttributeValue(current, kAXWindowsAttribute as CFString, &windowsRef) == .success,
                    let windows = windowsRef as? [AXUIElement] {
-                    for win in windows where queue.count < maxNodes {
+                    for win in windows where queue.count < 120 {
                         queue.append(win)
                     }
                 }
