@@ -44,6 +44,8 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Backlit Window HDR Shadow Recovery**: Real-time center-vs-border luminance detector automatically lifts silhouetted dark faces sitting in front of bright windows.
 - **Windows DPAPI Offline Credential Vault (`DpapiCredentialVault`)**: Encrypts your 512-D identity vector and 9-zone 3D baseline offline under `ProtectedData.Protect` (`DataProtectionScope.CurrentUser`) in `%LOCALAPPDATA%\NEELx`.
 - **WinLogon Lock Screen Architecture (`NEELx.CredentialProvider`)**: Native C++ `ICredentialProvider` COM interface communicating with `NEELx.Windows.exe` over an ACL-hardened named pipe (`\\.\pipe\NEELxBiometricUnlock`) restricted to `SYSTEM` + active user SID.
+- **Mobile Biometric Companion (Native Passkey — Zero App Needed)**: Unlock Windows 11 using your phone's native hardware biometrics (iPhone TrueDepth Face ID or Android BiometricPrompt) via standard FIDO2 Passkeys. Pair in 5 seconds via QR code, zero apps required.
+- **Phone Camera Studio (Android 14+ USB Webcam & iPhone Video)**: Use your Android phone's front camera via native Android 14+ USB-C webcam mode or iPhone wirelessly on any desk stand or kickstand — zero laptop clip required! Includes Bluetooth LE proximity gating (< 1.5m).
 - **Standalone Zero-Dependency Distribution**: Available as a complete, self-contained standalone package (unzip & double-click `Run-NEELx.bat` or run the 1-click PowerShell command; zero prerequisites, zero secondary runtime or model downloads).
 
 ---
@@ -66,7 +68,7 @@ curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash
 
 #### Option 2: Download All-in-One Universal DMG Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- **`NEELx-v2.0.0-beta.5-universal.dmg`** (~58.6 MB — complete offline bundle with Apple's `DepthAnythingV2SmallF16` + `ArcFace` pre-installed; zero secondary downloads required)
+- **`NEELx-v2.0.0-beta.6-universal.dmg`** (~58.6 MB — complete offline bundle with Apple's `DepthAnythingV2SmallF16` + `ArcFace` pre-installed; zero secondary downloads required)
 
 > **💡 First time opening on macOS?** In Finder, **Right-Click** `NEELx.app` in `/Applications` and select **Open** (or run `xattr -cr /Applications/NEELx.app`).
 
@@ -85,7 +87,7 @@ chmod +x build.sh
 
 #### Verify macOS DMG Integrity (Public SHA-256 Checksum)
 ```bash
-shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg
+shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.6-universal.dmg
 ```
 
 ---
@@ -106,7 +108,7 @@ irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 
 #### Option 2: Download All-in-One Standalone ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- **`NEELx-v2.0.0-beta.5-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
+- **`NEELx-v2.0.0-beta.6-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
 
 > **💡 First time opening on Windows 11?** Double-click `Run-NEELx.bat` inside the unzipped folder, or click **"More info" → "Run anyway"** if SmartScreen appears.
 
@@ -126,7 +128,7 @@ dotnet run --project src\NEELx.App\NEELx.App.csproj -c Release
 
 #### Verify Windows ZIP Integrity (Public SHA-256 Checksum)
 ```powershell
-Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.6-windows-x64-portable.zip" -Algorithm SHA256
 ```
 
 > Full Windows Credential Provider & DirectML guide: [`windows/README.md`](windows/README.md)

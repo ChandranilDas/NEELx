@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,11 +26,31 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Build NEELx.app from source
+      - name: Resolve Release Version
+        run: |
+          VERSION="$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "2.0.0-beta.6")"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=v$VERSION" >> $GITHUB_ENV
+
+      - name: Build NEELx.app & Package Universal DMG
         run: |
           chmod +x build.sh package_dmg.sh
-          ./build.sh
+          ./package_dmg.sh --universal
+          shasum -a 256 "NEELx-v${VERSION}-universal.dmg" > "NEELx-v${VERSION}-macOS-SHA256SUMS.txt"
+          cat "NEELx-v${VERSION}-macOS-SHA256SUMS.txt"
 
-      - name: Verify code signature
+      - name: Upload macOS Universal DMG to GitHub Release (on main push)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          codesign --verify --deep --strict --verbose=2 NEELx.app
+          # Create release if it doesn't exist, or upload assets
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
+            --title "NEELx $TAG" \
+            --notes "NEELx $TAG — 100% Offline 3D Biometric Face Unlock with Passkey Companion & Desk Stand Continuity Studio." \
+            --prerelease
+          
+          gh release upload "$TAG" \
+            "NEELx-v${VERSION}-universal.dmg" \
+            "NEELx-v${VERSION}-macOS-SHA256SUMS.txt" \
+            --clobber

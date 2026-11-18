@@ -11,7 +11,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$SCRIPT_DIR/source/NEELx"
 ARCH="$(uname -m)"
-VERSION="${NEELX_VERSION:-2.0.0-beta.5}"
+if [ -f "$SCRIPT_DIR/VERSION" ]; then
+    VERSION="${NEELX_VERSION:-$(cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]')}"
+else
+    VERSION="${NEELX_VERSION:-2.0.0-beta.6}"
+fi
 IS_LITE=false
 IS_UNIVERSAL=false
 DO_NOTARIZE=false

@@ -18,11 +18,16 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    env:
-      RELEASE_TAG: v2.0.0-beta.5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Resolve Release Tag from VERSION
+        shell: pwsh
+        run: |
+          $ver = if (Test-Path VERSION) { (Get-Content VERSION).Trim() } else { "2.0.0-beta.6" }
+          Write-Host "Resolved VERSION=$ver"
+          "RELEASE_TAG=v$ver" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4

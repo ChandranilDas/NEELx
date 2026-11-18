@@ -25,7 +25,7 @@
       <div class="brand" data-go-tab="overview">
         <span class="brand-mark"><img src="assets/neelx-logo.png?v=20261118-4" alt="NEELx Logo" /></span>
         <span>NEELx</span>
-        <span class="brand-ver" data-release-version>v2.0.0-beta.5</span>
+        <span class="brand-ver" data-release-version>v2.0.0-beta.6</span>
       </div>
 
       <nav class="tab-dock" role="tablist" aria-label="NEELx sections">
@@ -72,7 +72,7 @@
               </p>
               <div class="hero-actions">
                 <button class="btn btn-primary" type="button" data-go-tab="download" data-select-dl="macos">
-                  Download for macOS (<span data-release-version>v2.0.0-beta.5</span>)
+                  Download for macOS (<span data-release-version>v2.0.0-beta.6</span>)
                 </button>
                 <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
                   Watch How It Works
@@ -164,6 +164,16 @@
                 external webcams or Continuity Camera in clamshell mode, and runs with a smart thermal gate on Intel
                 Macs.</p>
             </div>
+            <div class="feature-card">
+              <span class="feature-tag">Mobile Companion</span>
+              <h3>Native Passkey Companion (Zero App Needed)</h3>
+              <p>Unlock macOS using your phone's native hardware biometrics (iPhone TrueDepth Face ID in Secure Enclave or Android BiometricPrompt) via standard FIDO2 Passkeys. Pair in 5 seconds via QR code — zero app downloads required.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Optical Hardware</span>
+              <h3>iPhone &amp; iPad Pro Desk Stand Continuity Studio</h3>
+              <p>Wirelessly connects iPhone 48MP rear camera or iPad Pro front TrueDepth camera on any standard desk stand, wireless charger, kickstand case, or monitor mount (no proprietary clip needed!). Includes dual-path concurrent unlock and Bluetooth LE proximity gating.</p>
+            </div>
           </div>
         </div>
 
@@ -184,7 +194,7 @@
               </p>
               <div class="hero-actions">
                 <button class="btn btn-win" type="button" data-go-tab="download" data-select-dl="windows">
-                  Download for Windows 11 (<span data-release-version>v2.0.0-beta.5</span>)
+                  Download for Windows 11 (<span data-release-version>v2.0.0-beta.6</span>)
                 </button>
                 <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
                   Preview Prism Animation
@@ -278,6 +288,16 @@
               <p>Download a single self-contained Portable ZIP (unzip &amp; run <code>NEELx.Windows.exe</code> with zero
                 prerequisites) or build from clean <code>.NET 8</code> source verified on every commit by GitHub
                 Actions.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Mobile Companion</span>
+              <h3>Native Passkey Companion (Zero App Needed)</h3>
+              <p>Unlock Windows 11 using your phone's native hardware biometrics (iPhone TrueDepth Face ID or Android BiometricPrompt) via standard FIDO2 Passkeys. Pair in 5 seconds via QR code with zero app downloads or accounts.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Optical Hardware</span>
+              <h3>Phone Camera Studio (Desk Stand / USB Webcam)</h3>
+              <p>Use your Android phone's front camera via native Android 14+ USB-C webcam mode or iPhone wirelessly on any desk stand or kickstand — zero laptop clip required! Includes Bluetooth LE proximity gating (&lt; 1.5m).</p>
             </div>
           </div>
         </div>
@@ -738,7 +758,7 @@
       <section id="tab-download" class="tab-panel" role="tabpanel">
         <div class="section-intro">
           <div class="eyebrow">Universal macOS 15+ (Apple Silicon M1+ &amp; Intel) · Windows 11 (x64 &amp; ARM64)</div>
-          <h2>Download NEELx <span data-release-version>v2.0.0-beta.5</span></h2>
+          <h2>Download NEELx <span data-release-version>v2.0.0-beta.6</span></h2>
           <p class="lead">
             Choose your operating system below for official release downloads, public SHA-256 file verification
             checksums, and 1-click copyable terminal &amp; source-build commands.
@@ -782,12 +802,12 @@
                 Complete offline bundle. Pre-bundles Apple's <code>DepthAnythingV2SmallF16</code> 3D neural depth engine + 512-D <code>ArcFace</code> pre-compiled for Apple Neural Engine. <strong>Zero secondary model downloads, zero configuration needed.</strong>
               </p>
               <a id="btnDownloadMac" class="btn btn-primary" style="padding: 13px 22px; font-size: 14.5px; justify-content: center;"
-                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal.dmg">
+                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.6/NEELx-v2.0.0-beta.6-universal.dmg">
                 Download macOS Universal DMG (All-in-One)
               </a>
               <div class="sha-row" style="margin-top: 12px;">
                 <span class="sha-text">File SHA-256: <span
-                    id="macSha">cd2173be4f9fa115d7b0017d9ec6fb85f871ed1845642b0631d4348ee207f7a5</span></span>
+                    id="macSha">941a56b006b4b492132f029eb23572f1df9e39f1e5f4749306919a82dc7afce1</span></span>
                 <button class="btn-copy" type="button" data-copy-target="#macSha">Copy</button>
               </div>
             </div>
@@ -804,7 +824,7 @@
               <div class="step-body">
                 <strong>Download &amp; Install (Zero Gatekeeper blocks)</strong>
                 • <strong>Fastest (1-Click Terminal):</strong> Run the command above: <code>curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>. It downloads, automatically removes quarantine, moves to Applications, and opens NEELx.<br/>
-                • <strong>Direct DMG:</strong> Open the downloaded <code>NEELx-v2.0.0-beta.5-universal.dmg</code> and drag <strong>NEELx.app</strong> into your <strong>Applications</strong> folder.<br/>
+                • <strong>Direct DMG:</strong> Open the downloaded <code>NEELx-v2.0.0-beta.6-universal.dmg</code> and drag <strong>NEELx.app</strong> into your <strong>Applications</strong> folder.<br/>
                 • <em>First time opening DMG?</em> In Finder, <strong>Right-Click</strong> (or Control-Click) <code>NEELx.app</code> in Applications and select <strong>Open</strong>, then click <strong>Open</strong> on the prompt. (Or System Settings → Privacy &amp; Security → Open Anyway).
               </div>
             </div>
@@ -831,7 +851,7 @@
 
           <div class="sha-help">
             <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the installer file (not
-            a private key). You can run <code>shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg</code> in Terminal to
+            a private key). You can run <code>shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.6-universal.dmg</code> in Terminal to
             verify your download matches byte-for-byte.
           </div>
 
@@ -858,7 +878,7 @@
             <div class="copy-block-content">
               <span class="copy-label"># Optional: verify downloaded DMG integrity via SHA-256</span>
               <code id="cmdMacSha"
-                class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg</code>
+                class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.6-universal.dmg</code>
             </div>
             <button class="btn-copy" type="button" data-copy-target="#cmdMacSha">Copy</button>
           </div>
@@ -918,7 +938,7 @@
                 Complete offline bundle for Windows 11 PCs. Pre-bundles the self-contained <code>.NET 8</code> runtime, DirectML GPU/NPU 3D depth engine, ONNX models, and <code>Run-NEELx.bat</code>. <strong>Zero separate runtime downloads, zero extra model downloads required.</strong>
               </p>
               <a id="btnDownloadWin" class="btn btn-win" style="padding: 13px 22px; font-size: 14.5px; justify-content: center;"
-                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip">
+                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.6/NEELx-v2.0.0-beta.6-windows-x64-portable.zip">
                 Download Windows 11 Package (All-in-One)
               </a>
               <div class="sha-row" style="margin-top: 12px;">
@@ -940,7 +960,7 @@
               <div class="step-body">
                 <strong>Download &amp; Install (Zero SmartScreen blocks)</strong>
                 • <strong>Fastest (1-Click PowerShell):</strong> Run the command above: <code>irm https://chandranildas.github.io/NEELx/install.ps1 | iex</code>. It downloads the all-in-one package, unblocks SmartScreen, creates a Start Menu shortcut, and launches.<br/>
-                • <strong>Direct ZIP Download:</strong> Extract <code>NEELx-v2.0.0-beta.5-windows-x64-portable.zip</code> to any folder.<br/>
+                • <strong>Direct ZIP Download:</strong> Extract <code>NEELx-v2.0.0-beta.6-windows-x64-portable.zip</code> to any folder.<br/>
                 • <em>First launch:</em> Double-click <strong><code>Run-NEELx.bat</code></strong> inside the folder (it automatically clears Windows Defender Mark-of-the-Web and starts NEELx). If double-clicking <code>NEELx.Windows.exe</code> directly and Windows Defender SmartScreen shows <em>"Windows protected your PC"</em>, click <strong>"More info" → "Run anyway"</strong>.
               </div>
             </div>
@@ -967,7 +987,7 @@
 
           <div class="sha-help">
             <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the ZIP package (not a
-            secret key). Run <code>Get-FileHash ~/Downloads/NEELx-v2.0.0-beta.5-windows-x64-portable.zip -Algorithm SHA256</code> in
+            secret key). Run <code>Get-FileHash ~/Downloads/NEELx-v2.0.0-beta.6-windows-x64-portable.zip -Algorithm SHA256</code> in
             PowerShell to verify your download.
           </div>
 
@@ -993,7 +1013,7 @@
             <div class="copy-block-content">
               <span class="copy-label"># Optional: verify downloaded Windows ZIP integrity via SHA-256</span>
               <code id="cmdWinSha"
-                class="copy-cmd">Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256</code>
+                class="copy-cmd">Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.6-windows-x64-portable.zip" -Algorithm SHA256</code>
             </div>
             <button class="btn-copy" type="button" data-copy-target="#cmdWinSha">Copy</button>
           </div>
