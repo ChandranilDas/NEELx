@@ -84,7 +84,9 @@ struct RecognitionSettingsPage: View {
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
                         if NeuralDepthAnalyzer.shared.isModelAvailable || depthDownloader.state == .installed {
-                            NEELxToggle(isOn: $settings.neuralDepthEnabled)
+                            Text("Always on")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         } else {
                             switch depthDownloader.state {
                             case .downloading(let progress, _):
@@ -108,7 +110,9 @@ struct RecognitionSettingsPage: View {
                                     depthDownloader.startDownload()
                                 }
                             case .installed:
-                                NEELxToggle(isOn: $settings.neuralDepthEnabled)
+                                Text("Always on")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }

@@ -9,6 +9,8 @@ struct CameraSettingsPage: View {
     @Bindable var pocController: POCController
     @State private var devices: [CameraDevice] = CameraDeviceCatalog.availableDevices()
     @Bindable private var settings = NEELxSettings.shared
+    @State private var verifier = ContinuityDeviceVerifier.shared
+    @State private var proximityGuard = DeviceProximityGuard.shared
     @State private var previewCamera = CameraManager()
     @State private var isPreviewShown = false
 
@@ -75,6 +77,80 @@ struct CameraSettingsPage: View {
                 cameraPicker(title: "External display", selection: $settings.externalDisplayCameraID)
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                SettingsSectionTitle(text: "iPhone & iPad Pro Continuity Studio")
+                SettingsGroup {
+                    SettingsRowContent(
+                        title: "Use iPhone / iPad Pro Camera",
+                        subtitle: "Wirelessly connects your iPhone (iOS 16+) or iPad Pro camera for studio-quality optics, 4K clarity, and Center Stage tracking. Automatically falls back to Mac's built-in camera when disconnected.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.allowContinuityCamera)
+                    }
+
+                    if settings.allowContinuityCamera {
+                        SettingsGroupDivider()
+
+                        SettingsRowContent(
+                            title: "Dual-Path Concurrent Unlock",
+                            subtitle: "Polls both your Mac's built-in camera and your iPhone/iPad camera simultaneously — unlocks from whichever detects your face first.",
+                            subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                        ) {
+                            NEELxToggle(isOn: $settings.dualCameraConcurrentUnlock)
+                        }
+
+                        SettingsGroupDivider()
+
+                        SettingsRowContent(
+                            title: "Device Proximity Guard (Bluetooth LE)",
+                            subtitle: "Requires your paired phone/tablet to be within arm's reach (< 1.5m) to arm biometric unlock, preventing unauthorized wake-ups.",
+                            subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                        ) {
+                            NEELxToggle(isOn: $settings.deviceProximityGuardEnabled)
+                        }
+                    }
+                }
+
+                // Real-time hardware requirements & cross-check card
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: verifier.isRequirementsMet ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(verifier.isRequirementsMet ? Color.green : Color.yellow)
+                            .font(.system(size: 14))
+
+                        Text(verifier.isRequirementsMet ? "Hardware Verified" : "Hardware Requirements Cross-Check")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(verifier.isRequirementsMet ? Color.green : Color.yellow)
+
+                        Spacer()
+
+                        Button(action: {
+                            verifier.refresh()
+                            refreshDevices()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Check")
+                            }
+                            .font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Text(verifier.diagnosticMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius).fill(SettingsMetrics.rowColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius)
+                        .strokeBorder(verifier.isRequirementsMet ? Color.green.opacity(0.3) : Color.yellow.opacity(0.3), lineWidth: 1)
+                )
+            }
+
             SettingsSectionTitle(text: "Preview")
             .padding(.bottom, -4)
             previewArea
@@ -92,6 +168,11 @@ struct CameraSettingsPage: View {
         .onChange(of: settings.defaultCameraID) { restartPreview() }
         .onChange(of: settings.builtInDisplayCameraID) { restartPreview() }
         .onChange(of: settings.externalDisplayCameraID) { restartPreview() }
+        .onChange(of: settings.allowContinuityCamera) {
+            refreshDevices()
+            verifier.refresh()
+            restartPreview()
+        }
     }
 
     /// Live feed, or a placeholder until "Show preview" is tapped — opening

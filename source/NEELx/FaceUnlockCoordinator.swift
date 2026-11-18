@@ -260,6 +260,16 @@ final class FaceUnlockCoordinator {
             return
         }
 
+        // Device Proximity Guard: If enabled, requires paired phone/tablet in Bluetooth range (< 1.5m)
+        if NEELxSettings.shared.deviceProximityGuardEnabled && !DeviceProximityGuard.shared.isDeviceInRange {
+            statusMessage = "Device out of range — bring your paired iPhone or iPad nearby to unlock."
+            if showsUI {
+                NotchOverlayController.shared.beginScanning()
+                NotchOverlayController.shared.finish(success: false)
+            }
+            return
+        }
+
         await camera.start()
         guard generation == scanGeneration else { return }
         guard !lockMonitor.isSleeping, LockMonitor.isScreenActuallyLocked() else { camera.stop(); return }

@@ -119,6 +119,9 @@ final class NEELxSettings {
         static let defaultCameraID = "NEELxSettings.defaultCameraID"
         static let builtInDisplayCameraID = "NEELxSettings.builtInDisplayCameraID"
         static let externalDisplayCameraID = "NEELxSettings.externalDisplayCameraID"
+        static let allowContinuityCamera = "NEELxSettings.allowContinuityCamera"
+        static let dualCameraConcurrentUnlock = "NEELxSettings.dualCameraConcurrentUnlock"
+        static let deviceProximityGuardEnabled = "NEELxSettings.deviceProximityGuardEnabled"
         static let hasCompletedOnboarding = "NEELxSettings.hasCompletedOnboarding"
         static let onboardingResumeStep = "NEELxSettings.onboardingResumeStep"
         static let hasAcknowledgedSecurityNotice = "NEELxSettings.hasAcknowledgedSecurityNotice"
@@ -143,8 +146,31 @@ final class NEELxSettings {
         didSet { defaults.set(livenessMode.rawValue, forKey: Key.livenessMode) }
     }
     /// Stage 3 Core ML Depth Anything V2 3D anti-spoofing on Apple Silicon ANE.
+    /// Hardcoded Always ON — critical for biometric security against photo & video replay.
     var neuralDepthEnabled: Bool {
-        didSet { defaults.set(neuralDepthEnabled, forKey: Key.neuralDepthEnabled) }
+        get { true }
+        set { defaults.set(true, forKey: Key.neuralDepthEnabled) }
+    }
+    /// Whether NEELx can automatically discover and use a nearby iPhone or iPad Pro camera.
+    /// Kept OFF by default so user explores options and enables explicitly.
+    var allowContinuityCamera: Bool {
+        didSet {
+            defaults.set(allowContinuityCamera, forKey: Key.allowContinuityCamera)
+            ContinuityDeviceVerifier.shared.refresh()
+        }
+    }
+    /// Whether NEELx polls both the Mac camera and iPhone/iPad camera concurrently for unlock.
+    /// Kept OFF by default.
+    var dualCameraConcurrentUnlock: Bool {
+        didSet { defaults.set(dualCameraConcurrentUnlock, forKey: Key.dualCameraConcurrentUnlock) }
+    }
+    /// Whether unlock requires the paired iPhone/iPad to be within close Bluetooth LE proximity (< 1.5m).
+    /// Kept OFF by default.
+    var deviceProximityGuardEnabled: Bool {
+        didSet {
+            defaults.set(deviceProximityGuardEnabled, forKey: Key.deviceProximityGuardEnabled)
+            DeviceProximityGuard.shared.updateState()
+        }
     }
     /// Active Chromatic Flash Challenge to defeat 4K video replay attacks.
     var chromaticFlashEnabled: Bool {
@@ -300,12 +326,14 @@ final class NEELxSettings {
         // while anti-spoofing cues (glare, bezel detection) catch photos or screens.
         livenessMode = defaults.string(forKey: Key.livenessMode)
             .flatMap(LivenessMode.init(rawValue:)) ?? .light
-        neuralDepthEnabled = defaults.object(forKey: Key.neuralDepthEnabled) as? Bool ?? true
         chromaticFlashEnabled = defaults.object(forKey: Key.chromaticFlashEnabled) as? Bool ?? false
         intruderLogEnabled = defaults.object(forKey: Key.intruderLogEnabled) as? Bool ?? true
         adaptiveLearningEnabled = defaults.object(forKey: Key.adaptiveLearningEnabled) as? Bool ?? true
         systemAuthPromptsEnabled = defaults.object(forKey: Key.systemAuthPromptsEnabled) as? Bool ?? true
         presenceAutoLockEnabled = defaults.object(forKey: Key.presenceAutoLockEnabled) as? Bool ?? false
+        allowContinuityCamera = defaults.bool(forKey: Key.allowContinuityCamera)
+        dualCameraConcurrentUnlock = defaults.bool(forKey: Key.dualCameraConcurrentUnlock)
+        deviceProximityGuardEnabled = defaults.bool(forKey: Key.deviceProximityGuardEnabled)
         let storedPresenceDelay = defaults.object(forKey: Key.presenceAutoLockSeconds) as? Int ?? 60
         presenceAutoLockSeconds = [30, 60, 120, 300].contains(storedPresenceDelay) ? storedPresenceDelay : 60
         // Matches `DetectionDistanceLevel.standard` — see RecognitionSettingsPage.swift.
@@ -364,7 +392,6 @@ final class NEELxSettings {
         defaultCameraID = defaults.string(forKey: Key.defaultCameraID)
         builtInDisplayCameraID = defaults.string(forKey: Key.builtInDisplayCameraID)
         externalDisplayCameraID = defaults.string(forKey: Key.externalDisplayCameraID)
-
         hasCompletedOnboarding = defaults.object(forKey: Key.hasCompletedOnboarding) as? Bool ?? false
         onboardingResumeStep = defaults.string(forKey: Key.onboardingResumeStep)
             .flatMap(OnboardingStep.init(rawValue:))

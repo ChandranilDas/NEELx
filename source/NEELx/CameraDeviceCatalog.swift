@@ -15,8 +15,12 @@ struct CameraDevice: Identifiable, Hashable {
 
 enum CameraDeviceCatalog {
     static func availableDevices() -> [CameraDevice] {
+        var types: [AVCaptureDevice.DeviceType] = [.builtInWideAngleCamera, .external]
+        if NEELxSettings.shared.allowContinuityCamera {
+            types.append(.continuityCamera)
+        }
         let discovery = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera],
+            deviceTypes: types,
             mediaType: .video,
             position: .unspecified
         )
@@ -63,14 +67,19 @@ enum CameraDeviceCatalog {
             }
         }
 
-        if clamshell {
+        if clamshell || settings.allowContinuityCamera {
+            let types: [AVCaptureDevice.DeviceType] = settings.allowContinuityCamera
+                ? [.continuityCamera, .external]
+                : [.external]
             let discovery = AVCaptureDevice.DiscoverySession(
-                deviceTypes: [.external, .continuityCamera],
+                deviceTypes: types,
                 mediaType: .video,
                 position: .unspecified
             )
-            if let externalOrContinuity = discovery.devices.first {
-                return externalOrContinuity
+            if settings.allowContinuityCamera, let continuity = discovery.devices.first(where: { $0.deviceType == .continuityCamera }) {
+                return continuity
+            } else if clamshell, let external = discovery.devices.first {
+                return external
             }
         }
 

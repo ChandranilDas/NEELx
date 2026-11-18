@@ -197,7 +197,7 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Group 2: Liveness & 3D Depth Engine -->
+                        <!-- Group 2: Liveness & 3D Depth Engine (Hardcoded Core Security) -->
                         <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16,14" Margin="0,0,0,12">
                             <StackPanel>
                                 <DockPanel>
@@ -205,7 +205,7 @@
                                         <TextBlock Text="3D Neural Depth (DirectML)" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <TextBlock Text="Depth Anything V2 analyzes 3D nose protrusion and facial curvature on DirectML GPU/NPU." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     </StackPanel>
-                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="Always on" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </DockPanel>
 
                                 <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
@@ -215,7 +215,7 @@
                                         <TextBlock Text="Multi-Frame Temporal Depth Consistency" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <TextBlock Text="Requires 2 consecutive physically consistent 3D readings to eliminate flat photo/screen attacks." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     </StackPanel>
-                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="Always on" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </DockPanel>
 
                                 <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
@@ -225,7 +225,7 @@
                                         <TextBlock Text="Active Chromatic Flash" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                         <TextBlock Text="Flashes a brief color pulse in low light to verify live skin reflection and defeat 4K replays." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     </StackPanel>
-                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
                                 </DockPanel>
 
                                 <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
@@ -365,6 +365,52 @@
                                         <TextBlock Text="ACTIVE" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentGreenBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                     </DockPanel>
                                 </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Group 2: Mobile Device & Proximity Companion (iPhone & Android) -->
+                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="MOBILE DEVICE &amp; PROXIMITY COMPANION" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" Margin="0,0,0,10"/>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="320">
+                                        <TextBlock Text="Use Phone Camera (iPhone &amp; Android)" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Uses your connected iPhone (Windows 11 Mobile Device / Camo) or Android camera for studio optics. Falls back to built-in webcam when disconnected." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="320">
+                                        <TextBlock Text="Dual-Path Concurrent Unlock" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Polls both laptop webcam and phone camera concurrently — unlocks from whichever sees you first." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="320">
+                                        <TextBlock Text="Bluetooth LE Dynamic Proximity Guard" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Requires your paired phone to be within arm's reach (&lt; 1.5m) to enable biometric unlock." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Hardware Cross-Check Card -->
+                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="#3338BDF8" BorderThickness="1" Padding="14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock DockPanel.Dock="Left" Text="Hardware Requirements Cross-Check" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentCyanBrush}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="READY" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentGreenBrush}"/>
+                                </DockPanel>
+                                <TextBlock Text="• iPhone (iOS 16+) with Windows Link or Android 11+ with Bluetooth LE&#x0a;• Windows 11 (22H2 / 24H2) with Bluetooth 4.2+ / 5.0+ adapter&#x0a;• Wi-Fi &amp; Bluetooth enabled on both devices&#x0a;🔒 Zero-Risk: Phone in range will NEVER unlock PC alone. 3D depth and gaze are still strictly verified." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="17"/>
                             </StackPanel>
                         </Border>
 
