@@ -1,6 +1,6 @@
 cask "neelx" do
   version "2.0.0-beta.3"
-  sha256 "873356da7563206a67718a3b4329888eff0fc57ea6f06b226b2d96f7ca6063a3"
+  sha256 "35809af8ee3f0de5bc2224711e6eb92537602a1295f92dfecb9e6e0133261de3"
 
   url "https://github.com/ChandranilDas/NEELx/releases/download/v#{version}/NEELx-v#{version}-universal-lite.dmg"
   name "NEELx"

@@ -43,11 +43,22 @@ struct FeedbackScreenshot: Identifiable {
     let jpegData: Data
 }
 
+enum EmailLaunchKind: Hashable {
+    case appleMail
+    case nativeMailto
+    case gmailWebApp
+    case outlookWebApp
+    case yahooWebApp
+    case genericWebApp
+}
+
 struct InstalledEmailApp: Identifiable, Hashable {
     let id: String
     let name: String
+    let subtitle: String
     let appURL: URL
     let bundleID: String
+    let launchKind: EmailLaunchKind
 }
 
 enum EmailAppCatalog {
@@ -69,31 +80,163 @@ enum EmailAppCatalog {
         "app.zen-browser.zen",
     ]
 
+    private static let knownNativeMailBundleIDs: Set<String> = [
+        "com.apple.mail",
+        "com.microsoft.Outlook",
+        "com.readdle.smartemail-Mac",
+        "com.readdle.SparkDesktop",
+        "com.readdle.SparkDesktop.appstore",
+        "org.mozilla.thunderbird",
+        "com.mimestream.Mimestream",
+        "it.bloop.airmail2",
+        "io.canarymail.mac",
+        "com.edisonmail.edisonmail",
+        "ch.protonmail.desktop",
+        "com.superhuman.mail",
+        "com.postbox-inc.postbox",
+        "com.emclient.mail.client",
+        "com.freron.MailMate",
+        "com.hey.app.desktop",
+        "com.spike.mac",
+    ]
+
     static func installedDesktopApps() -> [InstalledEmailApp] {
-        guard let probe = URL(string: "mailto:support@example.com") else { return [] }
-        let urls = NSWorkspace.shared.urlsForApplications(toOpen: probe)
-        var seen = Set<String>()
+        var seenPaths = Set<String>()
+        var seenBundleIDs = Set<String>()
         var apps: [InstalledEmailApp] = []
 
-        for url in urls {
-            let bundle = Bundle(url: url)
-            let bundleID = bundle?.bundleIdentifier ?? url.path
-            if excludedBrowserBundleIDs.contains(bundleID) || seen.contains(bundleID) {
-                continue
-            }
-            seen.insert(bundleID)
-            let displayName = (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
-                ?? (bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String)
-                ?? url.deletingPathExtension().lastPathComponent
-            apps.append(InstalledEmailApp(id: bundleID, name: displayName, appURL: url, bundleID: bundleID))
+        func register(_ app: InstalledEmailApp) {
+            let stdPath = app.appURL.standardizedFileURL.path
+            guard !seenPaths.contains(stdPath), !seenBundleIDs.contains(app.bundleID) else { return }
+            seenPaths.insert(stdPath)
+            seenBundleIDs.insert(app.bundleID)
+            apps.append(app)
         }
 
-        // Always put Apple Mail first if installed, then alphabetical
+        // 1. Discover every native desktop app registered for `mailto:` (excluding bare web browsers)
+        if let probe = URL(string: "mailto:support@example.com") {
+            for url in NSWorkspace.shared.urlsForApplications(toOpen: probe) {
+                let bundle = Bundle(url: url)
+                let bundleID = bundle?.bundleIdentifier ?? url.path
+                if excludedBrowserBundleIDs.contains(bundleID) { continue }
+                let displayName = appDisplayName(bundle: bundle, url: url)
+                let kind: EmailLaunchKind = (bundleID == "com.apple.mail") ? .appleMail : .nativeMailto
+                let subtitle = (bundleID == "com.apple.mail") ? "Built-in macOS Mail" : "Installed Email App"
+                register(InstalledEmailApp(
+                    id: bundleID,
+                    name: displayName,
+                    subtitle: subtitle,
+                    appURL: url,
+                    bundleID: bundleID,
+                    launchKind: kind
+                ))
+            }
+        }
+
+        // 2. Discover installed Email Web Apps (macOS Safari Web Apps + Chrome/Brave/Edge PWAs)
+        //    and third-party desktop mail apps in /Applications & ~/Applications
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let searchDirs: [URL] = [
+            home.appendingPathComponent("Applications", isDirectory: true),
+            home.appendingPathComponent("Applications/Chrome Apps.localized", isDirectory: true),
+            home.appendingPathComponent("Applications/Brave Browser Apps.localized", isDirectory: true),
+            home.appendingPathComponent("Applications/Edge Apps.localized", isDirectory: true),
+            home.appendingPathComponent("Applications/Chromium Apps.localized", isDirectory: true),
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+        ]
+
+        for dir in searchDirs {
+            guard let items = try? FileManager.default.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for url in items where url.pathExtension == "app" {
+                let bundle = Bundle(url: url)
+                let bundleID = bundle?.bundleIdentifier ?? url.path
+                if excludedBrowserBundleIDs.contains(bundleID) { continue }
+
+                let info = bundle?.infoDictionary ?? [:]
+                let displayName = appDisplayName(bundle: bundle, url: url)
+                let lowerName = displayName.lowercased()
+
+                // Inspect Safari Web App Manifest (`start_url`) or Chromium PWA (`CrAppModeShortcutURL`)
+                let manifest = info["Manifest"] as? [String: Any]
+                let startURL = ((manifest?["start_url"] as? String)
+                    ?? (info["CrAppModeShortcutURL"] as? String)
+                    ?? "").lowercased()
+
+                if startURL.contains("mail.google.com") || lowerName == "gmail" {
+                    register(InstalledEmailApp(
+                        id: bundleID,
+                        name: displayName,
+                        subtitle: "Installed Mail App",
+                        appURL: url,
+                        bundleID: bundleID,
+                        launchKind: .gmailWebApp
+                    ))
+                } else if startURL.contains("outlook.live.com") || startURL.contains("outlook.office") || lowerName.contains("outlook") {
+                    let isWebApp = !startURL.isEmpty || bundleID.contains("Safari.WebApp") || bundleID.contains(".app.")
+                    register(InstalledEmailApp(
+                        id: bundleID,
+                        name: displayName,
+                        subtitle: "Installed Mail App",
+                        appURL: url,
+                        bundleID: bundleID,
+                        launchKind: isWebApp ? .outlookWebApp : .nativeMailto
+                    ))
+                } else if startURL.contains("mail.yahoo.com") || lowerName.contains("yahoo mail") {
+                    register(InstalledEmailApp(
+                        id: bundleID,
+                        name: displayName,
+                        subtitle: "Installed Mail App",
+                        appURL: url,
+                        bundleID: bundleID,
+                        launchKind: .yahooWebApp
+                    ))
+                } else if knownNativeMailBundleIDs.contains(bundleID) {
+                    let kind: EmailLaunchKind = (bundleID == "com.apple.mail") ? .appleMail : .nativeMailto
+                    register(InstalledEmailApp(
+                        id: bundleID,
+                        name: displayName,
+                        subtitle: kind == .appleMail ? "Built-in macOS Mail" : "Installed Email App",
+                        appURL: url,
+                        bundleID: bundleID,
+                        launchKind: kind
+                    ))
+                } else if !startURL.isEmpty && (
+                    startURL.contains("mail.proton") ||
+                    startURL.contains("fastmail.com") ||
+                    startURL.contains("mail.zoho") ||
+                    startURL.contains("webmail") ||
+                    startURL.contains("icloud.com/mail") ||
+                    lowerName.contains("mail")
+                ) {
+                    register(InstalledEmailApp(
+                        id: bundleID,
+                        name: displayName,
+                        subtitle: "Installed Webmail App",
+                        appURL: url,
+                        bundleID: bundleID,
+                        launchKind: .genericWebApp
+                    ))
+                }
+            }
+        }
+
+        // Prioritize user-installed email apps (Gmail, Outlook, Spark, etc.) FIRST, with Apple Mail below them
         return apps.sorted { a, b in
-            if a.bundleID == "com.apple.mail" { return true }
-            if b.bundleID == "com.apple.mail" { return false }
+            if a.launchKind == .appleMail && b.launchKind != .appleMail { return false }
+            if a.launchKind != .appleMail && b.launchKind == .appleMail { return true }
             return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
         }
+    }
+
+    private static func appDisplayName(bundle: Bundle?, url: URL) -> String {
+        (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+            ?? (bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String)
+            ?? url.deletingPathExtension().lastPathComponent
     }
 }
 
@@ -107,6 +250,7 @@ struct FeedbackSheetView: View {
     @State private var includeDiagnostics: Bool = true
     @State private var screenshots: [FeedbackScreenshot] = []
     @State private var installedMailApps: [InstalledEmailApp] = EmailAppCatalog.installedDesktopApps()
+    @State private var showEmailAppPicker: Bool = false
     @State private var isSubmitting: Bool = false
     @State private var submitResult: String?
     @State private var submitFailed: Bool = false
@@ -277,25 +421,20 @@ struct FeedbackSheetView: View {
                 }
 
                 if hasEmail {
-                    Menu("Email") {
-                        if !installedMailApps.isEmpty {
-                            Section("Email Apps on This Mac") {
-                                ForEach(installedMailApps) { app in
-                                    Button(app.name) {
-                                        openInDesktopMailApp(app)
-                                    }
-                                }
-                            }
-                        }
-                        Section("Webmail (Opens Pre-filled Draft)") {
-                            Button("Gmail (Web)") { openWebmail(.gmail) }
-                            Button("Outlook (Web)") { openWebmail(.outlook) }
-                            Button("Yahoo Mail (Web)") { openWebmail(.yahoo) }
+                    Button {
+                        installedMailApps = EmailAppCatalog.installedDesktopApps()
+                        showEmailAppPicker.toggle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("Email")
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .disabled(!canSubmit)
-                    .onAppear {
-                        installedMailApps = EmailAppCatalog.installedDesktopApps()
+                    .popover(isPresented: $showEmailAppPicker, arrowEdge: .top) {
+                        emailAppChooserPopover
                     }
                 }
 
@@ -448,24 +587,160 @@ struct FeedbackSheetView: View {
         }
     }
 
+    private var emailAppChooserPopover: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Choose Email App")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.top, 2)
+
+            if !installedMailApps.isEmpty {
+                ForEach(installedMailApps) { app in
+                    Button {
+                        showEmailAppPicker = false
+                        openInDesktopMailApp(app)
+                    } label: {
+                        HStack(spacing: 9) {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: app.appURL.path))
+                                .resizable()
+                                .frame(width: 22, height: 22)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(app.name)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                Text(app.subtitle)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Divider()
+                    .padding(.vertical, 2)
+            }
+
+            Text("Or Open Webmail in Browser")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+
+            ForEach([
+                ("Gmail (Web)", WebmailProvider.gmail),
+                ("Outlook (Web)", WebmailProvider.outlook),
+                ("Yahoo Mail (Web)", WebmailProvider.yahoo),
+            ], id: \.0) { label, provider in
+                Button {
+                    showEmailAppPicker = false
+                    openWebmail(provider)
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "globe")
+                            .frame(width: 22, height: 18)
+                            .foregroundStyle(.secondary)
+                        Text(label)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(10)
+        .frame(width: 255)
+    }
+
     private func openInDesktopMailApp(_ app: InstalledEmailApp) {
-        // Apple Mail supports native NSSharingService with real image attachments + pre-filled To/Subject/Body
-        if app.bundleID == "com.apple.mail", let service = NSSharingService(named: .composeEmail) {
-            service.recipients = [NEELxConfig.feedbackEmail]
-            service.subject = composedTitle()
-            var items: [Any] = [composedPlainEmailBody()]
-            for shot in screenshots {
-                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(shot.name)
-                if (try? shot.jpegData.write(to: tempURL, options: .atomic)) != nil {
-                    items.append(tempURL)
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+
+        switch app.launchKind {
+        case .appleMail:
+            // Apple Mail supports native NSSharingService with real image attachments + pre-filled To/Subject/Body
+            if let service = NSSharingService(named: .composeEmail) {
+                service.recipients = [NEELxConfig.feedbackEmail]
+                service.subject = composedTitle()
+                var items: [Any] = [composedPlainEmailBody()]
+                for shot in screenshots {
+                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(shot.name)
+                    if (try? shot.jpegData.write(to: tempURL, options: .atomic)) != nil {
+                        items.append(tempURL)
+                    }
+                }
+                service.perform(withItems: items)
+                submitFailed = false
+                submitResult = screenshots.isEmpty
+                    ? "Opened draft in Apple Mail — review and press Send!"
+                    : "Opened draft in Apple Mail with \(screenshots.count) screenshot(s) attached!"
+                return
+            }
+
+        case .gmailWebApp:
+            if let url = webmailComposeURL(for: .gmail) {
+                NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
+                    Task { @MainActor in
+                        if error != nil {
+                            NSWorkspace.shared.open(url)
+                        }
+                        submitFailed = false
+                        submitResult = screenshots.isEmpty
+                            ? "Opened pre-filled draft in \(app.name) — review and press Send!"
+                            : "Opened draft in \(app.name) (use 'Send Directly' to auto-attach screenshots)."
+                    }
+                }
+                return
+            }
+
+        case .outlookWebApp:
+            if let url = webmailComposeURL(for: .outlook) {
+                NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
+                    Task { @MainActor in
+                        if error != nil { NSWorkspace.shared.open(url) }
+                        submitFailed = false
+                        submitResult = "Opened pre-filled draft in \(app.name) — review and press Send!"
+                    }
+                }
+                return
+            }
+
+        case .yahooWebApp:
+            if let url = webmailComposeURL(for: .yahoo) {
+                NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
+                    Task { @MainActor in
+                        if error != nil { NSWorkspace.shared.open(url) }
+                        submitFailed = false
+                        submitResult = "Opened pre-filled draft in \(app.name) — review and press Send!"
+                    }
+                }
+                return
+            }
+
+        case .genericWebApp:
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(
+                "To: \(NEELxConfig.feedbackEmail)\nSubject: \(composedTitle())\n\n\(composedPlainEmailBody())",
+                forType: .string
+            )
+            NSWorkspace.shared.openApplication(at: app.appURL, configuration: config) { _, _ in
+                Task { @MainActor in
+                    submitFailed = false
+                    submitResult = "Opened \(app.name) and copied your draft to clipboard — paste & Send!"
                 }
             }
-            service.perform(withItems: items)
-            submitFailed = false
-            submitResult = screenshots.isEmpty
-                ? "Opened draft in Apple Mail — review and press Send!"
-                : "Opened draft in Apple Mail with \(screenshots.count) screenshot(s) attached!"
             return
+
+        case .nativeMailto:
+            break
         }
 
         // Launch the exact desktop email client chosen by the user (never a blank browser tab)
@@ -478,8 +753,6 @@ struct FeedbackSheetView: View {
         ]
         guard let mailtoURL = components.url else { return }
 
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = true
         NSWorkspace.shared.open([mailtoURL], withApplicationAt: app.appURL, configuration: config) { _, error in
             Task { @MainActor in
                 if let error {
@@ -499,13 +772,12 @@ struct FeedbackSheetView: View {
         case gmail, outlook, yahoo
     }
 
-    private func openWebmail(_ provider: WebmailProvider) {
+    private func webmailComposeURL(for provider: WebmailProvider) -> URL? {
         let to = NEELxConfig.feedbackEmail
         let subject = composedTitle()
         let body = composedPlainEmailBody()
 
         var components: URLComponents
-        let label: String
         switch provider {
         case .gmail:
             components = URLComponents(string: "https://mail.google.com/mail/")!
@@ -516,7 +788,6 @@ struct FeedbackSheetView: View {
                 URLQueryItem(name: "su", value: subject),
                 URLQueryItem(name: "body", value: body),
             ]
-            label = "Gmail"
         case .outlook:
             components = URLComponents(string: "https://outlook.live.com/mail/0/deeplink/compose")!
             components.queryItems = [
@@ -524,7 +795,6 @@ struct FeedbackSheetView: View {
                 URLQueryItem(name: "subject", value: subject),
                 URLQueryItem(name: "body", value: body),
             ]
-            label = "Outlook Web"
         case .yahoo:
             components = URLComponents(string: "https://compose.mail.yahoo.com/")!
             components.queryItems = [
@@ -532,10 +802,19 @@ struct FeedbackSheetView: View {
                 URLQueryItem(name: "subject", value: subject),
                 URLQueryItem(name: "body", value: body),
             ]
-            label = "Yahoo Mail"
+        }
+        return components.url
+    }
+
+    private func openWebmail(_ provider: WebmailProvider) {
+        let label: String
+        switch provider {
+        case .gmail: label = "Gmail"
+        case .outlook: label = "Outlook Web"
+        case .yahoo: label = "Yahoo Mail"
         }
 
-        if let url = components.url {
+        if let url = webmailComposeURL(for: provider) {
             NSWorkspace.shared.open(url)
             submitFailed = false
             submitResult = screenshots.isEmpty
