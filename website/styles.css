@@ -1097,6 +1097,243 @@ select:focus, textarea:focus {
   margin: 4px 6px;
 }
 
+/* Platform Switcher Pill (macOS / Windows 11 parity) */
+.platform-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-strong);
+  margin-bottom: 22px;
+}
+
+.platform-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.platform-pill:hover {
+  color: var(--text);
+}
+
+.platform-pill.active[data-platform="macos"] {
+  background: rgba(48, 209, 88, 0.16);
+  color: #86efac;
+  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.42);
+}
+
+.platform-pill.active[data-platform="windows"] {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.42);
+}
+
+.platform-pane {
+  display: none;
+  animation: panelFadeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.platform-pane.active {
+  display: block;
+}
+
+.feature-tag.win-tag {
+  color: #38bdf8;
+}
+
+.dl-card.featured-win {
+  border-color: rgba(56, 189, 248, 0.42);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.06), var(--bg-card) 42%);
+}
+
+.dl-size.win-size {
+  background: rgba(56, 189, 248, 0.14);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.32);
+}
+
+.btn-win {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #090b10;
+  font-weight: 600;
+  border: none;
+}
+
+.btn-win:hover {
+  filter: brightness(1.08);
+}
+
+.sha-help {
+  margin-top: 12px;
+  margin-bottom: 22px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.sha-help strong {
+  color: var(--text);
+}
+
+/* Windows Interactive Hero Prism Stage */
+.win-stage {
+  background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), #0a0c11 65%);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+#winHeroCanvas {
+  width: 100%;
+  max-width: 380px;
+  height: 248px;
+  border-radius: 14px;
+  background: #07090e;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  display: block;
+}
+
+/* Windows 3-Phase Animation Cards + Full Desktop Lock Screen Preview */
+.section-divider {
+  margin: 44px 0 28px;
+  padding-top: 34px;
+  border-top: 1px solid var(--border);
+}
+
+.prism-phase-bezel {
+  background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.1), #06080c 72%);
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 14px;
+}
+
+.prism-phase-bezel canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 10px;
+}
+
+.win-lockscreen-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+
+#winLockSimCanvas {
+  width: 100%;
+  height: 215px;
+  border-radius: 14px;
+  background: #07090e;
+  border: 1px solid var(--border-strong);
+  display: block;
+  margin: 14px 0 14px;
+}
+
+/* Side-by-Side Architecture & Roadmap Parity Grid */
+.parity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.parity-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+}
+
+.parity-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.parity-list li {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  line-height: 1.5;
+}
+
+.parity-check {
+  color: var(--emerald);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.parity-check.win {
+  color: #38bdf8;
+}
+
+.parity-check.next {
+  color: var(--text-muted);
+}
+
+.arch-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.arch-table th,
+.arch-table td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.arch-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.arch-table td {
+  color: var(--text-secondary);
+}
+
+.arch-table td:first-child {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* Footer */
 footer {
   border-top: 1px solid var(--border);
@@ -1131,6 +1368,7 @@ footer {
   .depth-lab-body,
   .download-grid,
   .windows-banner,
+  .parity-grid,
   .form-grid {
     grid-template-columns: 1fr;
   }

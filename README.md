@@ -1,57 +1,67 @@
-# NEELx — Fast, Hardened Biometric Face Unlock for macOS
+# NEELx — Fast, Hardened 3D Biometric Face Unlock for macOS & Windows 11
 
-**NEELx** brings fast, natural, iPhone-style Face Unlock to macOS using your Mac's built-in camera and Apple Neural Engine — **100% offline, encrypted at rest, and open-source.**
+**NEELx** brings fast, natural, 3D biometric Face Unlock to **macOS** and **Windows 11** using any standard built-in or USB RGB webcam — **no IR camera required, 100% offline, hardware-encrypted at rest, and open-source (MIT License).**
 
 > **Official Website:** [https://chandranildas.github.io/NEELx/](https://chandranildas.github.io/NEELx/)  
-> Built for **macOS 15+ (Apple Silicon M1 & newer — M1, M2, M3, M4, M5+, plus Intel)** and **Windows 11 (`windows/` Edition)**. Runs 100% offline on-device with zero telemetry and hardware-backed encryption.
+> **macOS:** macOS 15+ — Native Universal Binary (`arm64` + `x86_64`) for **Apple Silicon (M1, M2, M3, M4, M5 & all newer chips)** + Intel Macs.  
+> **Windows 11:** Windows 11 (22H2+, x64 & ARM64) — `.NET 8` WPF Dark Mica + **ONNX Runtime DirectML** (DirectX 12 GPU / Copilot+ NPU) + **Windows DPAPI**.
+
+---
+
+## 🎯 About NEELx & Visual Identity
+
+NEELx runs completely offline on your device with zero cloud servers and zero telemetry. Each operating system gets a **bespoke native visual language** crafted specifically for its platform:
+
+- **macOS Edition — Notch Face ID**: Expands smoothly out of the MacBook hardware notch with an iPhone/iPad Pro-inspired 80-tick 360° enrollment ring, live Lighting Readiness Meter, emerald checkmark dissolve, and Force Touch haptic feedback.
+- **Windows 11 Edition — Fluent Prism Horizon**: Intentionally distinct from macOS/iOS — a razor-thin top-edge dark Mica glass blade featuring a counter-rotating **faceted diamond-iris crystal** and a sweeping **horizontal aurora laser horizon** that snaps to 0° emerald crystal alignment upon verified unlock.
 
 ---
 
 ## ✨ Key Features
 
-- **Smooth 360° Circular Face Enrollment + Live Lighting Readiness Meter**: Guided notch onboarding just like Face ID on iPhone and iPad Pro — slowly roll your head in one natural circle while a live lighting meter (`Ideal Lighting` / `Backlit · HDR Active` / `Low Light · Studio Fill`) guides optimal capture of your 512-D ArcFace template and **9-zone 3D facial depth profile**.
-- **Face ID for System Touch ID & Password Prompts**: Automatically replaces macOS password/Touch ID authorization prompts (System Settings Privacy & Security toggles, Keychain/Saved Passwords, App Store/Installer auth, and standard admin sheets) with hands-free 3D Face ID — while strictly excluding Apple Pay, payments, FileVault, and sensitive financial dialogs.
-- **Stage 3 Neural 3D Depth + Multi-Frame Temporal Consistency (Apple Neural Engine)**: Powered by Apple's Core ML `DepthAnythingV2SmallF16` running in FP16 (~22ms on Apple Silicon ANE). Validates **3D nose protrusion**, **non-planar facial curvature**, **head-to-background depth cliff**, and requires **2 consecutive physically consistent 3D depth frames** — rejecting flat photos, phone/tablet screens, and transient OLED glare.
-- **Backlit Window HDR Shadow Recovery**: Detects silhouetted backlit scenes (bright window behind your head, dark face in front) and applies GPU `CIHighlightShadowAdjust` shadow lift before face detection — seamlessly recovering darkened faces without waiting for dark-room mode.
-- **Luxury Studio Light & Spectral Chromatic Rim (with Live Preview)**: Redesigned dark-room softbox fills your display perimeter with an even 3800K warm champagne frame while keeping the center crystal clear, paired with a refined pastel-blended cyan/magenta reflection check against 4K video replays. Test it anytime via **Settings → General → Preview**.
-- **Subtle Spatial Haptic + Optional Soft Glass Sound Cue**: Crisp Force Touch trackpad `.alignment` haptic and optional whisper-soft unlock chime synced with the Face ID emerald checkmark dissolve.
-- **Attention & Eye Gaze Verification**: "Require Attention for Face ID" — checks Eye Aspect Ratio (`EAR`) and head orientation before unlocking.
-- **Silent Adaptive Learning**: Automatically adapts to gradual changes (glasses, beard, lighting drift) from high-confidence 3D-verified unlocks.
-- **Encrypted Intruder & Security Audit Log**: Records unlock attempts and AES-256-GCM encrypted snapshots of blocked intruders/spoofs strictly offline under your Touch ID key.
-- **Walk-Away Auto-Lock (Presence Lock)**: Optional zero-drain idle presence check that locks your Mac automatically when you step away.
-- **Smart Clamshell / Multi-Camera Auto-Switching**: Automatically switches to an external webcam or iPhone Continuity Camera when your MacBook lid is closed.
-- **Windows 11 Edition (`windows/`) — Fluent Prism Horizon**: Native `.NET 8` WPF + **ONNX Runtime DirectML** + **Windows DPAPI** + `ICredentialProvider` lock-screen architecture for Windows 11 laptops and desktops with standard RGB webcams, featuring a bespoke Windows-native **Fluent Prism Horizon** faceted diamond-iris & laser sweep animation (intentionally distinct from macOS/iPhone's circular Face ID).
-- **Zero-Cloud Privacy & Local Signing**:
-  - Touch ID (`LocalAuthentication`) gates access to your session key.
-  - 256-bit AES-GCM key in macOS Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`) encrypts credentials, embeddings, and audit logs.
-  - Auto-preserves your own free local `Apple Development` certificate on updates so macOS Accessibility permissions survive seamlessly.
+### 🍎 NEELx for macOS 15+
+- **Smooth 360° Circular Face Enrollment + Live Lighting Readiness Meter**: Slowly roll your head in one natural circle while a live micro-pill (`Ideal Lighting` / `Backlit · HDR Active` / `Low Light · Studio Fill`) guides optimal 512-D ArcFace + **9-zone 3D depth** capture.
+- **Face ID for System Touch ID & Password Prompts**: Approves macOS Touch ID & admin password prompts everywhere — System Settings, app/pkg installers, Saved Passwords (Safari, Chrome, Passwords app), Finder, and Keychain — while strictly excluding Apple Pay, payments, and FileVault.
+- **Stage 3 Neural 3D Depth + Multi-Frame Temporal Consistency (Apple Neural Engine)**: Runs Apple's Core ML `DepthAnythingV2SmallF16` in FP16 (~22.6 ms on ANE), validating nose protrusion, non-planar surface curvature, head-to-background cliff, and **2 consecutive physically consistent 3D frames**.
+- **Backlit Window HDR Shadow Recovery**: GPU Core Image tone mapping (`CIHighlightShadowAdjust`) lifts crushed facial shadows when sitting with a bright sunlit window behind you.
+- **Luxury Studio Light Softbox & Spectral Chromatic Rim (with Live Preview)**: Crystal-clear screen center surrounded by a 3800K warm champagne perimeter softbox + softened pastel cyan/magenta reflection check against 4K video replay. Preview anytime via **Settings → General → Preview**.
+- **Subtle Spatial Haptic + Optional Soft Glass Sound Cue**: Trackpad `.alignment` haptic + optional muted Glass chime (off by default).
+- **Attention & Eye Gaze Verification**: Checks open eyes (`EAR`) and active gaze before unlocking.
+- **Silent Adaptive Learning, Encrypted Intruder Log, Walk-Away Auto-Lock & Smart Clamshell Camera**.
+- **Auto Local-Cert Signing & 1-Click GitHub Auto-Updater**: Preserves your own free local `Apple Development` certificate on upgrades so macOS Accessibility & Keychain permissions stay intact.
+
+### 🪟 NEELx for Windows 11 (Fluent Prism Edition)
+- **Original Fluent Prism Horizon Unlock Blade (`PrismHorizonOverlay`)**: Dedicated top-edge dark Mica glass overlay with counter-rotating faceted diamond-iris aperture, horizontal aurora laser sweep, and four distinct states (`Scanning 3D Depth`, `Backlit HDR Lift`, `Verified Unlock`, `2D Spoof Blocked`) — live-previewable right inside `NEELx.Windows.exe`.
+- **ONNX Runtime DirectML GPU/NPU Engine (`OnnxFaceEngine`)**: Runs 512-D ArcFace + `DepthAnythingV2Small` on any DirectX 12 GPU (Intel Iris Xe/Arc, AMD Radeon, NVIDIA RTX/GTX) or Copilot+ NPU, with automatic CPU fallback.
+- **Multi-Frame Temporal 3D Depth Consistency**: Enforces 2 consecutive physically consistent 3D depth frames (nose protrusion `>= 0.042`, curvature RMSE `>= 0.024`, head-to-background cliff `>= 0.065`) to block flat photos, phone displays, and transient glare.
+- **Backlit Window HDR Shadow Recovery**: Real-time center-vs-border luminance detector automatically lifts silhouetted dark faces sitting in front of bright windows.
+- **Windows DPAPI Offline Credential Vault (`DpapiCredentialVault`)**: Encrypts your 512-D identity vector and 9-zone 3D baseline offline under `ProtectedData.Protect` (`DataProtectionScope.CurrentUser`) in `%LOCALAPPDATA%\NEELx`.
+- **WinLogon Lock Screen Architecture (`NEELx.CredentialProvider`)**: Native C++ `ICredentialProvider` COM interface communicating with `NEELx.Windows.exe` over an ACL-hardened named pipe (`\\.\pipe\NEELxBiometricUnlock`) restricted to `SYSTEM` + active user SID.
+- **Standalone Zero-Dependency Distribution**: Available as a self-contained Portable ZIP (unzip & double-click `NEELx.Windows.exe`) or Lightweight ZIP (for PCs with .NET 8 Desktop Runtime).
 
 ---
 
-## 🚀 Quick Start (Build & Install in 1 Command)
+## 🚀 Quick Start & Terminal Commands
 
-### Requirements
+### 🍎 macOS 15+
+
+#### Requirements
 - **macOS 15.0 (Sequoia)** or later
-- **Xcode** (for `swiftc`, `coremlc`, and `actool`)
-- Built-in FaceTime HD / Center Stage camera or external USB webcam
+- **Apple Silicon (M1, M2, M3, M4, M5 & newer)** or **Intel Mac** (no upper chip limit)
+- Built-in FaceTime HD / Center Stage camera or external USB / Continuity webcam
 
-### Install via Homebrew Cask (Recommended)
-
+#### Option 1: Install via Homebrew Cask (Recommended)
 ```bash
 brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx
 brew install --cask neelx
 ```
 
-### Or Download the DMG Directly
+#### Option 2: Download Universal DMG Directly
+Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
+- `NEELx-v2.0.0-beta.5-universal-lite.dmg` (~13.9 MB — fast download with 1-click in-app 3D Depth download)
+- `NEELx-v2.0.0-beta.5-universal.dmg` (~58.6 MB — complete offline bundle with `DepthAnythingV2SmallF16` pre-installed)
 
-Download `NEELx-v2.0.0-beta.5-universal-lite.dmg` (Universal Apple Silicon M1 & newer + Intel, 1-click in-app 3D Depth download) or the full offline DMG from the [**Official Website**](https://chandranildas.github.io/NEELx/) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
-
-### Windows 11 Edition (`windows/`)
-
-See [`windows/README.md`](windows/README.md) for the native `.NET 8` WPF + DirectML GPU/NPU + DPAPI + WinLogon `ICredentialProvider` implementation featuring the bespoke **Fluent Prism Horizon** unlock blade.
-
-### Or Build From Source
-
+#### Option 3: Build Directly from Swift Source
 ```bash
 git clone https://github.com/ChandranilDas/NEELx.git
 cd NEELx
@@ -59,58 +69,106 @@ chmod +x build.sh
 ./build.sh --with-depth --install
 ```
 
-This script automatically:
-1. Downloads Apple's official Core ML `DepthAnythingV2SmallF16.mlpackage` (when `--with-depth` is passed) and compiles both `ArcFace.mlpackage` and `DepthAnythingV2SmallF16.mlpackage` plus the asset catalog from pure source.
-2. Compiles all Swift sources with `-O -whole-module-optimization` for your Mac's native architecture (`arm64` or `x86_64`).
-3. Ad-hoc signs `NEELx.app` with camera entitlements (no paid Apple Developer account required).
-4. Installs to `/Applications/NEELx.app`, registers with LaunchServices/Spotlight, and launches the guided notch onboarding flow.
+#### Verify macOS DMG Integrity (Public SHA-256 Checksum)
+```bash
+shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg
+```
+
+---
+
+### 🪟 Windows 11 (Fluent Prism Edition)
+
+#### Requirements
+- **Windows 11 (22H2 or newer)** — x64 or ARM64
+- Any built-in or USB RGB webcam (720p+ recommended, **no Windows Hello IR camera required**)
+- Any DirectX 12 GPU or Windows NPU for DirectML acceleration (CPU fallback built in)
+
+#### Option 1: Quick PowerShell Download, Extract & Launch (Standalone Portable)
+```powershell
+Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"
+Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force
+Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"
+```
+
+#### Option 2: Download Windows ZIP Directly
+Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
+- `NEELx-v2.0.0-beta.5-windows-x64-portable.zip` (Standalone self-contained — zero prerequisites, unzip & run `NEELx.Windows.exe`)
+- `NEELx-v2.0.0-beta.5-windows-x64-lite.zip` (Lightweight — requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0))
+
+#### Option 3: Build & Run Directly from `.NET 8` Source
+```powershell
+git clone https://github.com/ChandranilDas/NEELx.git
+cd NEELx\windows
+dotnet restore NEELx.Windows.sln
+dotnet build NEELx.Windows.sln -c Release
+dotnet run --project src\NEELx.App\NEELx.App.csproj -c Release
+```
+
+#### Verify Windows ZIP Integrity (Public SHA-256 Checksum)
+```powershell
+Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256
+```
+
+> Full Windows Credential Provider & DirectML guide: [`windows/README.md`](windows/README.md)
 
 ---
 
 ## 🔒 Security Architecture & Threat Model
 
-| Security Layer | Implementation |
-|---|---|
-| **Identity Matching** | 512-D ArcFace embeddings with 5-point Vision landmark alignment (`threshold = 0.63`) |
-| **3D Neural Depth (ANE)** | Apple Core ML `DepthAnythingV2SmallF16` — 3D nose protrusion + least-squares plane-fit residual |
-| **Attention Check** | Eye Aspect Ratio (`EAR ≥ 0.14`) + Head Pose (`|yaw| ≤ 0.35`, `|pitch| ≤ 0.35`) |
-| **Spoof Defense** | 3D flat-plane spoof detector + specular screen glare cue + rectangular device bezel detector |
-| **Credential Storage** | AES-256-GCM encryption via Touch ID-gated session key (`LocalAuthentication` + Keychain) |
-| **Lockout Guard** | Auto-locks session on consecutive failures or idle timeout; requires Touch ID / Mac password |
-| **Lock Verification** | Authoritative `CGSessionCopyCurrentDictionary` check prevents accidental typing when unlocked |
+| Security Layer | macOS 15+ Implementation | Windows 11 Implementation |
+| :--- | :--- | :--- |
+| **Unlock Visual Language** | Notch Face ID 80-tick circular ring + emerald checkmark | Original **Fluent Prism Horizon** top-edge Mica blade + faceted diamond-iris + laser sweep |
+| **Identity Matching** | 512-D ArcFace Core ML (ANE, `threshold = 0.63`) | 512-D ArcFace ONNX DirectML GPU/NPU (CPU fallback) |
+| **3D Neural Depth** | Core ML `DepthAnythingV2SmallF16` (FP16 ANE, ~22.6 ms) | ONNX `DepthAnythingV2Small` (DirectML, ~28 ms) |
+| **Multi-Frame Guard** | 2 consecutive physically consistent 3D frames + 9-zone profile | 2 consecutive physically consistent 3D frames (nose protrusion + curvature + cliff) |
+| **Backlit & Dark Rooms** | GPU Core Image HDR shadow lift + 3800K Studio Light & Spectral Rim | Real-time center-vs-border backlit gamma shadow lift + Fluent edge light |
+| **Credential Storage** | AES-256-GCM + macOS Keychain (`WhenUnlockedThisDeviceOnly`) + Touch ID | Windows DPAPI (`ProtectedData` CurrentUser) in `%LOCALAPPDATA%\NEELx` |
+| **System / Lock Integration** | Lock Screen + System Touch ID & Password Prompts (Apple Pay excluded) | Desktop Biometric App + WinLogon `ICredentialProvider` named-pipe bridge |
 
-> **Transparency Note**: Standard Mac webcams capture 2D RGB images rather than infrared dot projections (TrueDepth). NEELx maximizes security within 2D camera hardware limits using ArcFace, Stage 3 Neural 3D Depth (Depth Anything V2 on ANE), eye attention verification, and anti-spoofing heuristics, and is designed as a fast, hardened convenience unlock alongside Touch ID.
+> **Transparency Note**: Standard webcams capture 2D RGB frames rather than infrared dot projections (TrueDepth / Windows Hello IR). NEELx maximizes security within 2D webcam limits using 512-D ArcFace, Stage 3 monocular 3D Depth, multi-frame temporal depth consistency, eye attention checks, and anti-replay heuristics.
 
 ---
 
-## 🛠️ Required macOS Permissions
+## 🛠️ Required OS Permissions
 
-During onboarding, NEELx requests two standard macOS permissions:
-1. **Camera**: Used strictly on-device while the lock screen is active or while enrolling your face in Settings.
-2. **Accessibility**: Allows NEELx to securely enter your decrypted password into the macOS lock screen login field upon a verified biometric match.
+### macOS 15+
+1. **Camera**: Used strictly on-device during enrollment, Lock Screen unlock, and system auth prompts.
+2. **Accessibility**: Allows NEELx to securely enter your decrypted password into macOS login and system authorization prompts upon verified 3D Face ID match.
+
+### Windows 11
+1. **Camera** (`Settings → Privacy & security → Camera`): Allows `NEELx.Windows.exe` to capture local webcam frames on-device.
+2. **Administrator (Optional — WinLogon Lock Screen only)**: Only needed if registering the optional C++ `ICredentialProvider` COM DLL under `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers`.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] 360° Circular Face Enrollment + Live Lighting Readiness Meter
+### macOS 15+
+- [x] 360° Circular Notch Face Enrollment + Live Lighting Readiness Meter
 - [x] Sub-200ms Unlock Pipeline + 3ms Keystroke Injection
 - [x] Eye Gaze & Attention Verification
 - [x] Luxury Studio Light Softbox & Spectral Chromatic Rim (with Live Preview)
 - [x] Backlit Window HDR Shadow Recovery
-- [x] Face ID for System Touch ID & Password Prompts
-- [x] **Stage 3 Neural Depth + Multi-Frame Temporal Consistency** (Core ML *Depth Anything V2 Small* on Apple Silicon ANE)
+- [x] Face ID for System Touch ID & Password Prompts (Apple Pay excluded)
+- [x] Stage 3 Neural 3D Depth + Multi-Frame Temporal Consistency (Apple Silicon ANE)
 - [x] Subtle Spatial Haptic + Optional Soft Glass Sound Cue
-- [x] **NEELx for Windows 11 (`windows/`)** — Fluent Prism Horizon UI + DirectML + DPAPI
+- [x] Universal Binary (Apple Silicon M1–M5+ & Intel), Homebrew Cask & Auto-Updater
+
+### Windows 11 (Fluent Prism Edition)
+- [x] Bespoke Fluent Prism Horizon Top-Edge Unlock Overlay (WPF Dark Mica)
+- [x] ONNX Runtime DirectML GPU/NPU 3D Depth + Multi-Frame Temporal Consistency
+- [x] Backlit Window HDR Shadow Recovery + Built-In 2D Spoof Rejection Self-Check
+- [x] Windows DPAPI Offline Biometric Vault (`DataProtectionScope.CurrentUser`)
+- [x] WinLogon `ICredentialProvider` COM Interface + ACL Named-Pipe Bridge
+- [x] Automated Windows CI Release Packages (Standalone Portable & Lite ZIPs)
+- [ ] Signed MSIX Installer & 1-Click WinLogon COM Auto-Registration
 
 ---
 
 ## 🤝 Contributing & Feedback
 
-Contributions, bug reports, security audits, and test results across all Mac models (**Apple Silicon M1, M2, M3, M4, M5 & newer**, Intel Macs, Studio Display, external webcams) and Windows 11 laptops are very welcome!
-1. Fork the repository
-2. Run `./build.sh` to verify your local build
-3. Open a Pull Request or Issue with your Mac model, macOS version, and feedback
+Contributions, bug reports, security audits, and test results across **macOS (Apple Silicon M1, M2, M3, M4, M5 & newer, Intel Macs, external webcams)** and **Windows 11 laptops/desktops** are very welcome!
+- Send feedback directly (with screenshots) from the [**Official Website**](https://chandranildas.github.io/NEELx/#feedback), from inside the macOS app via **Menu Bar → Send Feedback…**, or open a [GitHub Issue](https://github.com/ChandranilDas/NEELx/issues).
 
 ---
 

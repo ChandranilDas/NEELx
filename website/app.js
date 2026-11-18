@@ -45,12 +45,57 @@ function initTabs() {
   });
 
   document.querySelectorAll("[data-go-tab]").forEach((el) => {
-    el.addEventListener("click", () => activateTab(el.getAttribute("data-go-tab")));
+    el.addEventListener("click", () => {
+      const dlPlatform = el.getAttribute("data-select-dl");
+      if (dlPlatform) {
+        selectPlatformGroup("download", dlPlatform);
+      }
+      activateTab(el.getAttribute("data-go-tab"));
+    });
   });
 
   const initialHash = window.location.hash.replace(/^#/, "");
   if (initialHash && document.getElementById(`tab-${initialHash}`)) {
     activateTab(initialHash, false);
+  }
+}
+
+function selectPlatformGroup(group, platform) {
+  document.querySelectorAll(`.platform-pill[data-platform-group="${group}"]`).forEach((btn) => {
+    const isMatch = btn.getAttribute("data-platform") === platform;
+    btn.classList.toggle("active", isMatch);
+  });
+  ["macos", "windows"].forEach((p) => {
+    const pane = document.getElementById(`${group}-${p}`);
+    if (pane) pane.classList.toggle("active", p === platform);
+  });
+  if (group === "bench") {
+    const sub = document.getElementById("benchSub");
+    if (sub) {
+      sub.textContent =
+        platform === "windows"
+          ? "Measured on Windows 11 · ONNX Runtime DirectML (DirectX 12 GPU / Copilot+ NPU)"
+          : "Benchmarked on Apple M4 · Runs natively on M1, M2, M3, M4, M5+ & Intel";
+    }
+  }
+}
+
+function initPlatformSwitchers() {
+  document.querySelectorAll(".platform-pill[data-platform-group]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const group = btn.getAttribute("data-platform-group");
+      const platform = btn.getAttribute("data-platform");
+      if (group && platform) {
+        selectPlatformGroup(group, platform);
+      }
+    });
+  });
+
+  // Auto-select Windows download & overview pane when visiting from a Windows PC
+  if (/Windows/i.test(navigator.userAgent || "")) {
+    selectPlatformGroup("overview", "windows");
+    selectPlatformGroup("download", "windows");
+    selectPlatformGroup("bench", "windows");
   }
 }
 
@@ -113,6 +158,8 @@ async function syncLatestRelease() {
 
     const liteAsset = latest.assets.find((a) => a.name.includes("lite") && a.name.endsWith(".dmg"));
     const fullAsset = latest.assets.find((a) => !a.name.includes("lite") && a.name.endsWith(".dmg"));
+    const winPortAsset = latest.assets.find((a) => a.name.includes("windows") && a.name.includes("portable") && a.name.endsWith(".zip"));
+    const winLiteAsset = latest.assets.find((a) => a.name.includes("windows") && a.name.includes("lite") && a.name.endsWith(".zip"));
 
     if (liteAsset) {
       const mb = (liteAsset.size / (1024 * 1024)).toFixed(1);
@@ -127,6 +174,20 @@ async function syncLatestRelease() {
       const fullSize = document.getElementById("fullSize");
       if (fullBtn) fullBtn.href = fullAsset.browser_download_url;
       if (fullSize) fullSize.textContent = `${mb} MB · Universal`;
+    }
+    if (winPortAsset) {
+      const mb = (winPortAsset.size / (1024 * 1024)).toFixed(1);
+      const btn = document.getElementById("btnDownloadWinPortable");
+      const sz = document.getElementById("winPortableSize");
+      if (btn) btn.href = winPortAsset.browser_download_url;
+      if (sz) sz.textContent = `${mb} MB · Standalone Win x64`;
+    }
+    if (winLiteAsset) {
+      const mb = (winLiteAsset.size / (1024 * 1024)).toFixed(1);
+      const btn = document.getElementById("btnDownloadWinLite");
+      const sz = document.getElementById("winLiteSize");
+      if (btn) btn.href = winLiteAsset.browser_download_url;
+      if (sz) sz.textContent = `${mb} MB · Win x64`;
     }
   } catch {
     // Keep pre-populated links seamlessly
@@ -804,6 +865,342 @@ function initWindowsPrismCanvas() {
   frame();
 }
 
+// Shared helper to draw the authentic Windows 11 Fluent Prism Horizon Blade
+function drawPrismBlade(ctx, bx, by, bw, bh, state, t) {
+  const palettes = {
+    scanning: {
+      accent: "#38bdf8",
+      secondary: "#818cf8",
+      title: "NEELx Prism · Scanning 3D Depth",
+      sub: "DirectML GPU · Multi-frame geometry check",
+      pill: "PRISM 3D",
+    },
+    backlit: {
+      accent: "#fbbf24",
+      secondary: "#38bdf8",
+      title: "Backlit Silhouette · HDR Shadow Lift",
+      sub: "Recovering facial relief against bright window",
+      pill: "HDR LIFT",
+    },
+    verified: {
+      accent: "#30d158",
+      secondary: "#34d399",
+      title: "Identity & 3D Depth Verified",
+      sub: "DPAPI session unlocked · 2 frames confirmed",
+      pill: "UNLOCKED",
+    },
+    spoof: {
+      accent: "#fb7185",
+      secondary: "#f59e0b",
+      title: "Flat 2D Surface Rejected",
+      sub: "Insufficient nose protrusion & depth cliff",
+      pill: "BLOCKED",
+    },
+  };
+  const pal = palettes[state] || palettes.scanning;
+
+  ctx.save();
+  // Dark Mica glass blade
+  ctx.fillStyle = "rgba(17, 20, 27, 0.94)";
+  ctx.strokeStyle = `${pal.accent}66`;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 14);
+  ctx.fill();
+  ctx.stroke();
+
+  // Top atmospheric prism hairline
+  const rimGrad = ctx.createLinearGradient(bx, by, bx + bw, by);
+  rimGrad.addColorStop(0, "rgba(0,0,0,0)");
+  rimGrad.addColorStop(0.35, pal.accent);
+  rimGrad.addColorStop(0.65, pal.secondary);
+  rimGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.strokeStyle = rimGrad;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(bx + 14, by + 1);
+  ctx.lineTo(bx + bw - 14, by + 1);
+  ctx.stroke();
+
+  // Faceted Diamond-Iris Aperture (left)
+  const ix = bx + 28;
+  const iy = by + bh * 0.5 - 1;
+  const outerAngle = state === "verified" ? 0 : state === "spoof" ? Math.sin(t * 14) * 0.16 : t * 0.9;
+  const innerAngle = state === "verified" ? 0 : Math.PI / 4 - t * 1.35;
+
+  function drawDiamond(r, angle, stroke, fill) {
+    ctx.save();
+    ctx.translate(ix, iy);
+    ctx.rotate(angle);
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDiamond(13.5, outerAngle, pal.accent, `${pal.accent}1f`);
+  drawDiamond(8.5, innerAngle, pal.secondary, `${pal.secondary}28`);
+  drawDiamond(3.6, 0, pal.accent, pal.accent);
+
+  // Typography
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#f5f7fa";
+  ctx.font = "600 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(pal.title, bx + 52, by + bh * 0.44);
+
+  if (bw >= 290) {
+    ctx.fillStyle = "#9aa3b2";
+    ctx.font = "400 10.2px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(pal.sub, bx + 52, by + bh * 0.72);
+  }
+
+  // Right status pill
+  if (bw >= 310) {
+    const pw = 66;
+    const ph = 20;
+    const px = bx + bw - pw - 14;
+    const py = by + (bh - ph) / 2 - 1;
+    ctx.fillStyle = `${pal.accent}22`;
+    ctx.strokeStyle = `${pal.accent}55`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(px, py, pw, ph, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    ctx.font = "700 9px ui-monospace, Consolas, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(pal.pill, px + pw / 2, py + 13);
+  }
+
+  // Bottom horizontal laser horizon track
+  const trackY = by + bh - 4;
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
+
+  if (state === "verified") {
+    ctx.fillStyle = pal.accent;
+    ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
+  } else if (state === "spoof") {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 7);
+    ctx.fillStyle = `rgba(251, 113, 133, ${0.35 + pulse * 0.55})`;
+    ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
+  } else {
+    const beamW = Math.min(110, (bw - 24) * 0.42);
+    const travel = (bw - 24) + beamW;
+    const pos = ((t * 145) % travel) - beamW;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx + 12, trackY, bw - 24, 3);
+    ctx.clip();
+    const lg = ctx.createLinearGradient(bx + 12 + pos, 0, bx + 12 + pos + beamW, 0);
+    lg.addColorStop(0, "rgba(0,0,0,0)");
+    lg.addColorStop(0.5, pal.accent);
+    lg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = lg;
+    ctx.fillRect(bx + 12 + pos, trackY, beamW, 2.5);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function initWinHeroCanvas() {
+  const canvas = document.getElementById("winHeroCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width;
+  const H = canvas.height;
+  const statusEl = document.getElementById("winHeroStatus");
+
+  let mode = "scanning";
+  let t = 0;
+  let yaw = 0;
+  let pitch = 0;
+
+  canvas.addEventListener("pointermove", (e) => {
+    const r = canvas.getBoundingClientRect();
+    yaw = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
+    pitch = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
+  });
+  canvas.addEventListener("pointerleave", () => {
+    yaw = 0;
+    pitch = 0;
+  });
+
+  function setMode(m) {
+    mode = m;
+    if (!statusEl) return;
+    if (m === "verified") statusEl.innerHTML = `Identity &amp; 3D Depth Verified · <strong>DPAPI Session Unlocked</strong>`;
+    else if (m === "spoof") statusEl.innerHTML = `Flat 2D Surface Detected · <strong>Blocked by DirectML 3D Gate</strong>`;
+    else statusEl.innerHTML = `Move cursor or trigger state · <strong>Prism 3D Active</strong>`;
+  }
+
+  document.getElementById("btnWinHeroScan")?.addEventListener("click", () => setMode("scanning"));
+  document.getElementById("btnWinHeroUnlock")?.addEventListener("click", () => setMode("verified"));
+  document.getElementById("btnWinHeroSpoof")?.addEventListener("click", () => setMode("spoof"));
+
+  function render() {
+    t += 0.025;
+    ctx.clearRect(0, 0, W, H);
+
+    // Subtle Windows 11 Bloom dark backdrop
+    const bg = ctx.createRadialGradient(W * 0.5, H * 0.65, 18, W * 0.5, H * 0.5, W * 0.72);
+    bg.addColorStop(0, mode === "verified" ? "rgba(48, 209, 88, 0.16)" : mode === "spoof" ? "rgba(251, 113, 133, 0.14)" : "rgba(56, 189, 248, 0.16)");
+    bg.addColorStop(1, "#07090e");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Top-edge Fluent Prism Horizon Blade
+    drawPrismBlade(ctx, 18, 16, W - 36, 60, mode, t);
+
+    // Subtle 3D holographic biometric depth grid below blade
+    const cx = W * 0.5 + yaw * 14;
+    const cy = H * 0.66 + pitch * 8;
+    const accent = mode === "verified" ? "#30d158" : mode === "spoof" ? "#fb7185" : "#38bdf8";
+
+    ctx.strokeStyle = `${accent}55`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 42, 54, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Horizontal laser scan line sweeping over 3D head mesh
+    const scanY = cy - 48 + ((Math.sin(t * 2.2) + 1) * 0.5) * 96;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - 54, scanY);
+    ctx.lineTo(cx + 54, scanY);
+    ctx.stroke();
+
+    // Faceted 3D depth landmark points (eyes, nose tip, mouth corners)
+    const pts = [
+      [cx - 15 + yaw * 4, cy - 10 + pitch * 3],
+      [cx + 15 + yaw * 4, cy - 10 + pitch * 3],
+      [cx + yaw * 9, cy + 5 + pitch * 5],
+      [cx - 11 + yaw * 4, cy + 22 + pitch * 3],
+      [cx + 11 + yaw * 4, cy + 22 + pitch * 3],
+    ];
+    ctx.fillStyle = accent;
+    for (const [px, py] of pts) {
+      ctx.beginPath();
+      ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    ctx.font = "500 10px ui-monospace, Consolas, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      mode === "spoof" ? "z-depth: flat plane (Δz = 0.004)" : "DirectML 3D Mesh · Δz nose = +0.088",
+      W * 0.5,
+      H - 12
+    );
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+}
+
+function initWinHowItWorksSimulators() {
+  const phaseConfigs = [
+    { id: "winPhaseScan", state: "scanning" },
+    { id: "winPhaseUnlock", state: "verified" },
+    { id: "winPhaseSpoof", state: "spoof" },
+  ];
+
+  const phaseCanvases = phaseConfigs
+    .map((cfg) => ({ ...cfg, el: document.getElementById(cfg.id) }))
+    .filter((item) => item.el);
+
+  const lockSim = document.getElementById("winLockSimCanvas");
+  let simState = "scanning";
+
+  document.querySelectorAll("[data-win-sim]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      simState = btn.getAttribute("data-win-sim") || "scanning";
+    });
+  });
+
+  let t = 0;
+  function tick() {
+    t += 0.025;
+
+    for (const item of phaseCanvases) {
+      const ctx = item.el.getContext("2d");
+      const W = item.el.width;
+      const H = item.el.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#06080d";
+      ctx.fillRect(0, 0, W, H);
+
+      // Subtle bezel top edge
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(0, 0, W, 2);
+
+      drawPrismBlade(ctx, 12, 22, W - 24, 62, item.state, t);
+
+      // Windows 11 Lock Screen clock silhouette beneath
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.font = "600 28px 'Segoe UI Variable Display', -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("10:42", W / 2, H - 46);
+      ctx.fillStyle = "rgba(255,255,255,0.14)";
+      ctx.font = "400 11px 'Segoe UI', -apple-system, sans-serif";
+      ctx.fillText("Windows 11 Lock Screen", W / 2, H - 24);
+    }
+
+    if (lockSim) {
+      const ctx = lockSim.getContext("2d");
+      const W = lockSim.width;
+      const H = lockSim.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const bg = ctx.createRadialGradient(W * 0.5, H * 0.85, 40, W * 0.5, H * 0.5, W * 0.65);
+      bg.addColorStop(0, simState === "verified" ? "rgba(48,209,88,0.14)" : simState === "spoof" ? "rgba(251,113,133,0.14)" : simState === "backlit" ? "rgba(251,191,36,0.15)" : "rgba(56,189,248,0.16)");
+      bg.addColorStop(1, "#07090f");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Centered full-size Windows 11 Prism Horizon Blade
+      const bw = Math.min(440, W - 40);
+      drawPrismBlade(ctx, (W - bw) / 2, 18, bw, 68, simState, t);
+
+      // Windows 11 Lock Screen time & user tile
+      ctx.fillStyle = "rgba(255,255,255,0.86)";
+      ctx.font = "600 44px 'Segoe UI Variable Display', -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("09:41", W / 2, 146);
+
+      ctx.fillStyle = "rgba(255,255,255,0.52)";
+      ctx.font = "400 13px 'Segoe UI', -apple-system, sans-serif";
+      const subText =
+        simState === "verified"
+          ? "Welcome back · Signing in via NEELx Credential Provider…"
+          : simState === "spoof"
+            ? "NEELx blocked a 2D spoof · Enter PIN or look directly at webcam"
+            : simState === "backlit"
+              ? "Backlit window detected · HDR shadow recovery active"
+              : "Looking for your 3D face via DirectML…";
+      ctx.fillText(subText, W / 2, 178);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  tick();
+}
+
 // ---------------------------------------------------------------------------
 // 8. Direct Feedback Form (Auto-detected Browser Info + Screenshots + Email Picker)
 // ---------------------------------------------------------------------------
@@ -1074,10 +1471,13 @@ function initFeedbackForm() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
+  initPlatformSwitchers();
   initCopyButtons();
   syncLatestRelease();
   initEnrollmentSimulator();
+  initWinHeroCanvas();
   initHowItWorksDemos();
+  initWinHowItWorksSimulators();
   initDepthLab();
   initWindowsPrismCanvas();
   initFeedbackForm();

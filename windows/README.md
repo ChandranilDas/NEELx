@@ -2,45 +2,91 @@
 
 **100% offline 3D biometric Face Unlock for Windows 11 laptops and desktops with any standard RGB webcam — no Windows Hello IR camera required.**
 
-Unlike macOS (which uses an iPhone/iPad Pro-inspired circular notch Face ID animation), **NEELx for Windows 11** features a completely original **Fluent Prism Horizon** experience built specifically for Windows 11 Mica/Acrylic glass: a razor-thin frosted horizon blade with a rotating **faceted diamond-iris aperture** and **luminous horizontal laser sweep**.
+> **Official Website:** [https://chandranildas.github.io/NEELx/#download](https://chandranildas.github.io/NEELx/#download)  
+> **GitHub Releases:** [https://github.com/ChandranilDas/NEELx/releases](https://github.com/ChandranilDas/NEELx/releases)
 
 ---
 
-## Architecture
+## 🎯 About the Fluent Prism Horizon Design
+
+Unlike NEELx for macOS (which uses an iPhone/iPad Pro-inspired circular notch Face ID animation), **NEELx for Windows 11** features a completely original **Fluent Prism Horizon** design built natively for Windows 11 Mica/Acrylic glass:
+
+- **Phase 01 · Prism Scanning**: A razor-thin frosted dark-Mica blade docks beneath the top screen edge with two counter-rotating **faceted crystalline diamonds** and a sweeping **cyan-indigo horizontal laser horizon**.
+- **Phase 02 · Backlit HDR Lift**: When sitting with a bright window behind you, the rim transitions to warm amber-cyan while real-time gamma tone lifting recovers facial geometry.
+- **Phase 03 · Verified Unlock**: Both faceted crystals snap cleanly to 0° **emerald crystal alignment**, locking the horizontal horizon beam solid emerald as DPAPI unlocks your session.
+- **Phase 04 · 2D Spoof Rejected**: Flat photos or phone displays fail 3D nose protrusion and depth-cliff checks, pulsing refined amber-rose (`BLOCKED`) without unlocking.
+
+You can preview all four live states immediately after launching `NEELx.Windows.exe` directly from the dashboard.
+
+---
+
+## ✨ Key Features
+
+- **Original Fluent Prism Horizon Overlay (`UI/PrismHorizonOverlay.xaml`)**: Native WPF transparent top-most blade crafted for Windows 11 Dark Mica.
+- **ONNX Runtime DirectML GPU/NPU Engine (`Biometrics/OnnxFaceEngine.cs`)**: Runs 512-D `ArcFace` + `DepthAnythingV2Small` on any DirectX 12 GPU (Intel Iris Xe/Arc, AMD Radeon, NVIDIA RTX/GTX) or Copilot+ NPU, falling back automatically to CPU.
+- **Multi-Frame Temporal 3D Depth Consistency**: Requires 2 consecutive physically consistent 3D frames (stable nose protrusion `< 0.065` delta, stable head-to-background cliff `< 0.25` delta) within 1600 ms.
+- **Backlit Window HDR Shadow Recovery**: Compares center face luminance vs outer border luminance and lifts shadowed silhouettes automatically.
+- **Windows DPAPI Encrypted Vault (`Security/DpapiCredentialVault.cs`)**: Encrypts 512-D embeddings and 9-zone 3D baselines offline via `ProtectedData.Protect` (`DataProtectionScope.CurrentUser`) in `%LOCALAPPDATA%\NEELx`.
+- **WinLogon Lock Screen Contract (`NEELx.CredentialProvider/NEELxCredentialProvider.h`)**: Native C++ `ICredentialProvider` COM interface triggered over an ACL-hardened local named pipe (`\\.\pipe\NEELxBiometricUnlock`).
+
+---
+
+## 🏗️ Architecture
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Desktop & Overlay UI** | `.NET 8` + `WPF` (Fluent Dark Mica) | Settings dashboard, enrollment wizard, and bespoke **Prism Horizon** top-edge unlock blade |
-| **3D Depth & Recognition** | `ONNX Runtime DirectML` (`Microsoft.ML.OnnxRuntime.DirectML`) | Runs `ArcFace` (512-D identity) + `DepthAnythingV2Small` (3D anti-spoofing) on any DirectX 12 GPU or Copilot+ NPU |
+| **Desktop & Overlay UI** | `.NET 8` + `WPF` (Fluent Dark Mica) | Settings dashboard, pipeline self-check, and bespoke **Prism Horizon** top-edge blade |
+| **3D Depth & Recognition** | `Microsoft.ML.OnnxRuntime.DirectML` | Runs `ArcFace` (512-D identity) + `DepthAnythingV2Small` (3D anti-spoofing) on DirectX 12 GPU/NPU |
 | **Backlit HDR Recovery** | Real-time luminance & gamma shadow lift | Recovers darkened faces sitting with a bright window behind them |
 | **Multi-Frame Depth Guard** | Rolling temporal 3D buffer | Requires 2 consecutive consistent 3D geometry frames (nose protrusion + head-to-background cliff) |
-| **Credential & Template Vault** | Windows `DPAPI` (`ProtectedData`) + `AES-256-GCM` | Encrypts biometric vectors and unlock tokens offline under `DataProtectionScope.CurrentUser` |
-| **Lock Screen Integration** | Windows `ICredentialProvider` COM DLL (`NEELx.CredentialProvider`) | Native Windows 11 WinLogon lock-screen tile communicating over ACL-protected named pipe `\\.\pipe\NEELxBiometricUnlock` |
+| **Credential & Template Vault** | Windows `DPAPI` (`ProtectedData`) | Encrypts biometric vectors offline under `DataProtectionScope.CurrentUser` |
+| **Lock Screen Integration** | Windows `ICredentialProvider` COM DLL | Native Windows 11 WinLogon lock-screen tile communicating over `\\.\pipe\NEELxBiometricUnlock` |
 
 ---
 
-## System Requirements
+## 🚀 Quick Start & PowerShell Commands
 
-- **OS**: Windows 11 (22H2 or newer, x64 or ARM64)
-- **Hardware**: Any built-in or USB webcam (720p+ recommended)
-- **Accelerator**: Any DirectX 12 GPU (Intel Iris Xe/Arc, AMD Radeon, NVIDIA RTX/GTX) or Windows NPU via DirectML (CPU fallback supported)
-- **Build Toolchain**: [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+### Requirements
+- **Windows 11 (22H2 or newer)** — x64 or ARM64
+- Any built-in or USB RGB webcam (720p+ recommended)
+- DirectX 12 GPU or Windows NPU (CPU fallback supported)
 
----
-
-## Quick Build (Windows 11)
-
+### Option 1: One-Line PowerShell Download & Launch (Standalone Portable — Zero Prerequisites)
 ```powershell
-cd windows
-dotnet restore NEELx.Windows.sln
-dotnet build NEELx.Windows.sln -c Release
-dotnet run --project src/NEELx.App/NEELx.App.csproj -c Release
+Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"
+Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force
+Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"
 ```
 
-## Lock Screen Credential Provider Setup (Optional)
+### Option 2: Verify Downloaded ZIP Checksum (Public SHA-256)
+```powershell
+Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256
+```
 
-The `src/NEELx.CredentialProvider` directory defines the native C++ WinLogon `ICredentialProvider` contract (`NEELxCredentialProvider.h`) that pairs with `NEELx.App`'s local named-pipe biometric daemon (`\\.\pipe\NEELxBiometricUnlock`, restricted to `SYSTEM` + current user SID).
+### Option 3: Build & Run from `.NET 8` Source
+Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0):
+```powershell
+git clone https://github.com/ChandranilDas/NEELx.git
+cd NEELx\windows
+dotnet restore NEELx.Windows.sln
+dotnet build NEELx.Windows.sln -c Release
+dotnet run --project src\NEELx.App\NEELx.App.csproj -c Release
+```
 
+### Optional: Native WinLogon Lock Screen Credential Provider Setup
+The `src/NEELx.CredentialProvider` directory defines the native C++ WinLogon `ICredentialProvider` contract (`NEELxCredentialProvider.h`) that pairs with `NEELx.App`'s local named-pipe biometric bridge (`\\.\pipe\NEELxBiometricUnlock`, restricted to `SYSTEM` + current user SID):
 1. Build the WinLogon Credential Provider DLL with Visual Studio 2022 (`Desktop development with C++`).
-2. Register the COM CLSID under `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers`.
-3. Launch `NEELx.App`, enroll your 3D facial signature, and enable **Lock Screen Biometric Unlock**.
+2. Register the COM CLSID `{9F4D7B21-6C1E-4A3E-8D25-E8477B14A902}` under `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers`.
+3. Launch `NEELx.Windows.exe`, place your ONNX models in `%LOCALAPPDATA%\NEELx\models`, and enable Lock Screen Biometric Unlock.
+
+---
+
+## 🗺️ Windows 11 Roadmap
+
+- [x] Bespoke Fluent Prism Horizon Top-Edge Unlock Overlay (WPF Dark Mica)
+- [x] ONNX Runtime DirectML GPU/NPU 3D Depth + Multi-Frame Temporal Consistency
+- [x] Backlit Window HDR Shadow Recovery + Live 2D Spoof Rejection Self-Check
+- [x] Windows DPAPI Offline Vault (`DataProtectionScope.CurrentUser`)
+- [x] WinLogon `ICredentialProvider` COM Interface + ACL Named-Pipe Bridge
+- [x] Automated Windows CI Release Builds (Portable Standalone & Lite ZIPs)
+- [ ] Signed MSIX Installer & 1-Click WinLogon COM Auto-Registration

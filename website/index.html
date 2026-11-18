@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEELx — Biometric 3D Face Unlock for macOS &amp; Windows</title>
-  <meta name="description" content="NEELx brings sub-200ms offline 3D Face Unlock and system Touch ID prompt approval to macOS (Apple Silicon M1+ & Intel), with Stage 3 Neural 3D Depth, Backlit HDR recovery, and hardware-backed Keychain encryption." />
+  <title>NEELx — Biometric 3D Face Unlock for macOS &amp; Windows 11</title>
+  <meta name="description" content="NEELx brings sub-200ms 100% offline 3D Face Unlock to macOS (Apple Silicon M1+ & Intel) and Windows 11 (any standard webcam, no IR needed), with Stage 3 Neural 3D Depth, Backlit HDR recovery, and hardware-backed encryption." />
   <link rel="canonical" href="https://chandranildas.github.io/NEELx/" />
-  <meta property="og:title" content="NEELx — Biometric 3D Face Unlock for macOS &amp; Windows" />
-  <meta property="og:description" content="Offline 3D Face Unlock with Apple Neural Engine depth analysis, 360° enrollment, backlit HDR recovery, and system Touch ID prompt approval." />
+  <meta property="og:title" content="NEELx — Biometric 3D Face Unlock for macOS &amp; Windows 11" />
+  <meta property="og:description" content="Offline 3D Face Unlock for macOS (Apple Neural Engine) and Windows 11 (ONNX DirectML + Fluent Prism Horizon)." />
   <meta property="og:url" content="https://chandranildas.github.io/NEELx/" />
   <link rel="icon" type="image/svg+xml" href="assets/neelx-logo.svg" />
   <link rel="stylesheet" href="styles.css" />
@@ -39,115 +39,305 @@
   <main>
     <div class="container">
       <!-- ================================================================ -->
-      <!-- TAB 1: OVERVIEW                                                  -->
+      <!-- TAB 1: OVERVIEW (macOS & Windows 11 First-Class Parity)          -->
       <!-- ================================================================ -->
       <section id="tab-overview" class="tab-panel active" role="tabpanel">
-        <div class="hero-grid">
-          <div>
-            <div class="eyebrow">
-              <span class="dot-live"></span>
-              <span>macOS 15+ · Apple Silicon (M1 &amp; newer) + Intel · 100% Offline</span>
+        <div class="platform-switch" role="tablist" aria-label="Choose platform overview">
+          <button class="platform-pill active" type="button" data-platform-group="overview" data-platform="macos">macOS 15+ (Apple Silicon &amp; Intel)</button>
+          <button class="platform-pill" type="button" data-platform-group="overview" data-platform="windows">Windows 11 (Fluent Prism Edition)</button>
+        </div>
+
+        <!-- MACOS OVERVIEW PANE -->
+        <div id="overview-macos" class="platform-pane active">
+          <div class="hero-grid">
+            <div>
+              <div class="eyebrow">
+                <span class="dot-live"></span>
+                <span>macOS 15+ · Apple Silicon (M1 &amp; newer) + Intel · 100% Offline</span>
+              </div>
+              <h1>Face ID precision.<br />Native to your Mac.</h1>
+              <p class="lead">
+                NEELx unlocks your Mac and approves macOS system Touch ID &amp; password prompts in under 200 ms using on-device 512-D ArcFace matching, Stage 3 Neural 3D Depth on the Apple Neural Engine, backlit HDR shadow recovery, and hardware-backed Keychain encryption — with zero cloud servers.
+              </p>
+              <div class="hero-actions">
+                <button class="btn btn-primary" type="button" data-go-tab="download" data-select-dl="macos">
+                  Download for macOS (<span data-release-version>v2.0.0-beta.5</span>)
+                </button>
+                <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
+                  Watch How It Works
+                </button>
+                <button class="btn btn-secondary" type="button" data-go-tab="depth-lab">
+                  Try 3D Depth Lab
+                </button>
+              </div>
+              <div class="hero-chips">
+                <span>Universal Binary (arm64 + x86_64)</span>
+                <span>M1 · M2 · M3 · M4 · M5+ Ready</span>
+                <span>Zero Telemetry · MIT License</span>
+              </div>
             </div>
-            <h1>Face ID precision.<br />Native to your Mac.</h1>
-            <p class="lead">
-              NEELx unlocks your Mac and approves macOS system Touch ID &amp; password prompts in under 200 ms using on-device 512-D ArcFace matching, Stage 3 Neural 3D Depth on the Apple Neural Engine, backlit HDR shadow recovery, and hardware-backed Keychain encryption — with zero cloud servers.
-            </p>
-            <div class="hero-actions">
-              <button class="btn btn-primary" type="button" data-go-tab="download">
-                Download (<span data-release-version>v2.0.0-beta.5</span>)
-              </button>
-              <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
-                Watch How It Works
-              </button>
-              <button class="btn btn-secondary" type="button" data-go-tab="depth-lab">
-                Try 3D Depth Lab
-              </button>
-            </div>
-            <div class="hero-chips">
-              <span>Universal Binary (arm64 + x86_64)</span>
-              <span>M1 · M2 · M3 · M4 · M5+ Ready</span>
-              <span>Zero Telemetry · MIT License</span>
+
+            <!-- Interactive MacBook Notch with Sculpted 3D Vector Face -->
+            <div class="notch-stage">
+              <div class="notch-top-bar">
+                <span>Interactive 360° Enrollment</span>
+                <span class="camera-lens" title="FaceTime HD / Center Stage Camera"></span>
+                <span>80 Ticks · 3D Face</span>
+              </div>
+              <canvas id="enrollmentCanvas" width="248" height="248"></canvas>
+              <div id="enrollmentStatus" class="notch-status">
+                Move cursor around the face · <strong>0 / 8 sectors</strong>
+              </div>
+              <div class="stage-controls">
+                <button id="btnSimulateSweep" type="button" class="btn btn-secondary btn-sm">Simulate 360° Sweep</button>
+                <button id="btnResetSweep" type="button" class="btn btn-secondary btn-sm">Reset</button>
+              </div>
             </div>
           </div>
 
-          <!-- Interactive MacBook Notch with Sculpted 3D Vector Face -->
-          <div class="notch-stage">
-            <div class="notch-top-bar">
-              <span>Interactive 360° Enrollment</span>
-              <span class="camera-lens" title="FaceTime HD / Center Stage Camera"></span>
-              <span>80 Ticks · 3D Face</span>
+          <div class="spec-strip">
+            <div class="spec-tile">
+              <div class="spec-val">22.6 ms</div>
+              <div class="spec-lbl">Depth Anything V2 Small (FP16 · ANE)</div>
             </div>
-            <canvas id="enrollmentCanvas" width="248" height="248"></canvas>
-            <div id="enrollmentStatus" class="notch-status">
-              Move cursor around the face · <strong>0 / 8 sectors</strong>
+            <div class="spec-tile">
+              <div class="spec-val">&lt; 200 ms</div>
+              <div class="spec-lbl">Full verification &amp; unlock latency</div>
             </div>
-            <div class="stage-controls">
-              <button id="btnSimulateSweep" type="button" class="btn btn-secondary btn-sm">Simulate 360° Sweep</button>
-              <button id="btnResetSweep" type="button" class="btn btn-secondary btn-sm">Reset</button>
+            <div class="spec-tile">
+              <div class="spec-val">512-D + 9-Zone</div>
+              <div class="spec-lbl">ArcFace + personal calibrated 3D depth</div>
+            </div>
+            <div class="spec-tile">
+              <div class="spec-val">0 Bytes</div>
+              <div class="spec-lbl">Biometric or camera data sent online</div>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <span class="feature-tag">System-Wide Face ID</span>
+              <h3>System Touch ID &amp; Password Prompts</h3>
+              <p>Automatically approves macOS Touch ID &amp; admin password popups everywhere — System Settings, app installs, Saved Passwords, Finder, and Keychain — while strictly excluding Apple Pay &amp; payments.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Multi-Frame 3D Security</span>
+              <h3>Stage 3 Neural 3D Depth + Temporal Consistency</h3>
+              <p>Validates nose protrusion, non-planar surface curvature, head-to-background depth cliff, personal calibrated baseline, and 2-frame temporal depth consistency alongside sub-angle Micro-Parallax.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Every Lighting Condition</span>
+              <h3>Backlit HDR Shadow Recovery + Studio Light</h3>
+              <p>GPU Core Image HDR lifts dark backlit silhouettes against sunlit windows, while a smooth Apple Studio Light perimeter glow illuminates dim rooms and restores your exact brightness afterward.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Anti-Replay &amp; Attention</span>
+              <h3>Eye Gaze, Chromatic Prism &amp; Encrypted Audit Log</h3>
+              <p>Verifies open eyes and screen gaze before unlocking, supports optional spectral reflection verification against 4K video replay, and stores AES-256-GCM encrypted intruder snapshots offline.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Seamless Ownership</span>
+              <h3>Silent Adaptive Learning &amp; Local-Cert Auto-Updates</h3>
+              <p>Quietly adapts to glasses, beards, and lighting drift, includes a live Lighting Readiness Meter during 360° notch setup, spatial haptic + optional soft glass chime, and 1-click GitHub auto-updates.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag">Desktop Ergonomics</span>
+              <h3>Walk-Away Auto-Lock &amp; Smart Clamshell Camera</h3>
+              <p>Optional zero-drain Presence Lock secures your Mac when you step away, automatically switches to external webcams or Continuity Camera in clamshell mode, and runs with a smart thermal gate on Intel Macs.</p>
             </div>
           </div>
         </div>
 
-        <div class="spec-strip">
-          <div class="spec-tile">
-            <div class="spec-val">22.6 ms</div>
-            <div class="spec-lbl">Depth Anything V2 Small (FP16 · ANE)</div>
+        <!-- WINDOWS 11 OVERVIEW PANE -->
+        <div id="overview-windows" class="platform-pane">
+          <div class="hero-grid">
+            <div>
+              <div class="eyebrow">
+                <span class="dot-live" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></span>
+                <span>Windows 11 (x64 &amp; ARM64) · Any Standard Webcam · No IR Required</span>
+              </div>
+              <h1>Fluent Prism 3D.<br />Built for Windows 11.</h1>
+              <p class="lead">
+                Bring fast, 100% offline 3D biometric Face Unlock to any Windows 11 laptop or desktop without a Windows Hello IR camera. Powered by ONNX Runtime DirectML GPU/NPU acceleration, Windows DPAPI encryption, WinLogon Credential Provider architecture, and an original <strong>Fluent Prism Horizon</strong> unlock blade designed uniquely for Windows.
+              </p>
+              <div class="hero-actions">
+                <button class="btn btn-win" type="button" data-go-tab="download" data-select-dl="windows">
+                  Download for Windows 11 (<span data-release-version>v2.0.0-beta.5</span>)
+                </button>
+                <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
+                  Preview Prism Animation
+                </button>
+                <button class="btn btn-secondary" type="button" data-go-tab="depth-lab">
+                  DirectML Benchmarks
+                </button>
+              </div>
+              <div class="hero-chips">
+                <span>.NET 8 WPF Dark Mica UI</span>
+                <span>DirectX 12 GPU &amp; Copilot+ NPU</span>
+                <span>Windows DPAPI · Zero Cloud</span>
+              </div>
+            </div>
+
+            <!-- Interactive Windows 11 Fluent Prism Horizon Hero Stage -->
+            <div class="win-stage">
+              <div class="notch-top-bar">
+                <span>Fluent Prism Horizon · Interactive</span>
+                <span style="font-family: var(--font-mono); color: #7dd3fc;">DirectML 3D</span>
+              </div>
+              <canvas id="winHeroCanvas" width="380" height="248"></canvas>
+              <div id="winHeroStatus" class="notch-status">
+                Move cursor or trigger state · <strong>Prism 3D Active</strong>
+              </div>
+              <div class="stage-controls">
+                <button id="btnWinHeroScan" type="button" class="btn btn-secondary btn-sm">Scan</button>
+                <button id="btnWinHeroUnlock" type="button" class="btn btn-secondary btn-sm">Verify Unlock</button>
+                <button id="btnWinHeroSpoof" type="button" class="btn btn-secondary btn-sm">Test 2D Spoof</button>
+              </div>
+            </div>
           </div>
-          <div class="spec-tile">
-            <div class="spec-val">&lt; 200 ms</div>
-            <div class="spec-lbl">Full verification &amp; unlock latency</div>
+
+          <div class="spec-strip">
+            <div class="spec-tile">
+              <div class="spec-val">DirectML</div>
+              <div class="spec-lbl">Intel, AMD, NVIDIA GPU &amp; NPU acceleration</div>
+            </div>
+            <div class="spec-tile">
+              <div class="spec-val">&lt; 220 ms</div>
+              <div class="spec-lbl">End-to-end ArcFace + 3D Depth check</div>
+            </div>
+            <div class="spec-tile">
+              <div class="spec-val">DPAPI</div>
+              <div class="spec-lbl">Windows CurrentUser hardware-bound vault</div>
+            </div>
+            <div class="spec-tile">
+              <div class="spec-val">0 Bytes</div>
+              <div class="spec-lbl">100% offline · zero telemetry or cloud API</div>
+            </div>
           </div>
-          <div class="spec-tile">
-            <div class="spec-val">512-D + 9-Zone</div>
-            <div class="spec-lbl">ArcFace + personal calibrated 3D depth</div>
-          </div>
-          <div class="spec-tile">
-            <div class="spec-val">0 Bytes</div>
-            <div class="spec-lbl">Biometric or camera data sent online</div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Bespoke Windows Visual Identity</span>
+              <h3>Fluent Prism Horizon Unlock Blade</h3>
+              <p>Intentionally distinct from Mac/iPhone's circular Face ID — a razor-thin top-edge dark Mica glass blade with a counter-rotating faceted diamond-iris aperture and horizontal aurora laser sweep.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">DirectML 3D Anti-Spoofing</span>
+              <h3>512-D ArcFace + DepthAnythingV2Small ONNX</h3>
+              <p>Runs monocular 3D depth estimation on any DirectX 12 GPU or Copilot+ NPU (with automatic CPU fallback), checking nose protrusion, curvature RMSE, head-to-background cliff, and 2-frame temporal consistency.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Native Lock Screen Architecture</span>
+              <h3>WinLogon ICredentialProvider Bridge</h3>
+              <p>Pairs <code>NEELx.App</code> with a clean C++ WinLogon <code>ICredentialProvider</code> COM contract communicating over an ACL-hardened named pipe (<code>\\.\pipe\NEELxBiometricUnlock</code>) restricted to SYSTEM + active user SID.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Backlit &amp; Dim-Room Recovery</span>
+              <h3>Backlit Window HDR Shadow Lift</h3>
+              <p>Automatically detects backlit silhouettes (bright window behind your head, dark face in center) and lifts crushed facial shadows in real time before embedding extraction.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Zero-Cloud Credential Security</span>
+              <h3>Windows DPAPI Encrypted Biometric Vault</h3>
+              <p>Stores your 512-D identity vector and 9-zone 3D depth baseline encrypted via <code>ProtectedData.Protect</code> under <code>DataProtectionScope.CurrentUser</code> in <code>%LOCALAPPDATA%\NEELx</code>.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-tag win-tag">Zero-Dependency Distribution</span>
+              <h3>Portable Standalone EXE &amp; CI-Verified Source</h3>
+              <p>Download a single self-contained Portable ZIP (unzip &amp; run <code>NEELx.Windows.exe</code> with zero prerequisites) or build from clean <code>.NET 8</code> source verified on every commit by GitHub Actions.</p>
+            </div>
           </div>
         </div>
 
-        <div class="feature-grid">
-          <div class="feature-card">
-            <span class="feature-tag">System-Wide Face ID</span>
-            <h3>System Touch ID &amp; Password Prompts</h3>
-            <p>Automatically approves macOS Touch ID &amp; admin password popups everywhere — System Settings, app installs, Saved Passwords, Finder, and Keychain — while strictly excluding Apple Pay &amp; payments.</p>
+        <!-- SIDE-BY-SIDE SECURITY ARCHITECTURE & ROADMAP (BOTH PLATFORMS) -->
+        <div class="section-divider">
+          <div class="section-intro">
+            <div class="eyebrow">Cross-Platform Parity · Architecture &amp; Roadmap</div>
+            <h2>macOS &amp; Windows 11, side by side.</h2>
           </div>
-          <div class="feature-card">
-            <span class="feature-tag">Multi-Frame 3D Security</span>
-            <h3>Stage 3 Neural 3D Depth + Temporal Consistency</h3>
-            <p>Validates nose protrusion, non-planar surface curvature, head-to-background depth cliff, personal calibrated baseline, and multi-frame temporal depth consistency alongside sub-angle Micro-Parallax.</p>
+
+          <div class="card" style="overflow-x: auto;">
+            <h3>Security &amp; Biometric Architecture Comparison</h3>
+            <table class="arch-table">
+              <thead>
+                <tr>
+                  <th>Security Layer</th>
+                  <th>NEELx for macOS 15+</th>
+                  <th>NEELx for Windows 11</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Unlock Animation</td>
+                  <td>Notch Face ID circular 80-tick ring &amp; emerald checkmark dissolve</td>
+                  <td>Original <strong>Fluent Prism Horizon</strong> top-edge Mica blade, faceted diamond-iris &amp; laser sweep</td>
+                </tr>
+                <tr>
+                  <td>Identity Matching</td>
+                  <td>512-D ArcFace Core ML on Apple Neural Engine (ANE)</td>
+                  <td>512-D ArcFace ONNX on DirectML GPU / Copilot+ NPU (CPU fallback)</td>
+                </tr>
+                <tr>
+                  <td>3D Anti-Spoofing</td>
+                  <td><code>DepthAnythingV2SmallF16</code> (FP16 ANE) + 9-zone profile + 2-frame temporal consistency</td>
+                  <td><code>DepthAnythingV2Small</code> ONNX DirectML + nose protrusion + curvature RMSE + 2-frame temporal consistency</td>
+                </tr>
+                <tr>
+                  <td>Backlit &amp; Dark Rooms</td>
+                  <td>GPU Core Image HDR shadow recovery + 3800K Studio Light &amp; Spectral Chromatic Rim</td>
+                  <td>Real-time center-vs-border backlit HDR gamma shadow lift + Fluent edge illumination</td>
+                </tr>
+                <tr>
+                  <td>Credential Vault</td>
+                  <td>AES-256-GCM + macOS Keychain (<code>WhenUnlockedThisDeviceOnly</code>) + Touch ID gate</td>
+                  <td>Windows DPAPI (<code>ProtectedData</code> CurrentUser) + ACL-hardened named pipe IPC</td>
+                </tr>
+                <tr>
+                  <td>System Integration</td>
+                  <td>Lock Screen + System Touch ID &amp; Password Prompts (excluding Apple Pay/payments)</td>
+                  <td>Desktop Biometric App + WinLogon <code>ICredentialProvider</code> COM Lock Screen bridge</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="feature-card">
-            <span class="feature-tag">Every Lighting Condition</span>
-            <h3>Backlit HDR Shadow Recovery + Studio Light</h3>
-            <p>GPU Core Image HDR lifts dark backlit silhouettes against sunlit windows, while a smooth Apple Studio Light perimeter glow illuminates dim rooms and restores your exact brightness afterward.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-tag">Anti-Replay &amp; Attention</span>
-            <h3>Eye Gaze, Chromatic Prism &amp; Encrypted Audit Log</h3>
-            <p>Verifies open eyes and screen gaze before unlocking, supports optional spectral reflection verification against 4K video replay, and stores AES-256-GCM encrypted intruder snapshots offline.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-tag">Seamless Ownership</span>
-            <h3>Silent Adaptive Learning &amp; Local-Cert Auto-Updates</h3>
-            <p>Quietly adapts to glasses, beards, and lighting drift, includes a live Lighting Readiness Meter during 360° notch setup, spatial haptic + optional soft glass chime, and 1-click GitHub auto-updates.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-tag">Desktop Ergonomics</span>
-            <h3>Walk-Away Auto-Lock &amp; Smart Clamshell Camera</h3>
-            <p>Optional zero-drain Presence Lock secures your Mac when you step away, automatically switches to external webcams or Continuity Camera in clamshell mode, and runs with a smart thermal gate on Intel Macs.</p>
+
+          <div class="parity-grid">
+            <div class="parity-card">
+              <span class="feature-tag">macOS Roadmap</span>
+              <h3 style="margin-top: 6px;">macOS 15+ Milestones</h3>
+              <ul class="parity-list">
+                <li><span class="parity-check">[x]</span> 360° Circular Notch Enrollment + Live Lighting Readiness Meter</li>
+                <li><span class="parity-check">[x]</span> Stage 3 Neural 3D Depth (ANE) + Multi-Frame Temporal Consistency</li>
+                <li><span class="parity-check">[x]</span> Face ID for System Touch ID &amp; Password Prompts (payments excluded)</li>
+                <li><span class="parity-check">[x]</span> Backlit Window HDR Shadow Recovery + Studio Light &amp; Preview</li>
+                <li><span class="parity-check">[x]</span> Subtle Spatial Haptic + Optional Soft Glass Sound Cue</li>
+                <li><span class="parity-check">[x]</span> Universal Binary (M1–M5+ &amp; Intel), Homebrew Cask &amp; Auto-Updater</li>
+              </ul>
+            </div>
+
+            <div class="parity-card">
+              <span class="feature-tag win-tag">Windows 11 Roadmap</span>
+              <h3 style="margin-top: 6px;">Windows 11 Milestones</h3>
+              <ul class="parity-list">
+                <li><span class="parity-check win">[x]</span> Bespoke Fluent Prism Horizon Top-Edge Unlock Overlay (WPF Dark Mica)</li>
+                <li><span class="parity-check win">[x]</span> ONNX Runtime DirectML GPU/NPU 3D Depth + Multi-Frame Temporal Gate</li>
+                <li><span class="parity-check win">[x]</span> Backlit Window HDR Shadow Recovery + 2D Spoof Blocking Self-Check</li>
+                <li><span class="parity-check win">[x]</span> Windows DPAPI Offline Vault + WinLogon <code>ICredentialProvider</code> Contract</li>
+                <li><span class="parity-check win">[x]</span> Automated Windows CI Release Builds (Portable &amp; Lite ZIPs)</li>
+                <li><span class="parity-check next">[ ]</span> Signed MSIX Installer &amp; 1-Click WinLogon COM Auto-Registration</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ================================================================ -->
-      <!-- TAB 2: HOW IT WORKS (REAL ANIMATED VIDEOS + INTERACTIVE DEMOS)   -->
+      <!-- TAB 2: HOW IT WORKS (macOS VIDEOS + WINDOWS PRISM ANIMATIONS)    -->
       <!-- ================================================================ -->
       <section id="tab-how-it-works" class="tab-panel" role="tabpanel">
         <div class="section-intro">
-          <div class="eyebrow">Real In-App Notch Animations &amp; Interactive Previews</div>
-          <h2>Watch NEELx in motion.</h2>
+          <div class="eyebrow">macOS Notch Animations · Real Bundled Motion</div>
+          <h2>Watch NEELx for macOS in motion.</h2>
           <p class="lead">
             These are the actual smooth notch animations bundled inside NEELx for macOS — paired with live interactive simulators for Backlit HDR Shadow Recovery and the redesigned Studio Light rim.
           </p>
@@ -159,7 +349,7 @@
               <video src="assets/media/idleanimation.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-meta">
-              <span class="feature-tag">Phase 01 · Scanning</span>
+              <span class="feature-tag">macOS Phase 01 · Scanning</span>
               <h3>Subtle Notch Activation</h3>
               <p>The moment you wake your Mac or trigger a Touch ID prompt, NEELx expands cleanly out of the hardware notch and aligns your face in milliseconds.</p>
             </div>
@@ -170,7 +360,7 @@
               <video src="assets/media/unlockanimation.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-meta">
-              <span class="feature-tag">Phase 02 · Verified</span>
+              <span class="feature-tag">macOS Phase 02 · Verified</span>
               <h3>3D Verified Unlock</h3>
               <p>Once ArcFace, multi-frame 3D Depth, and eye attention confirm your live face, the green checkmark dissolves in sync with Trackpad haptic &amp; optional glass chime.</p>
             </div>
@@ -181,7 +371,7 @@
               <video src="assets/media/unsuccessfulunlockanimation.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-meta">
-              <span class="feature-tag">Phase 03 · Spoof / Mismatch</span>
+              <span class="feature-tag">macOS Phase 03 · Spoof / Mismatch</span>
               <h3>Instant Spoof Rejection</h3>
               <p>Flat screens, photos, closed eyes, or unrecognized faces are blocked immediately and logged with an AES-256-GCM encrypted snapshot in your audit log.</p>
             </div>
@@ -191,10 +381,10 @@
         <div class="interactive-split">
           <!-- Interactive Backlit HDR Shadow Lift Demo -->
           <div class="card">
-            <span class="feature-tag">Interactive Simulation · Backlit Window</span>
+            <span class="feature-tag">Interactive Simulation · macOS &amp; Windows</span>
             <h3 style="margin-top: 6px;">Backlit HDR Shadow Recovery</h3>
             <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">
-              Drag the slider to see how NEELx's GPU Core Image HDR lifts a completely darkened face silhouette when evening sunlight hits the camera from behind you.
+              Drag the slider to see how NEELx lifts a completely darkened face silhouette when evening sunlight hits the camera from behind you.
             </p>
             <div class="hdr-stage">
               <canvas id="hdrCanvas" width="460" height="210"></canvas>
@@ -224,17 +414,79 @@
             </div>
           </div>
         </div>
+
+        <!-- WINDOWS 11 FLUENT PRISM HORIZON ANIMATION SHOWCASE -->
+        <div class="section-divider">
+          <div class="section-intro">
+            <div class="eyebrow">Windows 11 Edition · Fluent Prism Horizon Motion</div>
+            <h2>Watch NEELx for Windows 11 in motion.</h2>
+            <p class="lead">
+              Built exclusively for Windows 11's Fluent Mica aesthetic — completely distinct from Mac/iPhone's circular Face ID. A sleek dark acrylic horizon blade docks softly beneath the top bezel with a counter-rotating <strong>faceted diamond-iris</strong> and a <strong>horizontal laser scan beam</strong>.
+            </p>
+          </div>
+
+          <div class="video-grid">
+            <div class="video-card">
+              <div class="prism-phase-bezel">
+                <canvas id="winPhaseScan" width="320" height="200"></canvas>
+              </div>
+              <div class="video-meta">
+                <span class="feature-tag win-tag">Windows Phase 01 · Prism Scanning</span>
+                <h3>Faceted Diamond-Iris &amp; Laser Sweep</h3>
+                <p>Two counter-rotating crystalline diamonds track 3D depth on your DirectML GPU/NPU while a luminous cyan-indigo laser horizon sweeps smoothly across the bottom edge.</p>
+              </div>
+            </div>
+
+            <div class="video-card">
+              <div class="prism-phase-bezel">
+                <canvas id="winPhaseUnlock" width="320" height="200"></canvas>
+              </div>
+              <div class="video-meta">
+                <span class="feature-tag win-tag">Windows Phase 02 · Prism Verified</span>
+                <h3>Emerald Crystal Alignment</h3>
+                <p>Upon 2-frame 3D depth &amp; ArcFace match, both diamond facets snap cleanly to 0° emerald crystal alignment, unlocking the DPAPI WinLogon session instantly.</p>
+              </div>
+            </div>
+
+            <div class="video-card">
+              <div class="prism-phase-bezel">
+                <canvas id="winPhaseSpoof" width="320" height="200"></canvas>
+              </div>
+              <div class="video-meta">
+                <span class="feature-tag win-tag">Windows Phase 03 · 2D Spoof Blocked</span>
+                <h3>Crisp Amber-Rose Recoil</h3>
+                <p>Flat 2D photos or phone displays fail nose protrusion and depth-cliff checks, triggering a refined amber-rose pulse without unlocking Windows.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Full Interactive Windows 11 Desktop Lock Screen Simulator -->
+          <div class="win-lockscreen-card">
+            <span class="feature-tag win-tag">Interactive Windows 11 Lock Screen Simulator</span>
+            <h3 style="margin-top: 6px;">Test Every Fluent Prism Horizon State Live</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">
+              Click any state below to preview the exact top-edge WPF Dark Mica blade rendered by <code>NEELx.Windows.exe</code> on Windows 11.
+            </p>
+            <canvas id="winLockSimCanvas" width="960" height="215"></canvas>
+            <div class="stage-controls" style="justify-content: flex-start;">
+              <button class="btn btn-secondary btn-sm" type="button" data-win-sim="scanning">Scanning 3D Depth</button>
+              <button class="btn btn-secondary btn-sm" type="button" data-win-sim="backlit">Backlit HDR Lift</button>
+              <button class="btn btn-secondary btn-sm" type="button" data-win-sim="verified">Verified Unlock</button>
+              <button class="btn btn-secondary btn-sm" type="button" data-win-sim="spoof">2D Spoof Blocked</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ================================================================ -->
-      <!-- TAB 3: 3D DEPTH LAB & BENCHMARKS                                 -->
+      <!-- TAB 3: 3D DEPTH LAB & BENCHMARKS (macOS ANE + WINDOWS DIRECTML)  -->
       <!-- ================================================================ -->
       <section id="tab-depth-lab" class="tab-panel" role="tabpanel">
         <div class="section-intro">
-          <div class="eyebrow">Stage 3 Core ML Depth Anything V2 Small · FP16 ANE</div>
+          <div class="eyebrow">Stage 3 Neural 3D Depth · Apple ANE &amp; Windows DirectML</div>
           <h2>Interactive 3D Depth Lab &amp; Telemetry.</h2>
           <p class="lead">
-            Toggle between a genuine 3D human face and a flat 2D phone/photo attack to inspect live nose protrusion, plane-fit curvature RMSE, head-to-background depth cliff, and multi-frame temporal stability.
+            Toggle between a genuine 3D human face and a flat 2D phone/photo attack to inspect live nose protrusion, plane-fit curvature RMSE, head-to-background depth cliff, and multi-frame temporal stability — shared across both macOS and Windows 11.
           </p>
         </div>
 
@@ -291,131 +543,269 @@
               </div>
 
               <p style="font-size: 12.5px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px;">
-                Multi-Frame Temporal Depth Consistency verifies physical stability across consecutive frames and pairs with sub-angle Temporal Micro-Parallax (4°–12°).
+                Multi-Frame Temporal Depth Consistency verifies physical stability across 2 consecutive frames on both Apple Silicon ANE and Windows DirectML.
               </p>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px;">
-            <h3>Measured End-to-End Pipeline Latency</h3>
-            <span style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);">Benchmarked on Apple M4 · Runs natively on M1, M2, M3, M4, M5+ &amp; Intel</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3>Measured End-to-End Pipeline Latency</h3>
+              <span id="benchSub" style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);">Benchmarked on Apple M4 · Runs natively on M1, M2, M3, M4, M5+ &amp; Intel</span>
+            </div>
+            <div class="platform-switch" style="margin-bottom: 0;">
+              <button class="platform-pill active" type="button" data-platform-group="bench" data-platform="macos">macOS (Apple ANE)</button>
+              <button class="platform-pill" type="button" data-platform-group="bench" data-platform="windows">Windows 11 (DirectML)</button>
+            </div>
           </div>
-          <div class="pipeline-bars">
-            <div class="pipe-row">
-              <span class="pipe-label">Vision Face &amp; 5-Point Alignment</span>
-              <div class="pipe-track"><div class="pipe-fill" style="width: 14%;"></div></div>
-              <span class="pipe-ms">~18 ms</span>
+
+          <div id="bench-macos" class="platform-pane active">
+            <div class="pipeline-bars">
+              <div class="pipe-row">
+                <span class="pipe-label">Vision Face &amp; 5-Point Alignment</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 14%;"></div></div>
+                <span class="pipe-ms">~18 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">Backlit HDR Recovery (Core Image GPU, auto)</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 6%;"></div></div>
+                <span class="pipe-ms">~3 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">512-D ArcFace Embedding (Core ML ANE)</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 24%;"></div></div>
+                <span class="pipe-ms">~31 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">Depth Anything V2 Small (FP16 ANE)</span>
+                <div class="pipe-track"><div class="pipe-fill pipe-fill-accent" style="width: 19%;"></div></div>
+                <span class="pipe-ms">22.6 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">3D Plane Fit + 9-Zone Profile + Temporal Check</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 5%;"></div></div>
+                <span class="pipe-ms">~2 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">AES-256-GCM Keychain Decrypt &amp; Unlock</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 10%;"></div></div>
+                <span class="pipe-ms">~12 ms</span>
+              </div>
             </div>
-            <div class="pipe-row">
-              <span class="pipe-label">Backlit HDR Recovery (auto, only when backlit)</span>
-              <div class="pipe-track"><div class="pipe-fill" style="width: 6%;"></div></div>
-              <span class="pipe-ms">~3 ms</span>
-            </div>
-            <div class="pipe-row">
-              <span class="pipe-label">512-D ArcFace Embedding (ANE)</span>
-              <div class="pipe-track"><div class="pipe-fill" style="width: 24%;"></div></div>
-              <span class="pipe-ms">~31 ms</span>
-            </div>
-            <div class="pipe-row">
-              <span class="pipe-label">Depth Anything V2 Small (FP16 ANE)</span>
-              <div class="pipe-track"><div class="pipe-fill pipe-fill-accent" style="width: 19%;"></div></div>
-              <span class="pipe-ms">22.6 ms</span>
-            </div>
-            <div class="pipe-row">
-              <span class="pipe-label">3D Plane Fit + 9-Zone Profile + Temporal Check</span>
-              <div class="pipe-track"><div class="pipe-fill" style="width: 5%;"></div></div>
-              <span class="pipe-ms">~2 ms</span>
-            </div>
-            <div class="pipe-row">
-              <span class="pipe-label">AES-256-GCM Decrypt &amp; Unlock</span>
-              <div class="pipe-track"><div class="pipe-fill" style="width: 10%;"></div></div>
-              <span class="pipe-ms">~12 ms</span>
+          </div>
+
+          <div id="bench-windows" class="platform-pane">
+            <div class="pipeline-bars">
+              <div class="pipe-row">
+                <span class="pipe-label">Webcam Capture &amp; Face Alignment</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 16%;"></div></div>
+                <span class="pipe-ms">~20 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">Backlit Window Gamma Shadow Lift (auto)</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 7%;"></div></div>
+                <span class="pipe-ms">~4 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">512-D ArcFace ONNX (DirectML GPU / NPU)</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 26%;"></div></div>
+                <span class="pipe-ms">~34 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">Depth Anything V2 Small ONNX (DirectML)</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 24%; background: linear-gradient(90deg, #38bdf8, #818cf8);"></div></div>
+                <span class="pipe-ms">~28 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">Multi-Frame Temporal 3D Geometry Gate</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 5%;"></div></div>
+                <span class="pipe-ms">~2 ms</span>
+              </div>
+              <div class="pipe-row">
+                <span class="pipe-label">DPAPI Unprotect &amp; Named-Pipe WinLogon Signal</span>
+                <div class="pipe-track"><div class="pipe-fill" style="width: 9%;"></div></div>
+                <span class="pipe-ms">~10 ms</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ================================================================ -->
-      <!-- TAB 4: DOWNLOAD (macOS + 1-CLICK COPY + WINDOWS EDITION)         -->
+      <!-- TAB 4: DOWNLOAD (FULL macOS & WINDOWS 11 PARITY + 1-CLICK COPY)  -->
       <!-- ================================================================ -->
       <section id="tab-download" class="tab-panel" role="tabpanel">
         <div class="section-intro">
-          <div class="eyebrow">Universal macOS 15+ (Apple Silicon M1+ &amp; Intel) · Windows 11 Edition</div>
+          <div class="eyebrow">Universal macOS 15+ (Apple Silicon M1+ &amp; Intel) · Windows 11 (x64 &amp; ARM64)</div>
           <h2>Download NEELx <span data-release-version>v2.0.0-beta.5</span></h2>
           <p class="lead">
-            No upper Apple Silicon chip limit — NEELx compiles as a native Universal Binary (<code>arm64</code> + <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel Macs running macOS 15 Sequoia or newer.
+            Choose your operating system below for official release downloads, public SHA-256 file verification checksums, and 1-click copyable terminal &amp; source-build commands.
           </p>
         </div>
 
-        <div class="download-grid">
-          <div class="dl-card featured">
-            <div class="dl-top">
-              <h3>macOS Universal Lite DMG</h3>
-              <span id="liteSize" class="dl-size">13.9 MB · Universal</span>
+        <div class="platform-switch" role="tablist" aria-label="Choose download platform">
+          <button class="platform-pill active" type="button" data-platform-group="download" data-platform="macos">macOS 15+ (DMG &amp; Homebrew)</button>
+          <button class="platform-pill" type="button" data-platform-group="download" data-platform="windows">Windows 11 (ZIP &amp; PowerShell)</button>
+        </div>
+
+        <!-- MACOS DOWNLOAD PANE -->
+        <div id="download-macos" class="platform-pane active">
+          <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
+            No upper Apple Silicon chip limit — NEELx compiles as a native Universal Binary (<code>arm64</code> + <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel Macs running macOS 15 Sequoia or newer.
+          </p>
+
+          <div class="download-grid">
+            <div class="dl-card featured">
+              <div class="dl-top">
+                <h3>macOS Universal Lite DMG</h3>
+                <span id="liteSize" class="dl-size">13.9 MB · Universal</span>
+              </div>
+              <p class="dl-copy">
+                Recommended fast installer. Includes the complete NEELx app and downloads Apple's 3D Neural Depth model in 1 click inside Settings (~3 seconds on broadband, zero Xcode needed).
+              </p>
+              <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal-lite.dmg">
+                Download macOS Lite DMG
+              </a>
+              <div class="sha-row">
+                <span class="sha-text">File SHA-256: <span id="liteSha">6866b7d0bdc4f4bd58461b0b8b022d0b18736dbc2fb17087a94949dd1c5d4c1e</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#liteSha">Copy</button>
+              </div>
             </div>
-            <p class="dl-copy">
-              Recommended fast installer. Includes the complete NEELx app and downloads Apple's 3D Neural Depth model in 1 click inside Settings (~3 seconds on broadband, zero Xcode needed).
-            </p>
-            <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal-lite.dmg">
-              Download Lite DMG
-            </a>
-            <div class="sha-row">
-              <span class="sha-text">SHA-256: <span id="liteSha">6866b7d0bdc4f4bd58461b0b8b022d0b18736dbc2fb17087a94949dd1c5d4c1e</span></span>
-              <button class="btn-copy" type="button" data-copy-target="#liteSha">Copy</button>
+
+            <div class="dl-card">
+              <div class="dl-top">
+                <h3>macOS Universal Full Offline DMG</h3>
+                <span id="fullSize" class="dl-size">58.6 MB · Universal</span>
+              </div>
+              <p class="dl-copy">
+                Complete all-in-one offline installer with Apple's compiled <code>DepthAnythingV2SmallF16</code> Core ML 3D depth engine already bundled inside <code>NEELx.app</code>.
+              </p>
+              <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal.dmg">
+                Download macOS Full DMG
+              </a>
+              <div class="sha-row">
+                <span class="sha-text">File SHA-256: <span id="fullSha">467cdb90c850da520d957eb7643f9e12eb64354bf3dd74f53dd651304d13d958</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#fullSha">Copy</button>
+              </div>
             </div>
           </div>
 
-          <div class="dl-card">
-            <div class="dl-top">
-              <h3>macOS Universal Full Offline DMG</h3>
-              <span id="fullSize" class="dl-size">58.6 MB · Universal</span>
+          <div class="sha-help">
+            <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the installer file (not a private key). You can run <code>shasum -a 256 NEELx-v2.0.0-beta.5-universal-lite.dmg</code> in Terminal to verify your download matches byte-for-byte.
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Install via Homebrew Cask (auto-clears Gatekeeper &amp; preserves your free local Apple Development cert)</span>
+              <code id="cmdBrew" class="copy-cmd">brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx &amp;&amp; brew install --cask neelx</code>
             </div>
-            <p class="dl-copy">
-              Complete all-in-one offline installer with Apple's compiled <code>DepthAnythingV2SmallF16</code> Core ML 3D depth engine already bundled inside <code>NEELx.app</code>.
-            </p>
-            <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal.dmg">
-              Download Full Offline DMG
-            </a>
-            <div class="sha-row">
-              <span class="sha-text">SHA-256: <span id="fullSha">467cdb90c850da520d957eb7643f9e12eb64354bf3dd74f53dd651304d13d958</span></span>
-              <button class="btn-copy" type="button" data-copy-target="#fullSha">Copy</button>
+            <button class="btn-copy" type="button" data-copy-target="#cmdBrew">Copy</button>
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Or build directly from pure Swift source on your Mac</span>
+              <code id="cmdSource" class="copy-cmd">git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install</code>
             </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdSource">Copy</button>
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Optional: verify downloaded DMG integrity via SHA-256</span>
+              <code id="cmdMacSha" class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdMacSha">Copy</button>
           </div>
         </div>
 
-        <!-- 1-Click Copy Terminal Commands -->
-        <div class="copy-block">
-          <div class="copy-block-content">
-            <span class="copy-label"># Install via Homebrew Cask (auto-clears Gatekeeper &amp; uses your local cert if available)</span>
-            <code id="cmdBrew" class="copy-cmd">brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx &amp;&amp; brew install --cask neelx</code>
-          </div>
-          <button class="btn-copy" type="button" data-copy-target="#cmdBrew">Copy</button>
-        </div>
+        <!-- WINDOWS 11 DOWNLOAD PANE -->
+        <div id="download-windows" class="platform-pane">
+          <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
+            Built for <strong>Windows 11 (22H2 or newer, x64 &amp; ARM64)</strong> with any built-in or USB webcam — <strong>no Windows Hello IR camera required</strong>. Uses DirectX 12 GPU / Copilot+ NPU via ONNX DirectML with automatic CPU fallback.
+          </p>
 
-        <div class="copy-block">
-          <div class="copy-block-content">
-            <span class="copy-label"># Or build directly from pure Swift source on your Mac</span>
-            <code id="cmdSource" class="copy-cmd">git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install</code>
-          </div>
-          <button class="btn-copy" type="button" data-copy-target="#cmdSource">Copy</button>
-        </div>
+          <div class="download-grid">
+            <div class="dl-card featured-win">
+              <div class="dl-top">
+                <h3>Windows 11 Portable ZIP (Standalone)</h3>
+                <span id="winPortableSize" class="dl-size win-size">Standalone · Win x64</span>
+              </div>
+              <p class="dl-copy">
+                Recommended zero-dependency package. Self-contained <code>.NET 8</code> runtime + DirectML ONNX engine bundled inside — just unzip and double-click <code>NEELx.Windows.exe</code>.
+              </p>
+              <a id="btnDownloadWinPortable" class="btn btn-win" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip">
+                Download Windows Portable ZIP
+              </a>
+              <div class="sha-row">
+                <span class="sha-text">File SHA-256: <span id="winPortableSha">updating…</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#winPortableSha">Copy</button>
+              </div>
+            </div>
 
-        <!-- Windows Edition Showcase (Distinct Fluent Prism Horizon Design) -->
-        <div class="windows-banner">
-          <div>
-            <span class="feature-tag">NEELx for Windows 11 · Source &amp; CI Ready</span>
-            <h3 style="margin: 6px 0 8px; font-size: 20px;">Fluent Prism Horizon — Designed Distinctly for Windows</h3>
-            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px;">
-              Built for Windows 11 laptops &amp; desktops with standard webcams (no IR camera needed). Instead of Mac's iPhone-style notch ring, NEELx for Windows features its own original <strong>Fluent Mica Prism Horizon</strong> diamond-aperture wave, ONNX DirectML GPU/NPU 3D Depth, Windows DPAPI encryption, and a Windows Credential Provider architecture.
-            </p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <a class="btn btn-secondary btn-sm" href="https://github.com/ChandranilDas/NEELx/tree/main/windows" target="_blank" rel="noopener">Explore Windows Source</a>
-              <a class="btn btn-secondary btn-sm" href="https://github.com/ChandranilDas/NEELx/actions" target="_blank" rel="noopener">Windows CI Builds</a>
+            <div class="dl-card">
+              <div class="dl-top">
+                <h3>Windows 11 Lite ZIP</h3>
+                <span id="winLiteSize" class="dl-size win-size">Lightweight · Win x64</span>
+              </div>
+              <p class="dl-copy">
+                Ultra-fast lightweight download for Windows 11 PCs that already have the <strong>.NET 8 Desktop Runtime</strong> installed. Includes the full Fluent Prism Horizon WPF app &amp; DirectML engine.
+              </p>
+              <a id="btnDownloadWinLite" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-lite.zip">
+                Download Windows Lite ZIP
+              </a>
+              <div class="sha-row">
+                <span class="sha-text">File SHA-256: <span id="winLiteSha">updating…</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#winLiteSha">Copy</button>
+              </div>
             </div>
           </div>
-          <canvas id="windowsPrismCanvas" width="420" height="150"></canvas>
+
+          <div class="sha-help">
+            <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the ZIP package (not a secret key). Run <code>Get-FileHash NEELx-v2.0.0-beta.5-windows-x64-portable.zip -Algorithm SHA256</code> in PowerShell to verify your download.
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Quick PowerShell download, extract &amp; launch (Windows 11)</span>
+              <code id="cmdWinQuick" class="copy-cmd">Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"; Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force; Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdWinQuick">Copy</button>
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Or build &amp; run directly from .NET 8 source on Windows 11</span>
+              <code id="cmdWinSource" class="copy-cmd">git clone https://github.com/ChandranilDas/NEELx.git; cd NEELx\windows; dotnet build NEELx.Windows.sln -c Release; dotnet run --project src\NEELx.App\NEELx.App.csproj -c Release</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdWinSource">Copy</button>
+          </div>
+
+          <div class="copy-block">
+            <div class="copy-block-content">
+              <span class="copy-label"># Optional: verify downloaded Windows ZIP integrity via SHA-256</span>
+              <code id="cmdWinSha" class="copy-cmd">Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdWinSha">Copy</button>
+          </div>
+
+          <div class="windows-banner">
+            <div>
+              <span class="feature-tag win-tag">WinLogon Lock Screen Architecture</span>
+              <h3 style="margin: 6px 0 8px; font-size: 19px;">Native Windows 11 Credential Provider</h3>
+              <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px;">
+                Want native Lock Screen tile unlock? The repository includes <code>NEELxCredentialProvider.h</code> under <code>windows/src/NEELx.CredentialProvider</code>, pairing with <code>NEELx.Windows.exe</code> over an ACL-protected named pipe (<code>\\.\pipe\NEELxBiometricUnlock</code>).
+              </p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn btn-secondary btn-sm" href="https://github.com/ChandranilDas/NEELx/tree/main/windows" target="_blank" rel="noopener">Browse Windows Source</a>
+                <a class="btn btn-secondary btn-sm" href="https://github.com/ChandranilDas/NEELx/blob/main/windows/README.md" target="_blank" rel="noopener">Windows Setup Guide</a>
+                <a class="btn btn-secondary btn-sm" href="https://github.com/ChandranilDas/NEELx/actions/workflows/build-windows.yml" target="_blank" rel="noopener">Windows CI Builds</a>
+              </div>
+            </div>
+            <canvas id="windowsPrismCanvas" width="420" height="150"></canvas>
+          </div>
         </div>
       </section>
 
@@ -427,7 +817,7 @@
           <div class="eyebrow">Direct to Developer · Screenshot Attachments Supported</div>
           <h2>Share Beta Feedback.</h2>
           <p class="lead">
-            Report unlock latency, backlit/dark-room results, system prompt tests, or feature ideas — with up to 3 screenshots attached directly. For automatic full Mac chip, camera, and ANE diagnostics, send feedback from inside NEELx via <strong>Menu Bar → Send Feedback…</strong>.
+            Report unlock latency, backlit/dark-room results, Windows DirectML tests, or feature ideas — with up to 3 screenshots attached directly. For automatic full Mac chip, camera, and ANE diagnostics, send feedback from inside NEELx via <strong>Menu Bar → Send Feedback…</strong>.
           </p>
         </div>
 
@@ -435,6 +825,7 @@
           <div class="form-grid">
             <select id="fbCategory" aria-label="Feedback category">
               <option value="Unlock Experience">Unlock Experience</option>
+              <option value="Windows 11 Edition">Windows 11 Edition</option>
               <option value="Bug Report">Bug Report</option>
               <option value="Feature Idea">Feature Idea</option>
             </select>
@@ -446,14 +837,14 @@
               <option value="1/5">★☆☆☆☆ · 1/5 — Didn't work</option>
             </select>
           </div>
-          <textarea id="fbMessage" placeholder="Tell us how NEELx performed on your Mac or Windows machine, lighting conditions, or ideas to make it even better…"></textarea>
+          <textarea id="fbMessage" placeholder="Tell us how NEELx performed on your Mac or Windows 11 machine, lighting conditions, or ideas to make it even better…"></textarea>
 
           <!-- Screenshot Uploader -->
           <div id="fbDropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="Attach up to 3 screenshots">
             <input id="fbFiles" type="file" accept="image/png,image/jpeg,image/webp,image/heic" multiple hidden />
             <div class="upload-copy">
               <span class="upload-title">Attach screenshots (optional · up to 3 images)</span>
-              <span class="upload-sub">Click to browse, drag &amp; drop, or press <code>Cmd+V</code> to paste</span>
+              <span class="upload-sub">Click to browse, drag &amp; drop, or press <code>Cmd+V</code> / <code>Ctrl+V</code> to paste</span>
             </div>
             <button id="btnPickScreenshots" type="button" class="btn btn-secondary btn-sm">Add Images</button>
           </div>
@@ -471,7 +862,7 @@
                 <button type="button" data-email-client="outlook">Outlook (Web Compose)</button>
                 <button type="button" data-email-client="yahoo">Yahoo Mail (Web Compose)</button>
                 <div class="email-menu-sep"></div>
-                <button type="button" data-email-client="native">Default Mail App (Apple Mail / Spark / Outlook)</button>
+                <button type="button" data-email-client="native">Default Mail App (Apple Mail / Outlook / Spark)</button>
                 <button type="button" data-email-client="copy">Copy Email Address &amp; Draft</button>
               </div>
             </div>

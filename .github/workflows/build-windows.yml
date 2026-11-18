@@ -12,9 +12,14 @@ on:
       - 'windows/**'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: v2.0.0-beta.5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,9 +35,57 @@ jobs:
       - name: Build NEELx for Windows 11 (Release)
         run: dotnet build windows/NEELx.Windows.sln --configuration Release --no-restore
 
+      - name: Publish Windows 11 Lite & Portable Packages
+        shell: pwsh
+        run: |
+          $tag = $env:RELEASE_TAG
+          $outDir = "dist-windows"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+          # 1. Lite package (requires .NET 8 Desktop Runtime — tiny fast download)
+          dotnet publish windows/src/NEELx.App/NEELx.App.csproj `
+            -c Release -r win-x64 --self-contained false `
+            -o "$outDir/lite"
+          Copy-Item windows/README.md "$outDir/lite/README.md"
+          Compress-Archive -Path "$outDir/lite/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-lite.zip" -Force
+
+          # 2. Standalone Portable package (self-contained — zero prerequisites, unzip & run)
+          dotnet publish windows/src/NEELx.App/NEELx.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o "$outDir/portable"
+          Copy-Item windows/README.md "$outDir/portable/README.md"
+          Compress-Archive -Path "$outDir/portable/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-portable.zip" -Force
+
+          $liteHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64-lite.zip" -Algorithm SHA256).Hash.ToLower()
+          $portHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64-portable.zip" -Algorithm SHA256).Hash.ToLower()
+          $liteBytes = (Get-Item "$outDir/NEELx-$tag-windows-x64-lite.zip").Length
+          $portBytes = (Get-Item "$outDir/NEELx-$tag-windows-x64-portable.zip").Length
+
+          @"
+          $liteHash  NEELx-$tag-windows-x64-lite.zip
+          $portHash  NEELx-$tag-windows-x64-portable.zip
+          "@ | Set-Content -Path "$outDir/NEELx-$tag-windows-SHA256SUMS.txt" -Encoding UTF8
+
+          Write-Host "WIN_LITE_SHA256=$liteHash SIZE=$liteBytes"
+          Write-Host "WIN_PORTABLE_SHA256=$portHash SIZE=$portBytes"
+
+      - name: Upload Windows packages to GitHub Release (on main push)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          gh release upload $tag `
+            "dist-windows/NEELx-$tag-windows-x64-lite.zip" `
+            "dist-windows/NEELx-$tag-windows-x64-portable.zip" `
+            "dist-windows/NEELx-$tag-windows-SHA256SUMS.txt" `
+            --clobber
+
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NEELx-Windows-11-Release
-          path: windows/src/NEELx.App/bin/Release/net8.0-windows/
+          name: NEELx-Windows-11-Packages
+          path: dist-windows/*.zip
           retention-days: 14
