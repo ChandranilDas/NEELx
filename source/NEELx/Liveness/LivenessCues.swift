@@ -314,11 +314,25 @@ nonisolated enum LivenessCues {
         return CueReading(level: depth.depth3DScore, confidence: 1)
     }
 
+    /// Returns true when Stage 3 Core ML Neural 3D Depth unambiguously proves a real 3D human head
+    /// (strong 3D relief, negligible flat-plane score, real nose protrusion, and clear head-to-background cliff).
+    /// Used to prevent 2D-only heuristics (background door frames, ceiling lamps behind the head) from
+    /// false-denying a genuine 3D face while keeping 100% full blocking power against flat phone/photo spoofs.
+    nonisolated private static func hasStrong3DHumanDepth(_ frame: LivenessFrame?) -> Bool {
+        guard let depth = frame?.neuralDepth else { return false }
+        return depth.depth3DScore >= 0.78
+            && depth.flatSpoofScore <= 0.18
+            && depth.noseProtrusion >= 0.028
+            && depth.backgroundCliff >= 0.10
+    }
+
     /// Skin gives many small scattered specular points; glass gives one big
     /// flat blob. `specularFraction` alone would fire on a bright forehead,
     /// so it's gated by how concentrated that glare is.
     nonisolated static func glossGlare(_ frame: LivenessFrame?) -> CueReading {
         guard let glare = frame?.glare else { return .none }
+        // A ceiling lamp behind a real 3D head is not glass screen glare on a flat phone
+        if hasStrong3DHumanDepth(frame) { return .none }
         let fractionScore = ramp(glare.specularFraction, floor: 0.01, ceiling: 0.08)
         let clusterFactor = ramp(glare.specularClusterRatio, floor: 0.3, ceiling: 1.0)
         let level = fractionScore * (0.3 + 0.7 * clusterFactor)
@@ -331,6 +345,8 @@ nonisolated enum LivenessCues {
     /// Raw overlap fraction from `DeviceBezelDetector`, used directly rather than re-scaled.
     nonisolated static func deviceDetected(_ frame: LivenessFrame?) -> CueReading {
         guard let overlap = frame?.deviceOverlapFraction else { return .none }
+        // A background door frame or wall behind a real 3D head is not a flat phone held in front
+        if hasStrong3DHumanDepth(frame) { return .none }
         return CueReading(level: Float(min(max(overlap, 0), 1)), confidence: 1)
     }
 

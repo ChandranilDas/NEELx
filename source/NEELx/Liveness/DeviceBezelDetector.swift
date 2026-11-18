@@ -45,13 +45,24 @@ nonisolated enum DeviceBezelDetector {
         else { return .none }
 
         let imageSize = CGSize(width: image.width, height: image.height)
-        let candidates = results.map { FaceDetector.convertToImageSpace($0.boundingBox, imageSize: imageSize) }
-        // Largest candidate is assumed to be the device itself, not a smaller qualifying detail.
+        let imageArea = max(1, imageSize.width * imageSize.height)
+        let faceArea = faceBoundingBox.width * faceBoundingBox.height
+        let candidates = results
+            .map { FaceDetector.convertToImageSpace($0.boundingBox, imageSize: imageSize) }
+            .filter { rect in
+                let rectArea = rect.width * rect.height
+                // Exclude room-scale architectural rectangles (door frames, walls, windows)
+                // where the rectangle covers most of the camera frame and dwarfs the face.
+                if rectArea / imageArea > 0.68 && (faceArea / max(1, rectArea)) < 0.08 {
+                    return false
+                }
+                return true
+            }
+        // Largest plausible device candidate overlapping the face
         guard let largest = candidates.max(by: { $0.width * $0.height < $1.width * $1.height }) else {
             return .none
         }
 
-        let faceArea = faceBoundingBox.width * faceBoundingBox.height
         guard faceArea > 0 else { return DeviceBezelObservation(rectangle: largest, faceOverlapFraction: nil) }
         let intersection = largest.intersection(faceBoundingBox)
         let overlap = (intersection.width * intersection.height) / faceArea
