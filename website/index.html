@@ -360,19 +360,12 @@
               <span class="feature-tag win-tag">Windows 11 Roadmap</span>
               <h3 style="margin-top: 6px;">Windows 11 Milestones</h3>
               <ul class="parity-list">
-                <li><span class="parity-check win">[x]</span> Bespoke Fluent Prism Horizon Top-Edge Unlock Overlay (WPF
-                  Dark Mica)</li>
-                <li><span class="parity-check win">[x]</span> ONNX Runtime DirectML GPU/NPU 3D Depth + Multi-Frame
-                  Temporal Gate</li>
-                <li><span class="parity-check win">[x]</span> Backlit Window HDR Shadow Recovery + 2D Spoof Blocking
-                  Self-Check</li>
-                <li><span class="parity-check win">[x]</span> Windows DPAPI Offline Vault + WinLogon
-                  <code>ICredentialProvider</code> Contract
-                </li>
-                <li><span class="parity-check win">[x]</span> Automated Windows CI Release Builds (Portable &amp; Lite
-                  ZIPs)</li>
-                <li><span class="parity-check next">[ ]</span> Signed MSIX Installer &amp; 1-Click WinLogon COM
-                  Auto-Registration</li>
+                <li><span class="parity-check win">[x]</span> <span>Bespoke Fluent Prism Core Unlock Overlay (WPF Dark Mica)</span></li>
+                <li><span class="parity-check win">[x]</span> <span>ONNX Runtime DirectML GPU/NPU 3D Depth + Multi-Frame Temporal Gate</span></li>
+                <li><span class="parity-check win">[x]</span> <span>Backlit Window HDR Shadow Recovery + 2D Spoof Blocking Self-Check</span></li>
+                <li><span class="parity-check win">[x]</span> <span>Windows DPAPI Offline Vault + WinLogon <code>ICredentialProvider</code> Contract</span></li>
+                <li><span class="parity-check win">[x]</span> <span>Automated Windows CI Release Builds (Portable &amp; Lite ZIPs)</span></li>
+                <li><span class="parity-check win">[x]</span> <span>1-Click SHA-256 Verified PowerShell Installer &amp; Upgrade-Safe DPAPI Vault</span></li>
               </ul>
             </div>
           </div>
@@ -924,9 +917,9 @@
 
           <div class="copy-block">
             <div class="copy-block-content">
-              <span class="copy-label"># Quick PowerShell download, extract &amp; launch (Windows 11)</span>
+              <span class="copy-label"># 1-Click PowerShell Installer (verifies SHA-256, adds Start Menu shortcut &amp; preserves your DPAPI vault on upgrades)</span>
               <code id="cmdWinQuick"
-                class="copy-cmd">Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"; Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force; Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"</code>
+                class="copy-cmd">irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex</code>
             </div>
             <button class="btn-copy" type="button" data-copy-target="#cmdWinQuick">Copy</button>
           </div>

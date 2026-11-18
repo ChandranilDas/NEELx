@@ -87,12 +87,12 @@ shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg
 - Any built-in or USB RGB webcam (720p+ recommended, **no Windows Hello IR camera required**)
 - Any DirectX 12 GPU or Windows NPU for DirectML acceleration (CPU fallback built in)
 
-#### Option 1: Quick PowerShell Download, Extract & Launch (Standalone Portable)
+#### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Upgrade-Safe)
+Verifies the official SHA-256 checksum automatically, installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin required), creates a Start Menu shortcut with the official NEELx logo, and preserves 100% of your DPAPI biometric vault in `%LOCALAPPDATA%\NEELx` on every upgrade:
 ```powershell
-Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"
-Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force
-Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"
+irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex
 ```
+*(Clean rollback / uninstaller preserving your vault by default: `irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex`)*
 
 #### Option 2: Download Windows ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
@@ -165,7 +165,7 @@ Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Alg
 - [x] Windows DPAPI Offline Biometric Vault (`DataProtectionScope.CurrentUser`)
 - [x] WinLogon `ICredentialProvider` COM Interface + ACL Named-Pipe Bridge
 - [x] Automated Windows CI Release Packages (Standalone Portable & Lite ZIPs)
-- [ ] Signed MSIX Installer & 1-Click WinLogon COM Auto-Registration
+- [x] 1-Click SHA-256 Verified PowerShell Installer (`install.ps1` / `uninstall.ps1`) & Upgrade-Safe DPAPI Vault
 
 ---
 

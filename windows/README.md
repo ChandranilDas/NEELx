@@ -55,11 +55,14 @@ You can preview all four live states immediately after launching `NEELx.Windows.
 - Any built-in or USB RGB webcam (720p+ recommended)
 - DirectX 12 GPU or Windows NPU (CPU fallback supported)
 
-### Option 1: One-Line PowerShell Download & Launch (Standalone Portable — Zero Prerequisites)
+### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Upgrade-Safe)
+Verifies the official SHA-256 checksum before extracting, installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin rights required), creates a Start Menu shortcut, and preserves 100% of your DPAPI biometric vault & ONNX models in `%LOCALAPPDATA%\NEELx` across upgrades:
 ```powershell
-Invoke-WebRequest "https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -OutFile "$env:TEMP\NEELx.zip"
-Expand-Archive "$env:TEMP\NEELx.zip" "$env:LOCALAPPDATA\NEELx-App" -Force
-Start-Process "$env:LOCALAPPDATA\NEELx-App\NEELx.Windows.exe"
+irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex
+```
+To uninstall cleanly (keeping your DPAPI vault unless `-WipeVault` is passed):
+```powershell
+irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex
 ```
 
 ### Option 2: Verify Downloaded ZIP Checksum (Public SHA-256)
@@ -93,4 +96,4 @@ The `src/NEELx.CredentialProvider` directory defines the native C++ WinLogon `IC
 - [x] Windows DPAPI Offline Vault (`DataProtectionScope.CurrentUser`)
 - [x] WinLogon `ICredentialProvider` COM Interface + ACL Named-Pipe Bridge
 - [x] Automated Windows CI Release Builds (Portable Standalone & Lite ZIPs)
-- [ ] Signed MSIX Installer & 1-Click WinLogon COM Auto-Registration
+- [x] 1-Click SHA-256 Verified PowerShell Installer (`install.ps1` / `uninstall.ps1`) & Upgrade-Safe DPAPI Vault
