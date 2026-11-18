@@ -431,7 +431,10 @@ function initFeedbackForm() {
     statusEl.style.color = "#38bdf8";
 
     try {
-      const res = await fetch("/api/feedback", {
+      const apiEndpoint = window.location.hostname.endsWith(".workers.dev")
+        ? "/api/feedback"
+        : "https://neelx.chandranildas925.workers.dev/api/feedback";
+      const res = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(d),

@@ -15,9 +15,8 @@ enum NEELxConfig {
     /// Direct email address for testers without a GitHub account.
     static let feedbackEmail = "chandranildas925@gmail.com"
 
-    /// Optional HTTPS webhook URL (e.g., Formspree `https://formspree.io/f/xxxxxx`, Discord webhook, or custom endpoint).
-    /// When set, testers can submit feedback directly inside NEELx with 1 click and zero browser/GitHub account!
-    static let feedbackWebhookURL = ""
+    /// Live Cloudflare Worker + Brevo endpoint so testers can submit feedback directly inside NEELx with 1 click and zero browser/GitHub account.
+    static let feedbackWebhookURL = "https://neelx.chandranildas925.workers.dev/api/feedback"
 
     /// Official NEELx website hosted free on GitHub Pages (and Cloudflare Pages mirror).
     static let officialWebsiteURL = URL(string: "https://chandranildas.github.io/NEELx/")
