@@ -195,6 +195,152 @@ async function syncLatestRelease() {
 }
 
 // ---------------------------------------------------------------------------
+// Shared Sculpted 3D Human Face Renderer (used across macOS, Windows & Depth Lab)
+// ---------------------------------------------------------------------------
+function renderSculptedHumanFace(ctx, opts) {
+  const {
+    cx,
+    cy,
+    scale = 1,
+    yaw = 0,
+    pitch = 0,
+    blinkPhase = 0,
+    strokeMain = "rgba(245, 245, 247, 0.90)",
+    strokeSoft = "rgba(255, 255, 255, 0.26)",
+    fillTop = "rgba(235, 238, 245, 0.22)",
+    fillMid = "rgba(120, 126, 140, 0.12)",
+    fillEdge = "rgba(20, 24, 34, 0.45)",
+    pupilColor = "#f5f5f7",
+    showShoulders = true,
+    showMeridians = true,
+    smileBoost = 0,
+    lineWidthScale = 1,
+    shadowGlow = null,
+  } = opts;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  if (shadowGlow) {
+    ctx.shadowColor = shadowGlow;
+    ctx.shadowBlur = 10;
+  }
+
+  // 3D parallax offsets (nose shifts farthest, jaw/head shifts least)
+  const headX = yaw * 6.5;
+  const headY = pitch * 5.5;
+  const midX = yaw * 12;
+  const midY = pitch * 9;
+  const noseX = yaw * 18;
+  const noseY = pitch * 13;
+
+  // Neck & shoulders silhouette
+  if (showShoulders) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.strokeStyle = strokeSoft;
+    ctx.lineWidth = 1.1 * lineWidthScale;
+    ctx.beginPath();
+    ctx.ellipse(headX * 0.45, 56 + headY * 0.25, 38, 18, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Sculpted 3D head contour (forehead -> cheekbones -> tapered jaw -> chin)
+  const faceGrad = ctx.createRadialGradient(noseX - 6, noseY - 10, 4, headX, headY, 44);
+  faceGrad.addColorStop(0, fillTop);
+  faceGrad.addColorStop(0.55, fillMid);
+  faceGrad.addColorStop(1, fillEdge);
+
+  ctx.fillStyle = faceGrad;
+  ctx.strokeStyle = strokeMain;
+  ctx.lineWidth = 1.65 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(headX, headY - 37);
+  ctx.bezierCurveTo(headX + 26, headY - 37, headX + 31, headY - 13, headX + 27, headY + 6);
+  ctx.bezierCurveTo(headX + 24, headY + 23, headX + 13, headY + 37, headX, headY + 40);
+  ctx.bezierCurveTo(headX - 13, headY + 37, headX - 24, headY + 23, headX - 27, headY + 6);
+  ctx.bezierCurveTo(headX - 31, headY - 13, headX - 26, headY - 37, headX, headY - 37);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Subtle 3D topographic contour meridians
+  if (showMeridians) {
+    ctx.strokeStyle = strokeSoft;
+    ctx.lineWidth = 0.9 * lineWidthScale;
+    ctx.beginPath();
+    ctx.moveTo(headX, headY - 36);
+    ctx.quadraticCurveTo(noseX, noseY, headX, headY + 39);
+    ctx.moveTo(headX - 26, headY - 6);
+    ctx.quadraticCurveTo(midX, midY - 2, headX + 26, headY - 6);
+    ctx.moveTo(headX - 23, headY + 12);
+    ctx.quadraticCurveTo(midX, midY + 16, headX + 23, headY + 12);
+    ctx.stroke();
+  }
+
+  // Sculpted eyebrows
+  ctx.strokeStyle = strokeMain;
+  ctx.lineWidth = 1.9 * lineWidthScale;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(midX - 18.5, midY - 13.5);
+  ctx.quadraticCurveTo(midX - 11.5, midY - 17.5, midX - 4, midY - 13.5);
+  ctx.moveTo(midX + 4, midY - 13.5);
+  ctx.quadraticCurveTo(midX + 11.5, midY - 17.5, midX + 18.5, midY - 13.5);
+  ctx.stroke();
+
+  // Expressive eyes (periodic blink + pupil tracking)
+  const eyeOpen = blinkPhase > 0.94 ? 0.16 : 1.0;
+  for (const side of [-1, 1]) {
+    const ex = midX + side * 11.8;
+    const ey = midY - 6;
+    ctx.fillStyle = "rgba(8, 10, 14, 0.72)";
+    ctx.strokeStyle = strokeMain;
+    ctx.lineWidth = 1.3 * lineWidthScale;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, 5.6, 2.8 * eyeOpen, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (eyeOpen > 0.5) {
+      ctx.fillStyle = pupilColor;
+      ctx.beginPath();
+      ctx.arc(ex + yaw * 1.4, ey + pitch * 0.9, 1.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Protruding 3D nose bridge + tip + wings
+  ctx.strokeStyle = strokeMain;
+  ctx.lineWidth = 1.55 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(midX, midY - 11);
+  ctx.quadraticCurveTo(noseX, noseY - 1, noseX, noseY + 7.5);
+  ctx.quadraticCurveTo(noseX - 4.2, noseY + 10.2, noseX - 5.8, noseY + 8.6);
+  ctx.moveTo(noseX, noseY + 7.5);
+  ctx.quadraticCurveTo(noseX + 4.2, noseY + 10.2, noseX + 5.8, noseY + 8.6);
+  ctx.stroke();
+
+  // Sculpted upper & lower lips
+  ctx.strokeStyle = strokeMain;
+  ctx.lineWidth = 1.6 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(midX - 9.5, midY + 18.5);
+  ctx.quadraticCurveTo(midX, midY + 21 + smileBoost, midX + 9.5, midY + 18.5);
+  ctx.stroke();
+
+  ctx.strokeStyle = strokeSoft;
+  ctx.lineWidth = 1.15 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(midX - 5.5, midY + 22);
+  ctx.quadraticCurveTo(midX, midY + 24.2 + smileBoost * 0.5, midX + 5.5, midY + 22);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------------------
 // 4. Interactive 80-Tick 360° Notch Ring with Proper Sculpted 3D Human Face
 // ---------------------------------------------------------------------------
 function initEnrollmentSimulator() {
@@ -652,14 +798,18 @@ function initDepthLab() {
   const canvas = document.getElementById("depthHeatmapCanvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const W = 420;
-  const H = 280;
+  const W = 460;
+  const H = 310;
   canvas.width = W;
   canvas.height = H;
 
   const btnReal = document.getElementById("btnModeReal");
   const btnSpoof = document.getElementById("btnModeSpoof");
+  const btnToggleScan = document.getElementById("btnToggleDepthScan");
   const verdictEl = document.getElementById("depthVerdict");
+
+  const cx = W * 0.5;
+  const cy = H * 0.41;
 
   function setBar(id, valText, pct, color) {
     const vEl = document.getElementById(`${id}Val`);
@@ -671,52 +821,92 @@ function initDepthLab() {
     }
   }
 
-  function renderDepth(mode) {
-    const img = ctx.createImageData(W, H);
+  // Pre-compute high-resolution anatomical 3D depth maps & offscreen base images for silky 60 FPS animated scan
+  function buildDepthScene(mode) {
+    const off = document.createElement("canvas");
+    off.width = W;
+    off.height = H;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(W, H);
     const data = img.data;
-    const cx = W * 0.5;
-    const cy = H * 0.45;
-    const crossSection = [];
+    const grid = new Float32Array(W * H);
 
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        let d = 0.08 + 0.04 * (y / H);
+        let d = 0.06 + 0.045 * (y / H);
 
         if (mode === "real") {
-          const nx = (x - cx) / 68;
-          const ny = (y - cy) / 86;
-          const r2 = nx * nx + ny * ny;
-
-          const sx = (x - cx) / 145;
-          const sy = (y - H * 0.96) / 62;
+          // Shoulders & neck
+          const sx = (x - cx) / 142;
+          const sy = (y - (H - 36)) / 56;
           if (sx * sx + sy * sy < 1) {
             const sh = Math.sqrt(Math.max(0, 1 - sx * sx - sy * sy));
-            d = Math.max(d, 0.44 + sh * 0.16);
+            d = Math.max(d, 0.34 + sh * 0.16);
           }
+          const neckX = (x - cx) / 28;
+          const neckY = (y - (cy + 86)) / 36;
+          if (Math.abs(neckX) < 1 && neckY > -0.7 && neckY < 1.1) {
+            d = Math.max(d, 0.42 + Math.sqrt(Math.max(0, 1 - neckX * neckX)) * 0.14);
+          }
+
+          // Anatomically tapered human head shape (wider at temples/cheeks, tapered jawline/chin)
+          const dy = y - cy;
+          const halfW = dy < 0 ? 64 : Math.max(22, 64 - (dy / 88) * 26);
+          const nx = (x - cx) / halfW;
+          const ny = dy / 86;
+          const r2 = nx * nx + ny * ny;
 
           if (r2 < 1.0) {
             const dome = Math.sqrt(1 - r2);
-            let faceD = 0.54 + dome * 0.28;
-            const el = ((x - (cx - 24)) / 14) ** 2 + ((y - (cy - 12)) / 10) ** 2;
-            const er = ((x - (cx + 24)) / 14) ** 2 + ((y - (cy - 12)) / 10) ** 2;
-            faceD -= Math.exp(-el * 2.2) * 0.065;
-            faceD -= Math.exp(-er * 2.2) * 0.065;
-            const noseTip = ((x - cx) / 13) ** 2 + ((y - (cy + 8)) / 22) ** 2;
-            faceD += Math.exp(-noseTip * 1.9) * 0.175;
-            d = Math.max(d, faceD);
+            let faceD = 0.50 + dome * 0.27;
+
+            // Forehead / brow ridge slight prominence
+            const brow = ((x - cx) / 44) ** 2 + ((y - (cy - 28)) / 10) ** 2;
+            faceD += Math.exp(-brow * 2.2) * 0.045;
+
+            // Deep twin recessed eye sockets (creates unmistakable twin valleys in z(x)!)
+            const el = ((x - (cx - 23)) / 15) ** 2 + ((y - (cy - 12)) / 10.5) ** 2;
+            const er = ((x - (cx + 23)) / 15) ** 2 + ((y - (cy - 12)) / 10.5) ** 2;
+            faceD -= Math.exp(-el * 2.1) * 0.115;
+            faceD -= Math.exp(-er * 2.1) * 0.115;
+
+            // Sculpted cheekbone prominences
+            const cl = ((x - (cx - 28)) / 18) ** 2 + ((y - (cy + 10)) / 14) ** 2;
+            const cr = ((x - (cx + 28)) / 18) ** 2 + ((y - (cy + 10)) / 14) ** 2;
+            faceD += Math.exp(-cl * 2.0) * 0.045;
+            faceD += Math.exp(-cr * 2.0) * 0.045;
+
+            // Sharp protruding 3D nose bridge + nose tip (peaks brightest in Inferno!)
+            const noseBridge = ((x - cx) / 9) ** 2 + ((y - (cy - 2)) / 24) ** 2;
+            const noseTip = ((x - cx) / 11.5) ** 2 + ((y - (cy + 13)) / 11) ** 2;
+            faceD += Math.exp(-noseBridge * 2.1) * 0.135;
+            faceD += Math.exp(-noseTip * 2.2) * 0.195;
+
+            // Sculpted lips & chin relief
+            const lips = ((x - cx) / 21) ** 2 + ((y - (cy + 36)) / 8.5) ** 2;
+            const chin = ((x - cx) / 18) ** 2 + ((y - (cy + 58)) / 13) ** 2;
+            faceD += Math.exp(-lips * 2.3) * 0.055;
+            faceD += Math.exp(-chin * 2.0) * 0.048;
+
+            d = Math.max(d, Math.min(0.99, faceD));
           }
         } else {
-          const rx = Math.abs(x - cx);
-          const ry = Math.abs(y - cy);
-          if (rx < 94 && ry < 112) {
-            d = 0.56 + ((x - cx) / W) * 0.05 + ((y - cy) / H) * 0.03;
-            const nx = (x - cx) / 56;
-            const ny = (y - cy) / 72;
-            if (nx * nx + ny * ny < 1) d += 0.008;
+          // 2D Phone / Photo Spoof: rounded smartphone held upright at uniform flat depth plane
+          const px = Math.abs(x - cx);
+          const py = Math.abs(y - cy);
+          const halfPW = 78;
+          const halfPH = 104;
+          const cornerR = 16;
+          const dxC = Math.max(0, px - (halfPW - cornerR));
+          const dyC = Math.max(0, py - (halfPH - cornerR));
+          const insidePhone = dxC * dxC + dyC * dyC <= cornerR * cornerR && px <= halfPW && py <= halfPH;
+          if (insidePhone) {
+            // Flat coplanar screen surface (tiny natural linear camera tilt, ZERO facial 3D relief)
+            d = 0.565 + ((x - cx) / W) * 0.025 + ((y - cy) / H) * 0.018;
           }
         }
 
-        if (y === Math.round(cy + 6)) crossSection.push(d);
+        grid[y * W + x] = d;
         const [r, g, b] = infernoColor(d);
         const idx = (y * W + x) * 4;
         data[idx] = r;
@@ -726,39 +916,111 @@ function initDepthLab() {
       }
     }
 
-    ctx.putImageData(img, 0, 0);
+    octx.putImageData(img, 0, 0);
 
-    const scanY = Math.round(cy + 6);
-    ctx.strokeStyle = "rgba(255,255,255,0.28)";
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(0, scanY);
-    ctx.lineTo(W, scanY);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (mode === "real") {
+      // Crisp translucent 3D sculpted topographic face overlay so it unmistakably reads as a real human face
+      renderSculptedHumanFace(octx, {
+        cx,
+        cy: cy + 2,
+        scale: 1.92,
+        yaw: 0,
+        pitch: 0,
+        blinkPhase: 0,
+        strokeMain: "rgba(255, 250, 232, 0.52)",
+        strokeSoft: "rgba(255, 240, 200, 0.24)",
+        fillTop: "rgba(255, 255, 255, 0.02)",
+        fillMid: "rgba(255, 255, 255, 0)",
+        fillEdge: "rgba(0, 0, 0, 0)",
+        pupilColor: "rgba(255, 252, 238, 0.65)",
+        showShoulders: false,
+        showMeridians: true,
+        lineWidthScale: 0.72,
+      });
+    } else {
+      // Realistic smartphone bezel + Dynamic Island + subtle glass reflection displaying a proper sculpted human face photo!
+      const px = cx - 78;
+      const py = cy - 104;
+      const pw = 156;
+      const ph = 208;
 
-    ctx.fillStyle = "rgba(10, 11, 15, 0.78)";
-    ctx.fillRect(0, H - 56, W, 56);
-    ctx.strokeStyle = mode === "real" ? "#30d158" : "#ff453a";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let x = 0; x < crossSection.length; x++) {
-      const py = H - 8 - crossSection[x] * 42;
-      if (x === 0) ctx.moveTo(x, py);
-      else ctx.lineTo(x, py);
+      octx.save();
+      octx.strokeStyle = "rgba(255, 255, 255, 0.58)";
+      octx.lineWidth = 2.4;
+      octx.beginPath();
+      octx.roundRect(px, py, pw, ph, 16);
+      octx.stroke();
+
+      // Inner screen bezel
+      octx.strokeStyle = "rgba(10, 12, 18, 0.65)";
+      octx.lineWidth = 5;
+      octx.beginPath();
+      octx.roundRect(px + 4, py + 4, pw - 8, ph - 8, 12);
+      octx.stroke();
+
+      // Top camera pill on spoof phone
+      octx.fillStyle = "rgba(10, 12, 18, 0.85)";
+      octx.beginPath();
+      octx.roundRect(cx - 18, py + 10, 36, 9, 5);
+      octx.fill();
+
+      // Clip inside phone display & draw the flat 2D photo of a proper sculpted human face
+      octx.beginPath();
+      octx.roundRect(px + 6, py + 6, pw - 12, ph - 12, 11);
+      octx.clip();
+
+      renderSculptedHumanFace(octx, {
+        cx,
+        cy: cy + 8,
+        scale: 1.55,
+        yaw: 0,
+        pitch: 0,
+        blinkPhase: 0,
+        strokeMain: "rgba(255, 236, 230, 0.78)",
+        strokeSoft: "rgba(255, 210, 200, 0.25)",
+        fillTop: "rgba(255, 255, 255, 0.08)",
+        fillMid: "rgba(255, 255, 255, 0.03)",
+        fillEdge: "rgba(0, 0, 0, 0.12)",
+        pupilColor: "rgba(255, 240, 236, 0.85)",
+        showShoulders: true,
+        showMeridians: false,
+        lineWidthScale: 0.78,
+      });
+
+      // Diagonal OLED specular glass glare across the flat phone photo
+      const glare = octx.createLinearGradient(px, py, px + pw, py + ph);
+      glare.addColorStop(0.28, "rgba(255,255,255,0)");
+      glare.addColorStop(0.45, "rgba(255,255,255,0.16)");
+      glare.addColorStop(0.58, "rgba(255,255,255,0)");
+      octx.fillStyle = glare;
+      octx.fillRect(px, py, pw, ph);
+
+      // Small corner label inside phone
+      octx.fillStyle = "rgba(12, 14, 20, 0.75)";
+      octx.beginPath();
+      octx.roundRect(px + 12, py + ph - 28, pw - 24, 18, 5);
+      octx.fill();
+      octx.fillStyle = "#ff9b95";
+      octx.font = "600 9.5px ui-monospace, Menlo, monospace";
+      octx.textAlign = "center";
+      octx.fillText("2D PHOTO ON PHONE SCREEN", cx, py + ph - 16);
+      octx.restore();
     }
-    ctx.stroke();
 
-    ctx.fillStyle = "rgba(255,255,255,0.75)";
-    ctx.font = "10.5px ui-monospace, Menlo, monospace";
-    ctx.fillText(
-      mode === "real"
-        ? "z(x): Sharp 3D nose peak + head-to-room cliff"
-        : "z(x): Flat coplanar plateau (2D screen/photo)",
-      12,
-      H - 40
-    );
+    return { off, grid };
+  }
 
+  const scenes = {
+    real: buildDepthScene("real"),
+    spoof: buildDepthScene("spoof"),
+  };
+
+  let activeMode = "real";
+  let scanPaused = false;
+  let manualScanY = null;
+  let sweepPhase = 0.56; // starts right near the protruding nose tip!
+
+  function updateTelemetry(mode) {
     if (mode === "real") {
       setBar("mNose", "+0.084", 84, "#30d158");
       setBar("mCurve", "0.071", 78, "#30d158");
@@ -780,24 +1042,357 @@ function initDepthLab() {
     }
   }
 
+  function sliceLabel(mode, y) {
+    if (mode === "spoof") {
+      return "z(x): Flat coplanar plateau — 2D photo on phone has zero nose relief";
+    }
+    const rel = y - cy;
+    if (rel < -22) return "z(x): Rounded 3D Forehead & Brow Dome";
+    if (rel < -2) return "z(x): Twin Recessed Eye Socket Valleys + Nasal Bridge";
+    if (rel < 24) return "z(x): Sharp Protruding 3D Nose Tip Peak (+0.084) + Room Cliff";
+    if (rel < 46) return "z(x): Sculpted Lips & Tapered Cheek Relief";
+    return "z(x): Defined Chin Contour + Head-to-Background Cliff";
+  }
+
+  canvas.addEventListener("pointermove", (e) => {
+    const r = canvas.getBoundingClientRect();
+    const py = ((e.clientY - r.top) / r.height) * H;
+    manualScanY = Math.max(36, Math.min(H - 70, py));
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    manualScanY = null;
+  });
+
   btnReal?.addEventListener("click", () => {
+    activeMode = "real";
     btnReal.classList.add("active");
-    btnSpoof.classList.remove("active");
-    renderDepth("real");
+    btnSpoof?.classList.remove("active");
+    updateTelemetry("real");
   });
 
   btnSpoof?.addEventListener("click", () => {
+    activeMode = "spoof";
     btnSpoof.classList.add("active");
-    btnReal.classList.remove("active");
-    renderDepth("spoof");
+    btnReal?.classList.remove("active");
+    updateTelemetry("spoof");
   });
 
-  renderDepth("real");
+  btnToggleScan?.addEventListener("click", () => {
+    scanPaused = !scanPaused;
+    btnToggleScan.textContent = scanPaused ? "Resume Scan" : "Pause Scan";
+  });
+
+  updateTelemetry("real");
+
+  function frame() {
+    const scene = scenes[activeMode];
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(scene.off, 0, 0);
+
+    // Calm, gracefully paced vertical scanline sweep (~6.5s full down-and-up cycle)
+    if (!scanPaused && manualScanY === null) {
+      sweepPhase += 0.0065;
+    }
+    const autoY = (cy - 68) + ((Math.sin(sweepPhase) + 1) * 0.5) * 136;
+    const scanY = Math.round(manualScanY !== null ? manualScanY : autoY);
+
+    // Luminous horizontal depth-probe laser line
+    const lineAccent = activeMode === "real" ? "#30d158" : "#ff453a";
+    const glowGrad = ctx.createLinearGradient(0, scanY - 8, 0, scanY + 8);
+    glowGrad.addColorStop(0, "rgba(0,0,0,0)");
+    glowGrad.addColorStop(0.5, activeMode === "real" ? "rgba(48, 209, 88, 0.34)" : "rgba(255, 69, 58, 0.34)");
+    glowGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, scanY - 8, W, 16);
+
+    ctx.strokeStyle = activeMode === "real" ? "rgba(180, 255, 200, 0.85)" : "rgba(255, 165, 160, 0.85)";
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, scanY);
+    ctx.lineTo(W, scanY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Live cross-section z(x) waveform box at bottom
+    const boxH = 62;
+    ctx.fillStyle = "rgba(8, 10, 14, 0.84)";
+    ctx.fillRect(0, H - boxH, W, boxH);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, H - boxH);
+    ctx.lineTo(W, H - boxH);
+    ctx.stroke();
+
+    // Waveform fill + crisp stroke sampled live from depthGrid[scanY]
+    const rowOffset = scanY * W;
+    ctx.beginPath();
+    ctx.moveTo(0, H - 6);
+    for (let x = 0; x < W; x++) {
+      const d = scene.grid[rowOffset + x];
+      const py = H - 7 - d * 38;
+      ctx.lineTo(x, py);
+    }
+    ctx.lineTo(W, H - 6);
+    ctx.closePath();
+    ctx.fillStyle = activeMode === "real" ? "rgba(48, 209, 88, 0.14)" : "rgba(255, 69, 58, 0.14)";
+    ctx.fill();
+
+    ctx.strokeStyle = lineAccent;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < W; x++) {
+      const d = scene.grid[rowOffset + x];
+      const py = H - 7 - d * 38;
+      if (x === 0) ctx.moveTo(x, py);
+      else ctx.lineTo(x, py);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(245, 245, 247, 0.86)";
+    ctx.font = "500 10.5px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(sliceLabel(activeMode, scanY), 12, H - boxH + 16);
+
+    requestAnimationFrame(frame);
+  }
+
+  frame();
 }
 
 // ---------------------------------------------------------------------------
-// 7. Original Windows Fluent Prism Horizon Animated Canvas (Distinct from Mac!)
+// 7. Windows 11 Fluent Prism Core — Studio-Grade Kinetic 3D Orbital Renderer
+//    (Matches real Windows 11 PrismHorizonOverlay.xaml + macOS studio quality)
 // ---------------------------------------------------------------------------
+function drawOctagonPath(ctx, cx, cy, r) {
+  const c = r * 0.414;
+  ctx.beginPath();
+  ctx.moveTo(cx - c, cy - r);
+  ctx.lineTo(cx + c, cy - r);
+  ctx.lineTo(cx + r, cy - c);
+  ctx.lineTo(cx + r, cy + c);
+  ctx.lineTo(cx + c, cy + r);
+  ctx.lineTo(cx - c, cy + r);
+  ctx.lineTo(cx - r, cy + c);
+  ctx.lineTo(cx - r, cy - c);
+  ctx.closePath();
+}
+
+function draw3DOrbitalRing(ctx, cx, cy, radius, tiltX, rotZ, strokeColor, glowColor, lineWidth, alpha) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotZ);
+  ctx.scale(1, Math.max(0.14, Math.abs(tiltX)));
+  ctx.globalAlpha = alpha;
+
+  // Soft motion-blur volumetric halo (matching macOS orbital glow richness)
+  ctx.strokeStyle = glowColor;
+  ctx.lineWidth = lineWidth * 2.8;
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Crisp luminous core arc
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Renders the studio-grade Windows 11 Fluent Prism Core kinetic emblem.
+ * mode: "scanning" | "backlit" | "verified" | "spoof"
+ * animatedLoop: true for How It Works phase cards (plays full smooth transition cycle)
+ */
+function drawKineticPrismCore(ctx, cx, cy, radius, mode, t, opts = {}) {
+  const {
+    yaw = 0,
+    pitch = 0,
+    animatedLoop = false,
+    blinkPhase = 0,
+  } = opts;
+
+  ctx.save();
+
+  let phase = 1;
+  let shakeX = 0;
+  if (animatedLoop) {
+    if (mode === "verified") {
+      // Calm 4.4s loop: 0..0.38 orbital spin -> 0.38..0.58 emerald octagon snap -> 0.52..0.76 checkmark draw -> hold
+      phase = (t * 0.24) % 1;
+    } else if (mode === "spoof") {
+      // Calm 4.0s loop: 0..0.34 cyan scan -> 0.34..0.58 damped spring recoil + coral X -> hold
+      phase = (t * 0.26) % 1;
+      if (phase >= 0.34 && phase < 0.62) {
+        const sp = (phase - 0.34) / 0.28;
+        shakeX = Math.sin(sp * Math.PI * 4) * Math.exp(-sp * 3.4) * (radius * 0.16);
+      }
+    }
+  } else if (mode === "spoof") {
+    shakeX = Math.sin(t * 2.4) * 1.2;
+  }
+
+  ctx.translate(cx + shakeX, cy);
+
+  // Determine current color palette based on mode & animation phase
+  let primary = "#38bdf8";
+  let secondary = "#818cf8";
+  let bloomRgba = "rgba(56, 189, 248, 0.22)";
+
+  if (mode === "backlit") {
+    primary = "#fbbf24";
+    secondary = "#38bdf8";
+    bloomRgba = "rgba(251, 191, 36, 0.22)";
+  } else if (mode === "verified" && (!animatedLoop || phase >= 0.36)) {
+    primary = "#30d158";
+    secondary = "#34d399";
+    bloomRgba = "rgba(48, 209, 88, 0.26)";
+  } else if (mode === "spoof" && (!animatedLoop || phase >= 0.34)) {
+    primary = "#fb7185";
+    secondary = "#f59e0b";
+    bloomRgba = "rgba(251, 113, 133, 0.24)";
+  }
+
+  // Deep atmospheric radial bloom behind the emblem
+  const aura = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 1.45);
+  aura.addColorStop(0, bloomRgba);
+  aura.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 1.45, 0, Math.PI * 2);
+  ctx.fill();
+
+  const isLockedVerified = mode === "verified" && (!animatedLoop || phase >= 0.42);
+  const isLockedSpoof = mode === "spoof" && (!animatedLoop || phase >= 0.38);
+
+  // 1. Dual 3D Tilted Orbital Prism Rings (gyroscopic 3D depth feel, matching macOS motion quality)
+  if (!isLockedVerified && !isLockedSpoof) {
+    const speed = mode === "verified" ? 1.5 : 1.15;
+    const tiltA = 0.42 + Math.sin(t * speed) * 0.42;
+    const tiltB = 0.42 + Math.cos(t * speed * 0.85) * 0.42;
+    draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltA, t * 0.65, primary, primary, Math.max(2.6, radius * 0.055), 0.9);
+    draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltB, -t * 0.52 + 1.1, secondary, secondary, Math.max(2.2, radius * 0.046), 0.78);
+  } else {
+    // Soft converged outer halo ring
+    ctx.save();
+    ctx.strokeStyle = primary;
+    ctx.globalAlpha = 0.22;
+    ctx.lineWidth = Math.max(6, radius * 0.14);
+    ctx.shadowColor = primary;
+    ctx.shadowBlur = 22;
+    drawOctagonPath(ctx, 0, 0, radius * 0.95);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 2. Crisp Fluent Octagonal Crystal Frame (Windows-original geometric signature)
+  ctx.save();
+  ctx.strokeStyle = primary;
+  ctx.lineWidth = isLockedVerified || isLockedSpoof ? Math.max(3.6, radius * 0.068) : Math.max(1.8, radius * 0.032);
+  ctx.globalAlpha = isLockedVerified || isLockedSpoof ? 0.95 : 0.48;
+  ctx.shadowColor = primary;
+  ctx.shadowBlur = isLockedVerified || isLockedSpoof ? 18 : 8;
+  drawOctagonPath(ctx, 0, 0, radius * 0.94);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Center Biometric Emblem:
+  //    - Scanning / Backlit: Proper Sculpted 3D Human Face + volumetric depth laser sweep
+  //    - Verified: Smooth spring-drawn Emerald Checkmark
+  //    - Spoof: Bold Coral-Amber Prism X
+  if (!isLockedVerified && !isLockedSpoof) {
+    const faceScale = (radius / 76) * 1.15;
+    renderSculptedHumanFace(ctx, {
+      cx: 0,
+      cy: 0,
+      scale: faceScale,
+      yaw,
+      pitch,
+      blinkPhase,
+      strokeMain: mode === "backlit" ? "rgba(255, 240, 195, 0.95)" : "rgba(232, 246, 255, 0.94)",
+      strokeSoft: mode === "backlit" ? "rgba(251, 191, 36, 0.34)" : "rgba(56, 189, 248, 0.36)",
+      fillTop: mode === "backlit" ? "rgba(251, 191, 36, 0.26)" : "rgba(56, 189, 248, 0.24)",
+      fillMid: "rgba(129, 140, 248, 0.12)",
+      fillEdge: "rgba(8, 12, 22, 0.55)",
+      pupilColor: primary,
+      showShoulders: false,
+      showMeridians: true,
+      lineWidthScale: 1.05,
+      shadowGlow: primary,
+    });
+
+    // Calm volumetric horizontal laser scanline gliding across the sculpted 3D face
+    const scanY = Math.sin(t * 1.65) * (radius * 0.58);
+    const beamW = radius * 1.28;
+    const beamGrad = ctx.createLinearGradient(-beamW / 2, scanY, beamW / 2, scanY);
+    beamGrad.addColorStop(0, "rgba(0,0,0,0)");
+    beamGrad.addColorStop(0.5, primary);
+    beamGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.strokeStyle = beamGrad;
+    ctx.lineWidth = Math.max(2, radius * 0.036);
+    ctx.shadowColor = primary;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(-beamW / 2, scanY);
+    ctx.lineTo(beamW / 2, scanY);
+    ctx.stroke();
+  } else if (isLockedVerified) {
+    // Progressive smooth checkmark draw-on
+    const drawProg = animatedLoop ? Math.min(1, Math.max(0, (phase - 0.44) / 0.24)) : 1;
+    const eased = 1 - Math.pow(1 - drawProg, 3);
+    const p0 = { x: -radius * 0.34, y: radius * 0.02 };
+    const p1 = { x: -radius * 0.08, y: radius * 0.29 };
+    const p2 = { x: radius * 0.38, y: -radius * 0.26 };
+
+    ctx.save();
+    ctx.strokeStyle = "#30d158";
+    ctx.lineWidth = Math.max(4.5, radius * 0.095);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = "#30d158";
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    if (eased < 0.42) {
+      const f = eased / 0.42;
+      ctx.lineTo(p0.x + (p1.x - p0.x) * f, p0.y + (p1.y - p0.y) * f);
+    } else {
+      ctx.lineTo(p1.x, p1.y);
+      const f = (eased - 0.42) / 0.58;
+      ctx.lineTo(p1.x + (p2.x - p1.x) * f, p1.y + (p2.y - p1.y) * f);
+    }
+    ctx.stroke();
+    ctx.restore();
+  } else if (isLockedSpoof) {
+    // Bold Coral-Amber Spoof Blocked X
+    const drawProg = animatedLoop ? Math.min(1, Math.max(0, (phase - 0.40) / 0.20)) : 1;
+    const eased = 1 - Math.pow(1 - drawProg, 3);
+    const d = radius * 0.30 * eased;
+    ctx.save();
+    ctx.strokeStyle = "#fb7185";
+    ctx.lineWidth = Math.max(4.4, radius * 0.09);
+    ctx.lineCap = "round";
+    ctx.shadowColor = "#fb7185";
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.moveTo(-d, -d);
+    ctx.lineTo(d, d);
+    ctx.moveTo(d, -d);
+    ctx.lineTo(-d, d);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 function initWindowsPrismCanvas() {
   const canvas = document.getElementById("windowsPrismCanvas");
   if (!canvas) return;
@@ -809,54 +1404,23 @@ function initWindowsPrismCanvas() {
   function frame() {
     t += 0.022;
     ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#06080d";
+    ctx.fillRect(0, 0, W, H);
 
-    // Subtle Fluent acrylic horizon line
-    const cy = H * 0.5;
-    const cx = W * 0.5;
-    const cycle = (Math.sin(t) + 1) * 0.5; // 0..1 scanning pulse
-    const verified = Math.sin(t * 0.45) > 0.65;
+    const verified = Math.sin(t * 0.42) > 0.55;
+    drawKineticPrismCore(ctx, W * 0.5, H * 0.46, 44, verified ? "verified" : "scanning", t, {
+      yaw: Math.sin(t * 0.8) * 0.45,
+      pitch: Math.cos(t * 0.6) * 0.25,
+      blinkPhase: (t * 0.14) % 1,
+    });
 
-    // Horizontal laser wave sweep
-    const grad = ctx.createLinearGradient(40, cy, W - 40, cy);
-    grad.addColorStop(0, "rgba(255,255,255,0)");
-    grad.addColorStop(0.5, verified ? "rgba(48, 209, 88, 0.85)" : "rgba(180, 210, 255, 0.72)");
-    grad.addColorStop(1, "rgba(255,255,255,0)");
-
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let x = 36; x <= W - 36; x += 4) {
-      const norm = (x - cx) / (W * 0.42);
-      const env = Math.exp(-norm * norm * 3.5);
-      const wave = verified ? 0 : Math.sin(x * 0.055 - t * 4.2) * 14 * env;
-      const y = cy + wave;
-      if (x === 36) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Faceted Geometric Diamond-Iris Aperture (Windows-original, NOT iPhone/Mac circular ring!)
-    const r = 24 + (verified ? 2 : cycle * 4);
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(verified ? Math.PI / 4 : Math.PI / 4 + Math.sin(t * 0.8) * 0.14);
-    ctx.strokeStyle = verified ? "#30d158" : "rgba(245, 245, 247, 0.85)";
-    ctx.fillStyle = verified ? "rgba(48, 209, 88, 0.14)" : "rgba(255, 255, 255, 0.05)";
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.roundRect(-r * 0.75, -r * 0.75, r * 1.5, r * 1.5, 6);
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-
-    // Status label
-    ctx.fillStyle = verified ? "#5ee984" : "rgba(255,255,255,0.62)";
-    ctx.font = "500 10.5px ui-monospace, Menlo, monospace";
+    ctx.fillStyle = verified ? "#5ee984" : "rgba(125, 211, 252, 0.82)";
+    ctx.font = "500 10px ui-monospace, Menlo, monospace";
     ctx.textAlign = "center";
     ctx.fillText(
-      verified ? "NEELx WINDOWS · PRISM HORIZON VERIFIED" : "NEELx WINDOWS · DIRECTML 3D SCANNING",
-      cx,
-      H - 14
+      verified ? "NEELx WINDOWS · PRISM CORE VERIFIED" : "NEELx WINDOWS · DIRECTML 3D SCANNING",
+      W * 0.5,
+      H - 10
     );
 
     requestAnimationFrame(frame);
@@ -865,175 +1429,35 @@ function initWindowsPrismCanvas() {
   frame();
 }
 
-// Shared helper to draw the authentic Windows 11 Fluent Prism Horizon Blade
-function drawPrismBlade(ctx, bx, by, bw, bh, state, t) {
-  const palettes = {
-    scanning: {
-      accent: "#38bdf8",
-      secondary: "#818cf8",
-      title: "NEELx Prism · Scanning 3D Depth",
-      sub: "DirectML GPU · Multi-frame geometry check",
-      pill: "PRISM 3D",
-    },
-    backlit: {
-      accent: "#fbbf24",
-      secondary: "#38bdf8",
-      title: "Backlit Silhouette · HDR Shadow Lift",
-      sub: "Recovering facial relief against bright window",
-      pill: "HDR LIFT",
-    },
-    verified: {
-      accent: "#30d158",
-      secondary: "#34d399",
-      title: "Identity & 3D Depth Verified",
-      sub: "DPAPI session unlocked · 2 frames confirmed",
-      pill: "UNLOCKED",
-    },
-    spoof: {
-      accent: "#fb7185",
-      secondary: "#f59e0b",
-      title: "Flat 2D Surface Rejected",
-      sub: "Insufficient nose protrusion & depth cliff",
-      pill: "BLOCKED",
-    },
-  };
-  const pal = palettes[state] || palettes.scanning;
-
-  ctx.save();
-  // Dark Mica glass blade
-  ctx.fillStyle = "rgba(17, 20, 27, 0.94)";
-  ctx.strokeStyle = `${pal.accent}66`;
-  ctx.lineWidth = 1.25;
-  ctx.beginPath();
-  ctx.roundRect(bx, by, bw, bh, 14);
-  ctx.fill();
-  ctx.stroke();
-
-  // Top atmospheric prism hairline
-  const rimGrad = ctx.createLinearGradient(bx, by, bx + bw, by);
-  rimGrad.addColorStop(0, "rgba(0,0,0,0)");
-  rimGrad.addColorStop(0.35, pal.accent);
-  rimGrad.addColorStop(0.65, pal.secondary);
-  rimGrad.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.strokeStyle = rimGrad;
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(bx + 14, by + 1);
-  ctx.lineTo(bx + bw - 14, by + 1);
-  ctx.stroke();
-
-  // Faceted Diamond-Iris Aperture (left)
-  const ix = bx + 28;
-  const iy = by + bh * 0.5 - 1;
-  const outerAngle = state === "verified" ? 0 : state === "spoof" ? Math.sin(t * 14) * 0.16 : t * 0.9;
-  const innerAngle = state === "verified" ? 0 : Math.PI / 4 - t * 1.35;
-
-  function drawDiamond(r, angle, stroke, fill) {
-    ctx.save();
-    ctx.translate(ix, iy);
-    ctx.rotate(angle);
-    ctx.fillStyle = fill;
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(0, -r);
-    ctx.lineTo(r, 0);
-    ctx.lineTo(0, r);
-    ctx.lineTo(-r, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  drawDiamond(13.5, outerAngle, pal.accent, `${pal.accent}1f`);
-  drawDiamond(8.5, innerAngle, pal.secondary, `${pal.secondary}28`);
-  drawDiamond(3.6, 0, pal.accent, pal.accent);
-
-  // Typography
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#f5f7fa";
-  ctx.font = "600 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText(pal.title, bx + 52, by + bh * 0.44);
-
-  if (bw >= 290) {
-    ctx.fillStyle = "#9aa3b2";
-    ctx.font = "400 10.2px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText(pal.sub, bx + 52, by + bh * 0.72);
-  }
-
-  // Right status pill
-  if (bw >= 310) {
-    const pw = 66;
-    const ph = 20;
-    const px = bx + bw - pw - 14;
-    const py = by + (bh - ph) / 2 - 1;
-    ctx.fillStyle = `${pal.accent}22`;
-    ctx.strokeStyle = `${pal.accent}55`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(px, py, pw, ph, 7);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = pal.accent;
-    ctx.font = "700 9px ui-monospace, Consolas, monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(pal.pill, px + pw / 2, py + 13);
-  }
-
-  // Bottom horizontal laser horizon track
-  const trackY = by + bh - 4;
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
-
-  if (state === "verified") {
-    ctx.fillStyle = pal.accent;
-    ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
-  } else if (state === "spoof") {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 7);
-    ctx.fillStyle = `rgba(251, 113, 133, ${0.35 + pulse * 0.55})`;
-    ctx.fillRect(bx + 12, trackY, bw - 24, 2.5);
-  } else {
-    const beamW = Math.min(110, (bw - 24) * 0.42);
-    const travel = (bw - 24) + beamW;
-    const pos = ((t * 145) % travel) - beamW;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(bx + 12, trackY, bw - 24, 3);
-    ctx.clip();
-    const lg = ctx.createLinearGradient(bx + 12 + pos, 0, bx + 12 + pos + beamW, 0);
-    lg.addColorStop(0, "rgba(0,0,0,0)");
-    lg.addColorStop(0.5, pal.accent);
-    lg.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = lg;
-    ctx.fillRect(bx + 12 + pos, trackY, beamW, 2.5);
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
 function initWinHeroCanvas() {
   const canvas = document.getElementById("winHeroCanvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const W = canvas.width;
-  const H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const W = 380;
+  const H = 248;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
   const statusEl = document.getElementById("winHeroStatus");
 
   let mode = "scanning";
   let t = 0;
+  let targetYaw = 0;
+  let targetPitch = 0;
   let yaw = 0;
   let pitch = 0;
+  let blinkPhase = 0;
 
   canvas.addEventListener("pointermove", (e) => {
     const r = canvas.getBoundingClientRect();
-    yaw = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
-    pitch = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
+    targetYaw = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
+    targetPitch = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
   });
   canvas.addEventListener("pointerleave", () => {
-    yaw = 0;
-    pitch = 0;
+    targetYaw = 0;
+    targetPitch = 0;
   });
 
   function setMode(m) {
@@ -1041,7 +1465,7 @@ function initWinHeroCanvas() {
     if (!statusEl) return;
     if (m === "verified") statusEl.innerHTML = `Identity &amp; 3D Depth Verified · <strong>DPAPI Session Unlocked</strong>`;
     else if (m === "spoof") statusEl.innerHTML = `Flat 2D Surface Detected · <strong>Blocked by DirectML 3D Gate</strong>`;
-    else statusEl.innerHTML = `Move cursor or trigger state · <strong>Prism 3D Active</strong>`;
+    else statusEl.innerHTML = `Move cursor around face · <strong>Prism 3D Active</strong>`;
   }
 
   document.getElementById("btnWinHeroScan")?.addEventListener("click", () => setMode("scanning"));
@@ -1049,61 +1473,33 @@ function initWinHeroCanvas() {
   document.getElementById("btnWinHeroSpoof")?.addEventListener("click", () => setMode("spoof"));
 
   function render() {
-    t += 0.025;
-    ctx.clearRect(0, 0, W, H);
+    t += 0.022;
+    blinkPhase = (blinkPhase + 0.007) % 1;
+    yaw += (targetYaw - yaw) * 0.14;
+    pitch += (targetPitch - pitch) * 0.14;
 
-    // Subtle Windows 11 Bloom dark backdrop
-    const bg = ctx.createRadialGradient(W * 0.5, H * 0.65, 18, W * 0.5, H * 0.5, W * 0.72);
-    bg.addColorStop(0, mode === "verified" ? "rgba(48, 209, 88, 0.16)" : mode === "spoof" ? "rgba(251, 113, 133, 0.14)" : "rgba(56, 189, 248, 0.16)");
-    bg.addColorStop(1, "#07090e");
-    ctx.fillStyle = bg;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#04060a";
     ctx.fillRect(0, 0, W, H);
 
-    // Top-edge Fluent Prism Horizon Blade
-    drawPrismBlade(ctx, 18, 16, W - 36, 60, mode, t);
+    drawKineticPrismCore(ctx, W * 0.5, H * 0.46, 76, mode, t, {
+      yaw,
+      pitch,
+      blinkPhase,
+      animatedLoop: false,
+    });
 
-    // Subtle 3D holographic biometric depth grid below blade
-    const cx = W * 0.5 + yaw * 14;
-    const cy = H * 0.66 + pitch * 8;
-    const accent = mode === "verified" ? "#30d158" : mode === "spoof" ? "#fb7185" : "#38bdf8";
-
-    ctx.strokeStyle = `${accent}55`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 42, 54, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Horizontal laser scan line sweeping over 3D head mesh
-    const scanY = cy - 48 + ((Math.sin(t * 2.2) + 1) * 0.5) * 96;
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(cx - 54, scanY);
-    ctx.lineTo(cx + 54, scanY);
-    ctx.stroke();
-
-    // Faceted 3D depth landmark points (eyes, nose tip, mouth corners)
-    const pts = [
-      [cx - 15 + yaw * 4, cy - 10 + pitch * 3],
-      [cx + 15 + yaw * 4, cy - 10 + pitch * 3],
-      [cx + yaw * 9, cy + 5 + pitch * 5],
-      [cx - 11 + yaw * 4, cy + 22 + pitch * 3],
-      [cx + 11 + yaw * 4, cy + 22 + pitch * 3],
-    ];
-    ctx.fillStyle = accent;
-    for (const [px, py] of pts) {
-      ctx.beginPath();
-      ctx.arc(px, py, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = "500 10px ui-monospace, Consolas, monospace";
+    ctx.fillStyle = mode === "verified" ? "#5ee984" : mode === "spoof" ? "#fda4af" : "rgba(186, 230, 253, 0.72)";
+    ctx.font = "500 10.5px ui-monospace, Consolas, monospace";
     ctx.textAlign = "center";
     ctx.fillText(
-      mode === "spoof" ? "z-depth: flat plane (Δz = 0.004)" : "DirectML 3D Mesh · Δz nose = +0.088",
+      mode === "verified"
+        ? "PRISM 3D VERIFIED · Δz nose = +0.088 · DPAPI UNLOCKED"
+        : mode === "spoof"
+          ? "FLAT 2D SPOOF BLOCKED · Δz nose = +0.004"
+          : "DIRECTML 3D MESH · MULTI-FRAME DEPTH ACTIVE",
       W * 0.5,
-      H - 12
+      H - 14
     );
 
     requestAnimationFrame(render);
@@ -1133,57 +1529,111 @@ function initWinHowItWorksSimulators() {
   });
 
   let t = 0;
+  let blinkPhase = 0;
   function tick() {
-    t += 0.025;
+    t += 0.022;
+    blinkPhase = (blinkPhase + 0.007) % 1;
 
+    // 1. Three studio-grade pure-obsidian Windows Phase Cards (matching macOS .mp4 quality & visual presence!)
     for (const item of phaseCanvases) {
       const ctx = item.el.getContext("2d");
       const W = item.el.width;
       const H = item.el.height;
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#06080d";
+      ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle bezel top edge
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      ctx.fillRect(0, 0, W, 2);
-
-      drawPrismBlade(ctx, 12, 22, W - 24, 62, item.state, t);
-
-      // Windows 11 Lock Screen clock silhouette beneath
-      ctx.fillStyle = "rgba(255,255,255,0.22)";
-      ctx.font = "600 28px 'Segoe UI Variable Display', -apple-system, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("10:42", W / 2, H - 46);
-      ctx.fillStyle = "rgba(255,255,255,0.14)";
-      ctx.font = "400 11px 'Segoe UI', -apple-system, sans-serif";
-      ctx.fillText("Windows 11 Lock Screen", W / 2, H - 24);
+      drawKineticPrismCore(ctx, W * 0.5, H * 0.5, 96, item.state, t, {
+        yaw: item.state === "scanning" ? Math.sin(t * 0.7) * 0.55 : 0,
+        pitch: item.state === "scanning" ? Math.cos(t * 0.5) * 0.3 : 0,
+        blinkPhase,
+        animatedLoop: true,
+      });
     }
 
+    // 2. Full Interactive Windows 11 Lock Screen Simulator showing the exact floating Prism Core Card
     if (lockSim) {
       const ctx = lockSim.getContext("2d");
       const W = lockSim.width;
       const H = lockSim.height;
       ctx.clearRect(0, 0, W, H);
 
-      const bg = ctx.createRadialGradient(W * 0.5, H * 0.85, 40, W * 0.5, H * 0.5, W * 0.65);
-      bg.addColorStop(0, simState === "verified" ? "rgba(48,209,88,0.14)" : simState === "spoof" ? "rgba(251,113,133,0.14)" : simState === "backlit" ? "rgba(251,191,36,0.15)" : "rgba(56,189,248,0.16)");
-      bg.addColorStop(1, "#07090f");
+      const bg = ctx.createRadialGradient(W * 0.5, H * 0.9, 50, W * 0.5, H * 0.5, W * 0.65);
+      bg.addColorStop(
+        0,
+        simState === "verified"
+          ? "rgba(48,209,88,0.16)"
+          : simState === "spoof"
+            ? "rgba(251,113,133,0.15)"
+            : simState === "backlit"
+              ? "rgba(251,191,36,0.16)"
+              : "rgba(56,189,248,0.17)"
+      );
+      bg.addColorStop(1, "#05070c");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Centered full-size Windows 11 Prism Horizon Blade
-      const bw = Math.min(440, W - 40);
-      drawPrismBlade(ctx, (W - bw) / 2, 18, bw, 68, simState, t);
+      // Floating Obsidian Mica Prism Core Card (exact match to Windows PrismHorizonOverlay.xaml!)
+      const cardW = 198;
+      const cardH = 164;
+      const cardX = (W - cardW) / 2;
+      const cardY = 14;
+      const borderCol =
+        simState === "verified"
+          ? "rgba(48, 209, 88, 0.5)"
+          : simState === "spoof"
+            ? "rgba(251, 113, 133, 0.5)"
+            : simState === "backlit"
+              ? "rgba(251, 191, 36, 0.5)"
+              : "rgba(56, 189, 248, 0.45)";
 
-      // Windows 11 Lock Screen time & user tile
-      ctx.fillStyle = "rgba(255,255,255,0.86)";
-      ctx.font = "600 44px 'Segoe UI Variable Display', -apple-system, sans-serif";
+      ctx.save();
+      ctx.fillStyle = "rgba(8, 10, 15, 0.95)";
+      ctx.strokeStyle = borderCol;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, cardW, cardH, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      drawKineticPrismCore(ctx, W * 0.5, cardY + 66, 48, simState, t, {
+        yaw: simState === "scanning" || simState === "backlit" ? Math.sin(t * 0.8) * 0.45 : 0,
+        pitch: Math.cos(t * 0.6) * 0.2,
+        blinkPhase,
+        animatedLoop: false,
+      });
+
+      const titleMap = {
+        scanning: "PRISM 3D · SCANNING",
+        backlit: "BACKLIT · HDR LIFT",
+        verified: "UNLOCKED · 3D VERIFIED",
+        spoof: "2D SPOOF BLOCKED",
+      };
+      const titleCol =
+        simState === "verified"
+          ? "#30d158"
+          : simState === "spoof"
+            ? "#fb7185"
+            : simState === "backlit"
+              ? "#fbbf24"
+              : "#38bdf8";
+
       ctx.textAlign = "center";
-      ctx.fillText("09:41", W / 2, 146);
+      ctx.fillStyle = titleCol;
+      ctx.font = "600 10.5px 'Segoe UI', -apple-system, sans-serif";
+      ctx.fillText(titleMap[simState] || titleMap.scanning, W * 0.5, cardY + cardH - 22);
+      ctx.fillStyle = "#8e97a8";
+      ctx.font = "400 9.5px 'Segoe UI', -apple-system, sans-serif";
+      ctx.fillText("DirectML GPU · Windows DPAPI", W * 0.5, cardY + cardH - 9);
+
+      // Windows 11 Lock Screen time & caption beneath the floating card
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.font = "600 40px 'Segoe UI Variable Display', -apple-system, sans-serif";
+      ctx.fillText("09:41", W / 2, 224);
 
       ctx.fillStyle = "rgba(255,255,255,0.52)";
-      ctx.font = "400 13px 'Segoe UI', -apple-system, sans-serif";
+      ctx.font = "400 12.5px 'Segoe UI', -apple-system, sans-serif";
       const subText =
         simState === "verified"
           ? "Welcome back · Signing in via NEELx Credential Provider…"
@@ -1192,7 +1642,7 @@ function initWinHowItWorksSimulators() {
             : simState === "backlit"
               ? "Backlit window detected · HDR shadow recovery active"
               : "Looking for your 3D face via DirectML…";
-      ctx.fillText(subText, W / 2, 178);
+      ctx.fillText(subText, W / 2, 254);
     }
 
     requestAnimationFrame(tick);

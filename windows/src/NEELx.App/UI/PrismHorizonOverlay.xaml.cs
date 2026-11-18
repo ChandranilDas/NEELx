@@ -13,20 +13,22 @@ public enum PrismVisualState
 }
 
 /// <summary>
-/// Bespoke Windows 11 Fluent Prism Horizon biometric unlock blade.
-/// Intentionally distinct from macOS/iOS's circular notch Face ID animation:
-/// uses a top-edge dark Mica glass blade, counter-rotating faceted crystalline
-/// diamond-iris, and horizontal laser horizon sweep.
+/// Bespoke Windows 11 Fluent Prism Core biometric unlock overlay.
+/// Features a sculpted Fluent biometric face inside an octagonal crystal aperture,
+/// dual 3D tilted orbital prism rings, vertical volumetric depth-scan sweep,
+/// emerald crystal checkmark convergence, and damped horizontal spoof recoil.
 /// </summary>
 public partial class PrismHorizonOverlay : Window
 {
     private readonly Storyboard _scanLoopStoryboard;
+    private readonly Storyboard _recoilStoryboard;
 
     public PrismHorizonOverlay()
     {
         InitializeComponent();
         PositionTopCenter();
         _scanLoopStoryboard = BuildScanLoopStoryboard();
+        _recoilStoryboard = BuildRecoilStoryboard();
         Loaded += (_, _) => SetVisualState(PrismVisualState.Scanning);
     }
 
@@ -34,31 +36,49 @@ public partial class PrismHorizonOverlay : Window
     {
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2.0;
-        Top = workArea.Top + 14;
+        Top = workArea.Top + 18;
     }
 
     private Storyboard BuildScanLoopStoryboard()
     {
         var sb = new Storyboard { RepeatBehavior = RepeatBehavior.Forever };
 
-        var outerSpin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(5.2));
-        Storyboard.SetTarget(outerSpin, OuterPrism);
-        Storyboard.SetTargetProperty(outerSpin, new PropertyPath("(UIElement.RenderTransform).(RotateTransform.Angle)"));
-        sb.Children.Add(outerSpin);
+        var rotA = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(4.2));
+        Storyboard.SetTarget(rotA, OrbitRingA);
+        Storyboard.SetTargetProperty(rotA, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"));
+        sb.Children.Add(rotA);
 
-        var innerSpin = new DoubleAnimation(45, -315, TimeSpan.FromSeconds(3.6));
-        Storyboard.SetTarget(innerSpin, InnerPrism);
-        Storyboard.SetTargetProperty(innerSpin, new PropertyPath("(UIElement.RenderTransform).(RotateTransform.Angle)"));
-        sb.Children.Add(innerSpin);
+        var rotB = new DoubleAnimation(360, 0, TimeSpan.FromSeconds(3.4));
+        Storyboard.SetTarget(rotB, OrbitRingB);
+        Storyboard.SetTargetProperty(rotB, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"));
+        sb.Children.Add(rotB);
 
-        var laserSweep = new DoubleAnimation(-140, 420, TimeSpan.FromSeconds(1.45))
+        var scanSweep = new DoubleAnimation(38, 94, TimeSpan.FromSeconds(1.6))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            AutoReverse = true,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
         };
-        Storyboard.SetTarget(laserSweep, HorizonLaserBeam);
-        Storyboard.SetTargetProperty(laserSweep, new PropertyPath("(Canvas.Left)"));
-        sb.Children.Add(laserSweep);
+        Storyboard.SetTarget(scanSweep, FaceScanBeam);
+        Storyboard.SetTargetProperty(scanSweep, new PropertyPath("(Canvas.Top)"));
+        sb.Children.Add(scanSweep);
 
+        return sb;
+    }
+
+    private Storyboard BuildRecoilStoryboard()
+    {
+        var sb = new Storyboard();
+        var shake = new DoubleAnimationUsingKeyFrames();
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(0))));
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(-10, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(65))));
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(9, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(130))));
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(-6, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(195))));
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(3, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(260))));
+        shake.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(320))));
+
+        Storyboard.SetTarget(shake, CardShakeTransform);
+        Storyboard.SetTargetProperty(shake, new PropertyPath(TranslateTransform.XProperty));
+        sb.Children.Add(shake);
         return sb;
     }
 
@@ -70,9 +90,14 @@ public partial class PrismHorizonOverlay : Window
                 ApplyPalette(
                     accent: Color.FromRgb(56, 189, 248),
                     secondary: Color.FromRgb(129, 140, 248),
-                    title: "NEELx Prism · Scanning 3D Depth",
-                    subtitle: "DirectML GPU · Multi-frame geometry verification",
-                    pillText: "PRISM 3D");
+                    title: "PRISM 3D · SCANNING",
+                    subtitle: "DirectML GPU · Multi-frame depth");
+                FluentFaceGroup.Opacity = 1.0;
+                FaceScanBeam.Opacity = 1.0;
+                VerifiedCheckPath.Opacity = 0.0;
+                SpoofCrossPath.Opacity = 0.0;
+                OrbitRingA.Opacity = 0.92;
+                OrbitRingB.Opacity = 0.85;
                 _scanLoopStoryboard.Begin(this, isControllable: true);
                 break;
 
@@ -80,22 +105,30 @@ public partial class PrismHorizonOverlay : Window
                 ApplyPalette(
                     accent: Color.FromRgb(251, 191, 36),
                     secondary: Color.FromRgb(56, 189, 248),
-                    title: "Backlit Silhouette · HDR Shadow Lift",
-                    subtitle: "Recovering facial relief against bright window",
-                    pillText: "HDR LIFT");
+                    title: "BACKLIT · HDR LIFT",
+                    subtitle: "Recovering shadowed facial relief");
+                FluentFaceGroup.Opacity = 1.0;
+                FaceScanBeam.Opacity = 1.0;
+                VerifiedCheckPath.Opacity = 0.0;
+                SpoofCrossPath.Opacity = 0.0;
+                OrbitRingA.Opacity = 0.92;
+                OrbitRingB.Opacity = 0.85;
                 _scanLoopStoryboard.Begin(this, isControllable: true);
                 break;
 
             case PrismVisualState.VerifiedUnlock:
                 _scanLoopStoryboard.Stop(this);
-                OuterPrismRotate.Angle = 0;
-                InnerPrismRotate.Angle = 0;
                 ApplyPalette(
                     accent: Color.FromRgb(48, 209, 88),
                     secondary: Color.FromRgb(52, 211, 153),
-                    title: "Identity & 3D Depth Verified",
-                    subtitle: "DPAPI session unlocked · 2 frames confirmed",
-                    pillText: "UNLOCKED");
+                    title: "UNLOCKED · 3D VERIFIED",
+                    subtitle: "DPAPI session authenticated");
+                FluentFaceGroup.Opacity = 0.0;
+                FaceScanBeam.Opacity = 0.0;
+                SpoofCrossPath.Opacity = 0.0;
+                OrbitRingA.Opacity = 0.18;
+                OrbitRingB.Opacity = 0.18;
+                VerifiedCheckPath.Opacity = 1.0;
                 break;
 
             case PrismVisualState.SpoofRejected:
@@ -103,31 +136,36 @@ public partial class PrismHorizonOverlay : Window
                 ApplyPalette(
                     accent: Color.FromRgb(251, 113, 133),
                     secondary: Color.FromRgb(245, 158, 11),
-                    title: "Flat 2D Surface Rejected",
-                    subtitle: "Insufficient nose protrusion & background cliff",
-                    pillText: "BLOCKED");
+                    title: "2D SPOOF BLOCKED",
+                    subtitle: "Flat surface · No 3D nose relief");
+                FluentFaceGroup.Opacity = 0.0;
+                FaceScanBeam.Opacity = 0.0;
+                VerifiedCheckPath.Opacity = 0.0;
+                OrbitRingA.Opacity = 0.22;
+                OrbitRingB.Opacity = 0.22;
+                SpoofCrossPath.Opacity = 1.0;
+                _recoilStoryboard.Begin(this);
                 break;
         }
     }
 
-    private void ApplyPalette(Color accent, Color secondary, string title, string subtitle, string pillText)
+    private void ApplyPalette(Color accent, Color secondary, string title, string subtitle)
     {
-        BladeBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(95, accent.R, accent.G, accent.B));
-        TopRimStopA.Color = accent;
-        TopRimStopB.Color = secondary;
-        LaserCoreStop.Color = accent;
+        BladeBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(110, accent.R, accent.G, accent.B));
+        AuraCoreStop.Color = accent;
+        ScanBeamStop.Color = accent;
 
-        OuterPrism.Stroke = new SolidColorBrush(Color.FromArgb(225, accent.R, accent.G, accent.B));
-        OuterPrism.Fill = new SolidColorBrush(Color.FromArgb(30, accent.R, accent.G, accent.B));
-        InnerPrism.Stroke = new SolidColorBrush(Color.FromArgb(220, secondary.R, secondary.G, secondary.B));
-        InnerPrism.Fill = new SolidColorBrush(Color.FromArgb(40, secondary.R, secondary.G, secondary.B));
-        CoreDiamond.Fill = new SolidColorBrush(accent);
+        OrbitRingA.Stroke = new SolidColorBrush(Color.FromArgb(225, accent.R, accent.G, accent.B));
+        OrbitRingB.Stroke = new SolidColorBrush(Color.FromArgb(205, secondary.R, secondary.G, secondary.B));
+        OrbitGlowA.Color = accent;
+        OrbitGlowB.Color = secondary;
+
+        OctagonCrystal.Stroke = new SolidColorBrush(Color.FromArgb(180, accent.R, accent.G, accent.B));
+        OctagonCrystal.Fill = new SolidColorBrush(Color.FromArgb(24, accent.R, accent.G, accent.B));
+        FaceContourPath.Fill = new SolidColorBrush(Color.FromArgb(22, accent.R, accent.G, accent.B));
 
         PrimaryStatusText.Text = title;
+        PrimaryStatusText.Foreground = new SolidColorBrush(accent);
         SecondaryStatusText.Text = subtitle;
-        StatusPillText.Text = pillText;
-        StatusPillText.Foreground = new SolidColorBrush(accent);
-        StatusPill.Background = new SolidColorBrush(Color.FromArgb(32, accent.R, accent.G, accent.B));
-        StatusPill.BorderBrush = new SolidColorBrush(Color.FromArgb(90, accent.R, accent.G, accent.B));
     }
 }
