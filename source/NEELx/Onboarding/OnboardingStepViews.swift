@@ -20,7 +20,7 @@ struct IntroStepView: View {
                 Text("NEELx")
                     .font(NEELxTheme.Font.title)
                     .foregroundStyle(NEELxTheme.textPrimary)
-                Text("Biometric Face Unlock")
+                Text("3D Biometric Face Unlock")
                     .font(NEELxTheme.Font.button)
                     .foregroundStyle(NEELxTheme.textSecondary)
 
@@ -33,7 +33,7 @@ struct IntroStepView: View {
             .padding(.leading, 4)
             Spacer(minLength: 4)
             NEELxLogoView()
-                .frame(width: 106, height: 106)
+                .frame(width: 102, height: 102)
                 .padding(.top, 4)
         }
         .onboardingContentPadding()
@@ -46,9 +46,22 @@ struct IntroStepView: View {
 }
 
 private struct NEELxLogoView: View {
+    @State private var appeared = false
+
     var body: some View {
-        // Video already bakes in its own white rounded-card background — no extra chrome needed.
-        LoopingVideoView(resourceName: "logoanimation")
+        Image(nsImage: NSApplication.shared.applicationIconImage)
+            .resizable()
+            .interpolation(.high)
+            .aspectRatio(contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+            .scaleEffect(appeared ? 1.0 : 0.90)
+            .opacity(appeared ? 1.0 : 0.0)
+            .onAppear {
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                    appeared = true
+                }
+            }
     }
 }
 
@@ -68,13 +81,13 @@ struct PermissionsStepView: View {
 
             PermissionRow(
                 title: "Accessibility",
-                detail: "Allow NEELx to unlock your Mac",
+                detail: "Unlock your Mac & approve system prompts",
                 granted: controller.accessibilityGranted
             ) { controller.grantAccessibility() }
 
             PermissionRow(
                 title: "Camera",
-                detail: "Allow NEELx to recognize your face",
+                detail: "Recognize your face & 3D depth on-device",
                 granted: controller.cameraPermission == .granted
             ) { controller.grantCamera() }
 
@@ -114,7 +127,7 @@ struct SecurityNoticeStepView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, 4)
 
-            Text("It uses your Mac's standard webcam and is designed for convenience, not high-security authentication.")
+            Text("Uses your Mac's webcam with on-device 3D Neural Depth & eye-gaze checks. Built for fast convenience — Apple Pay & payments always stay Touch ID only.")
                 .font(NEELxTheme.Font.passwordCaption)
                 .foregroundStyle(NEELxTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -152,12 +165,12 @@ struct PreSetupStepView: View {
         VStack(spacing: 2) {
             HStack(alignment: .top, spacing: 2) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Set up Face\nRecognition")
+                    Text("Set up 3D Face\nRecognition")
                         .font(NEELxTheme.Font.title)
                         .foregroundStyle(NEELxTheme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Slowly rotate your head\nin a circle")
+                    Text("Slowly roll your head once\nin a smooth 360° circle")
                         .font(NEELxTheme.Font.button)
                         .foregroundStyle(NEELxTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -433,7 +446,7 @@ struct PasswordStepView: View {
                 .foregroundStyle(NEELxTheme.textPrimary)
                 .padding(.leading, 4)
 
-            Text("Your password is required to unlock your Mac. It is encrypted and securely stored in Keychain. NEELx works entirely offline, so your password never leaves your Mac.")
+            Text("Encrypted locally with AES-256-GCM under your Touch ID Keychain key. Used strictly offline to unlock your Mac and approve system prompts.")
                 .font(NEELxTheme.Font.passwordCaption)
                 .foregroundStyle(NEELxTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
