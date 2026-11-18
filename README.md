@@ -54,16 +54,19 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Apple Silicon (M1, M2, M3, M4, M5 & newer)** or **Intel Mac** (no upper chip limit)
 - Built-in FaceTime HD / Center Stage camera or external USB / Continuity webcam
 
-#### Option 1: Install via Homebrew Cask (Recommended)
+#### Option 1: 1-Click Terminal Quick Install (Recommended — Zero Gatekeeper Blocks)
+Downloads the DMG, clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
 ```bash
-brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx
-brew install --cask neelx
+curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash
 ```
+*(Or install via Homebrew Cask: `brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx && brew install --cask neelx`)*
 
 #### Option 2: Download Universal DMG Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
 - `NEELx-v2.0.0-beta.5-universal-lite.dmg` (~13.9 MB — fast download with 1-click in-app 3D Depth download)
 - `NEELx-v2.0.0-beta.5-universal.dmg` (~58.6 MB — complete offline bundle with `DepthAnythingV2SmallF16` pre-installed)
+
+> **💡 First time opening on macOS?** In Finder, **Right-Click** `NEELx.app` in `/Applications` and select **Open** (or run `xattr -cr /Applications/NEELx.app`).
 
 #### Option 3: Build Directly from Swift Source
 ```bash
@@ -87,17 +90,19 @@ shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg
 - Any built-in or USB RGB webcam (720p+ recommended, **no Windows Hello IR camera required**)
 - Any DirectX 12 GPU or Windows NPU for DirectML acceleration (CPU fallback built in)
 
-#### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Upgrade-Safe)
-Verifies the official SHA-256 checksum automatically, installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin required), creates a Start Menu shortcut with the official NEELx logo, and preserves 100% of your DPAPI biometric vault in `%LOCALAPPDATA%\NEELx` on every upgrade:
+#### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
+Verifies the official SHA-256 checksum automatically, unblocks files from Windows Defender (`Unblock-File`), installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin required), creates a Start Menu shortcut with the official NEELx logo, and preserves 100% of your DPAPI biometric vault in `%LOCALAPPDATA%\NEELx` on every upgrade:
 ```powershell
-irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex
+irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 ```
 *(Clean rollback / uninstaller preserving your vault by default: `irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex`)*
 
 #### Option 2: Download Windows ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- `NEELx-v2.0.0-beta.5-windows-x64-portable.zip` (Standalone self-contained — zero prerequisites, unzip & run `NEELx.Windows.exe`)
+- `NEELx-v2.0.0-beta.5-windows-x64-portable.zip` (Standalone self-contained — includes `Run-NEELx.bat` to launch with zero SmartScreen friction)
 - `NEELx-v2.0.0-beta.5-windows-x64-lite.zip` (Lightweight — requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0))
+
+> **💡 First time opening on Windows 11?** Double-click `Run-NEELx.bat` inside the unzipped folder, or click **"More info" → "Run anyway"** if SmartScreen appears.
 
 #### Option 3: Build & Run Directly from `.NET 8` Source
 ```powershell

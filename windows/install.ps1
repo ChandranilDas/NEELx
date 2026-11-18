@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     NEELx for Windows 11 — Official 1-Click Installer & Upgrade-Safe Updater.
 
@@ -88,6 +88,10 @@ try {
 
     Write-Host "Extracting to $InstallDir..."
     Expand-Archive -Path $ZipPath -DestinationPath $InstallDir -Force
+
+    # Strips Windows Defender Mark-of-the-Web (Zone.Identifier) so SmartScreen never blocks launch
+    Write-Host "Unblocking files (clearing SmartScreen Mark-of-the-Web)..."
+    Get-ChildItem -Path $InstallDir -Recurse | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction SilentlyContinue }
 
     $ExePath = Join-Path $InstallDir "NEELx.Windows.exe"
     if (-not (Test-Path $ExePath)) {

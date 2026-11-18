@@ -55,17 +55,23 @@ You can preview all four live states immediately after launching `NEELx.Windows.
 - Any built-in or USB RGB webcam (720p+ recommended)
 - DirectX 12 GPU or Windows NPU (CPU fallback supported)
 
-### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Upgrade-Safe)
-Verifies the official SHA-256 checksum before extracting, installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin rights required), creates a Start Menu shortcut, and preserves 100% of your DPAPI biometric vault & ONNX models in `%LOCALAPPDATA%\NEELx` across upgrades:
+### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
+Verifies the official SHA-256 checksum before extracting, strips Windows Defender Mark-of-the-Web (`Unblock-File`), installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin rights required), creates a Start Menu shortcut, and preserves 100% of your DPAPI biometric vault & ONNX models in `%LOCALAPPDATA%\NEELx` across upgrades:
 ```powershell
-irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex
+irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 ```
 To uninstall cleanly (keeping your DPAPI vault unless `-WipeVault` is passed):
 ```powershell
 irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex
 ```
 
-### Option 2: Verify Downloaded ZIP Checksum (Public SHA-256)
+### Option 2: Standalone Portable ZIP (Unzip & Run)
+If downloading the ZIP from the website or GitHub:
+1. Extract the ZIP file to any folder.
+2. Double-click **`Run-NEELx.bat`** (automatically clears Windows Defender Mark-of-the-Web and launches `NEELx.Windows.exe`).
+3. Or if launching `NEELx.Windows.exe` directly and Microsoft Defender SmartScreen prompts, click **"More info" → "Run anyway"**.
+
+### Option 3: Verify Downloaded ZIP Checksum (Public SHA-256)
 ```powershell
 Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.5-windows-x64-portable.zip" -Algorithm SHA256
 ```

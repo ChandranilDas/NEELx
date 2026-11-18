@@ -38,7 +38,7 @@ jobs:
       - name: Validate Windows Installer & Uninstaller PowerShell Scripts
         shell: pwsh
         run: |
-          foreach ($scriptPath in @("windows/install.ps1", "windows/uninstall.ps1")) {
+          foreach ($scriptPath in @("windows/install.ps1", "windows/uninstall.ps1", "website/install.ps1")) {
             $tokens = $null
             $parseErrors = $null
             $fullPath = (Resolve-Path $scriptPath).Path
@@ -61,6 +61,7 @@ jobs:
             -c Release -r win-x64 --self-contained false `
             -o "$outDir/lite"
           Copy-Item windows/README.md "$outDir/lite/README.md"
+          Copy-Item windows/Run-NEELx.bat "$outDir/lite/Run-NEELx.bat"
           Compress-Archive -Path "$outDir/lite/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-lite.zip" -Force
 
           # 2. Standalone Portable package (self-contained — zero prerequisites, unzip & run)
@@ -69,6 +70,7 @@ jobs:
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -o "$outDir/portable"
           Copy-Item windows/README.md "$outDir/portable/README.md"
+          Copy-Item windows/Run-NEELx.bat "$outDir/portable/Run-NEELx.bat"
           Compress-Archive -Path "$outDir/portable/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-portable.zip" -Force
 
           $liteHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64-lite.zip" -Algorithm SHA256).Hash.ToLower()

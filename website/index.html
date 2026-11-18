@@ -16,7 +16,7 @@
   <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png?v=20261118-4" />
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=20261118-4" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=20261118-4" />
-  <link rel="stylesheet" href="styles.css?v=20261118-4" />
+  <link rel="stylesheet" href="styles.css?v=20261119-1" />
 </head>
 
 <body>
@@ -752,7 +752,17 @@
         </div>
 
         <!-- MACOS DOWNLOAD PANE -->
+        <!-- MACOS DOWNLOAD PANE -->
         <div id="download-macos" class="platform-pane active">
+          <!-- Recommended 1-Click Terminal Quick Install (Zero Gatekeeper Blocks) -->
+          <div class="copy-block" style="border: 1px solid rgba(48, 209, 88, 0.45); background: rgba(48, 209, 88, 0.08); padding: 16px; border-radius: 14px; margin-bottom: 20px;">
+            <div class="copy-block-content">
+              <span class="copy-label" style="color: #30D158; font-weight: 600; display: block; margin-bottom: 6px;">⚡ Recommended 1-Click Install (Zero Gatekeeper blocks · Opens instantly)</span>
+              <code id="cmdMacOneClick" class="copy-cmd">curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdMacOneClick">Copy</button>
+          </div>
+
           <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
             No upper Apple Silicon chip limit — NEELx compiles as a native Universal Binary (<code>arm64</code> +
             <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel
@@ -798,6 +808,22 @@
                     id="fullSha">258421d72cf0a2a5b02dd3c7126a893a6db32591a92e8fc1ca99452f51de5427</span></span>
                 <button class="btn-copy" type="button" data-copy-target="#fullSha">Copy</button>
               </div>
+            </div>
+          </div>
+
+          <!-- Gatekeeper First Launch Guidance -->
+          <div style="background: rgba(255, 189, 46, 0.08); border: 1px solid rgba(255, 189, 46, 0.3); border-radius: 12px; padding: 14px 18px; margin: 18px 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 16px;">💡</span>
+              <strong style="color: #FFBD2E; font-size: 13.5px;">First time opening DMG on macOS Sequoia or Sonoma?</strong>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 8px 0;">
+              Because NEELx is open-source and not signed with a paid Apple developer subscription, macOS Gatekeeper may show <em>"Apple could not verify NEELx is free of malware"</em>.
+            </p>
+            <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.6;">
+              • <strong>Option A (Easiest):</strong> In Finder, <strong>Right-Click</strong> (or Control-Click) <code>NEELx.app</code> in Applications and click <strong>Open</strong>, then click <strong>Open</strong> on the prompt.<br/>
+              • <strong>Option B:</strong> Go to <strong>System Settings → Privacy &amp; Security</strong>, scroll to Security, and click <strong>Open Anyway</strong>.<br/>
+              • <strong>Option C (Zero Dialogs):</strong> Run the 1-Click Terminal Command above (auto-clears quarantine).
             </div>
           </div>
 
@@ -861,6 +887,15 @@
 
         <!-- WINDOWS 11 DOWNLOAD PANE -->
         <div id="download-windows" class="platform-pane">
+          <!-- Recommended 1-Click PowerShell Quick Install (Zero SmartScreen Blocks) -->
+          <div class="copy-block" style="border: 1px solid rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.08); padding: 16px; border-radius: 14px; margin-bottom: 20px;">
+            <div class="copy-block-content">
+              <span class="copy-label" style="color: #38BDF8; font-weight: 600; display: block; margin-bottom: 6px;">⚡ Recommended 1-Click Install (Zero SmartScreen blocks · Upgrade-Safe DPAPI Vault)</span>
+              <code id="cmdWinQuickTop" class="copy-cmd">irm https://chandranildas.github.io/NEELx/install.ps1 | iex</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdWinQuickTop">Copy</button>
+          </div>
+
           <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
             Built for <strong>Windows 11 (22H2 or newer, x64 &amp; ARM64)</strong> with any built-in or USB webcam —
             <strong>no Windows Hello IR camera required</strong>. Uses DirectX 12 GPU / Copilot+ NPU via ONNX DirectML
@@ -875,7 +910,7 @@
               </div>
               <p class="dl-copy">
                 Recommended zero-dependency package. Self-contained <code>.NET 8</code> runtime + DirectML ONNX engine
-                bundled inside — just unzip and double-click <code>NEELx.Windows.exe</code>.
+                bundled inside — includes <code>Run-NEELx.bat</code> to launch with zero SmartScreen friction.
               </p>
               <a id="btnDownloadWinPortable" class="btn btn-win"
                 href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip">
@@ -906,6 +941,22 @@
                     id="winLiteSha">1d7534b5627dab075830c2c5bb53d22dc559cd6a78b23cd4df4e3314ea321fc5</span></span>
                 <button class="btn-copy" type="button" data-copy-target="#winLiteSha">Copy</button>
               </div>
+            </div>
+          </div>
+
+          <!-- Windows SmartScreen First Launch Guidance -->
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px 18px; margin: 18px 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 16px;">💡</span>
+              <strong style="color: #38BDF8; font-size: 13.5px;">First time opening on Windows 11?</strong>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 8px 0;">
+              Because NEELx is open-source and not signed with an enterprise commercial certificate, Microsoft Defender SmartScreen may show <em>"Windows protected your PC"</em>.
+            </p>
+            <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.6;">
+              • <strong>Option A (Easiest):</strong> Double-click <strong><code>Run-NEELx.bat</code></strong> inside the extracted folder (automatically unblocks and starts NEELx).<br/>
+              • <strong>Option B:</strong> On the SmartScreen prompt, click <strong>"More info"</strong> → click <strong>"Run anyway"</strong>.<br/>
+              • <strong>Option C (Zero Dialogs):</strong> Run the 1-Click PowerShell command above (auto-unblocks and adds a Start Menu shortcut).
             </div>
           </div>
 
@@ -1054,7 +1105,7 @@
     </div>
   </footer>
 
-  <script src="app.js?v=20261118-3"></script>
+  <script src="app.js?v=20261119-1"></script>
 </body>
 
 </html>
