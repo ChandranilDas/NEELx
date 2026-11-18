@@ -400,6 +400,11 @@ final class FaceUnlockCoordinator {
         var lastFaceBoundingBox: CGRect?
         /// Cheap way to detect "no new camera frame yet" vs. "fresh frame" — without it a repeat frame would corrupt the liveness motion signal.
         var lastProcessedFrameID: UInt64?
+        /// Tracks the latest frame & reason when a face WAS visible so timed-out failures (e.g. flat 2D photo,
+        /// closed eyes, or short wrong-face attempts) are always recorded in the Audit Log, while empty-room timeouts stay silent.
+        var lastSeenFaceFrame: CameraFrame?
+        var lastPendingKind: SecurityAuditKind = .wrongFace
+        var lastPendingReason: String?
 
         while Date() < deadline, !Task.isCancelled,
               !requireOverlayScanning || NotchOverlayController.shared.phase == .scanning {
@@ -437,6 +442,7 @@ final class FaceUnlockCoordinator {
             // Face is visible — measure face-region brightness and hold once well-illuminated
             scanLighting.consider(frame.image, faceVisible: true, faceBox: result.face.normalizedBoundingBox)
             lastFaceBoundingBox = result.face.normalizedBoundingBox
+            lastSeenFaceFrame = frame
 
             let neuralDepthEnabled = NEELxSettings.shared.neuralDepthEnabled
             if !neuralDepthEnabled {
@@ -485,14 +491,16 @@ final class FaceUnlockCoordinator {
                 livenessConfirmed = false
                 matchedNonSpoofFrames = 0
                 liveness.reset()
+                let topDetail = scored.first.map {
+                    String(format: "max=%.3f centroid=%.3f (threshold %.2f)", $0.maxSampleSimilarity, $0.centroidSimilarity, matchThreshold)
+                } ?? "no enrolled active face"
+                lastPendingKind = .wrongFace
+                lastPendingReason = "Unrecognized face (\(topDetail))"
                 // Allow 0.65s for camera auto-exposure & adaptive dark-room lighting to settle before counting wrong-face streaks
                 if Date().timeIntervalSince(scanStartedAt) >= 0.65 {
                     consecutiveWrongFaceFrames += 1
                 }
                 if consecutiveWrongFaceFrames >= wrongFaceStreakThreshold {
-                    let topDetail = scored.first.map {
-                        String(format: "max=%.3f centroid=%.3f (threshold %.2f)", $0.maxSampleSimilarity, $0.centroidSimilarity, matchThreshold)
-                    } ?? "no enrolled active face"
                     lastOutcome = "Unrecognized face (\(topDetail))"
                     SecurityAuditLog.shared.record(kind: .wrongFace, detail: "Unrecognized face (\(topDetail))", snapshotImage: frame.image)
                     return .consistentlyWrongFace
@@ -682,7 +690,37 @@ final class FaceUnlockCoordinator {
                 return .matched
             }
 
+            if flatSpoofSuspected {
+                lastPendingKind = .spoofBlocked
+                lastPendingReason = String(
+                    format: "Flat 2D surface blocked (3D Depth %.0f%%, flatSpoof %.0f%%).",
+                    (depthReading?.depth3DScore ?? 0) * 100,
+                    (depthReading?.flatSpoofScore ?? 0) * 100
+                )
+            } else if !attentionVerified {
+                lastPendingKind = .spoofBlocked
+                lastPendingReason = !eyesOpen
+                    ? "Attention check failed — eyes closed or obscured."
+                    : "Attention check failed — not facing the screen."
+            } else if !livenessConfirmed {
+                lastPendingKind = .spoofBlocked
+                lastPendingReason = String(
+                    format: "Could not verify live 3D face before timeout (3D Depth %.0f%%).",
+                    (depthReading?.depth3DScore ?? 0) * 100
+                )
+            }
+
             try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+
+        // If a face was actually in front of the camera when the scan window timed out without unlocking,
+        // record the failure + encrypted snapshot in the Audit Log (empty-room timeouts stay silent).
+        if !Task.isCancelled,
+           LockMonitor.isScreenActuallyLocked(),
+           let faceFrame = lastSeenFaceFrame,
+           let reason = lastPendingReason {
+            lastOutcome = reason
+            SecurityAuditLog.shared.record(kind: lastPendingKind, detail: reason, snapshotImage: faceFrame.image)
         }
         return .noResolution
     }

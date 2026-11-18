@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     NEELx for Windows 11 — Clean Uninstaller & WinLogon Rollback.
 

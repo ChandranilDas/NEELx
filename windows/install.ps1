@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     NEELx for Windows 11 — Official 1-Click Installer & Upgrade-Safe Updater.
 
