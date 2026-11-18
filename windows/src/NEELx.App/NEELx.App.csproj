@@ -12,7 +12,13 @@
     <Authors>Chandranil Das</Authors>
     <Product>NEELx for Windows 11</Product>
     <Description>100% offline 3D biometric Face Unlock for Windows 11 using standard RGB webcams and DirectML neural depth.</Description>
+    <ApplicationIcon>Assets\neelx.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\neelx.ico" />
+    <Resource Include="Assets\neelx-logo.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.19.2" />

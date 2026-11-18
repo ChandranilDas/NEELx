@@ -1,10 +1,16 @@
-<svg width="181" height="174" viewBox="0 0 181 174" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M50.0027 117.938C66.6591 139.354 117.149 139.354 134.326 117.938" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M96.8489 47L80.7874 95.1846H96.8489" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M52.6797 47V68.6513" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M131.649 47V68.6513" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M6.00001 134C6.00001 135.545 6.00001 139.299 6.00001 140.182C6.00001 155.636 18.3646 168 30.7292 168C33.8204 168 36.9115 168 40.0027 168" stroke="white" stroke-width="12" stroke-linecap="round"/>
-<path d="M175.005 134C175.005 135.545 175.005 139.299 175.005 140.182C175.005 155.636 162.641 168 150.276 168C147.185 168 144.094 168 141.003 168" stroke="white" stroke-width="12" stroke-linecap="round"/>
-<path d="M6.00001 40C6.00001 38.4545 6.00001 34.7008 6.00001 33.8182C6.00001 18.3636 18.3646 6 30.7292 6C33.8204 6 36.9115 6 40.0027 6" stroke="white" stroke-width="12" stroke-linecap="round"/>
-<path d="M175.005 40C175.005 38.4545 175.005 34.7008 175.005 33.8182C175.005 18.3636 162.641 6 150.276 6C147.185 6 144.094 6 141.003 6" stroke="white" stroke-width="12" stroke-linecap="round"/>
+<svg width="184" height="184" viewBox="0 0 184 184" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Corner Face ID brackets -->
+  <path d="M16 56V40C16 26.745 26.745 16 40 16H56" stroke="white" stroke-width="13" stroke-linecap="round"/>
+  <path d="M168 56V40C168 26.745 157.255 16 144 16H128" stroke="white" stroke-width="13" stroke-linecap="round"/>
+  <path d="M16 128V144C16 157.255 26.745 168 40 168H56" stroke="white" stroke-width="13" stroke-linecap="round"/>
+  <path d="M168 128V144C168 157.255 157.255 168 144 168H128" stroke="white" stroke-width="13" stroke-linecap="round"/>
+  <!-- Signature flowing NEELx N-wave swoop -->
+  <path d="M40 80C54 50 76 42 92 56C106 68 122 72 146 42C136 74 114 86 95 72C78 60 58 66 40 80Z" fill="white"/>
+  <!-- Eyes -->
+  <path d="M62 84V100" stroke="white" stroke-width="12" stroke-linecap="round"/>
+  <path d="M122 84V100" stroke="white" stroke-width="12" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M94 86V112C94 116 91 119 86 119H82" stroke="white" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Smile -->
+  <path d="M68 134C80 146 104 146 116 134" stroke="white" stroke-width="11" stroke-linecap="round"/>
 </svg>

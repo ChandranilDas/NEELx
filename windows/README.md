@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../website/assets/neelx-logo.png" width="96" height="96" alt="NEELx Official Logo" />
+</p>
+
 # NEELx for Windows 11 (Fluent Prism Edition)
 
 **100% offline 3D biometric Face Unlock for Windows 11 laptops and desktops with any standard RGB webcam — no Windows Hello IR camera required.**

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="website/assets/neelx-logo.png" width="112" height="112" alt="NEELx Official Logo" />
+</p>
+
 # NEELx — Fast, Hardened 3D Biometric Face Unlock for macOS & Windows 11
 
 **NEELx** brings fast, natural, 3D biometric Face Unlock to **macOS** and **Windows 11** using any standard built-in or USB RGB webcam — **no IR camera required, 100% offline, hardware-encrypted at rest, and open-source (MIT License).**
