@@ -687,6 +687,7 @@ struct FeedbackSheetView: View {
 
         case .gmailWebApp:
             if let url = webmailComposeURL(for: .gmail) {
+                copyFirstScreenshotToClipboardIfNeeded()
                 NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
                     Task { @MainActor in
                         if error != nil {
@@ -695,7 +696,7 @@ struct FeedbackSheetView: View {
                         submitFailed = false
                         submitResult = screenshots.isEmpty
                             ? "Opened pre-filled draft in \(app.name) — review and press Send!"
-                            : "Opened draft in \(app.name) (use 'Send Directly' to auto-attach screenshots)."
+                            : "Opened \(app.name) — press Cmd+V inside the email to paste your screenshot (or use 'Send Directly' to auto-attach all \(screenshots.count))."
                     }
                 }
                 return
@@ -703,11 +704,14 @@ struct FeedbackSheetView: View {
 
         case .outlookWebApp:
             if let url = webmailComposeURL(for: .outlook) {
+                copyFirstScreenshotToClipboardIfNeeded()
                 NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
                     Task { @MainActor in
                         if error != nil { NSWorkspace.shared.open(url) }
                         submitFailed = false
-                        submitResult = "Opened pre-filled draft in \(app.name) — review and press Send!"
+                        submitResult = screenshots.isEmpty
+                            ? "Opened pre-filled draft in \(app.name) — review and press Send!"
+                            : "Opened \(app.name) — press Cmd+V inside the email to paste your screenshot (or use 'Send Directly' to auto-attach all \(screenshots.count))."
                     }
                 }
                 return
@@ -715,11 +719,14 @@ struct FeedbackSheetView: View {
 
         case .yahooWebApp:
             if let url = webmailComposeURL(for: .yahoo) {
+                copyFirstScreenshotToClipboardIfNeeded()
                 NSWorkspace.shared.open([url], withApplicationAt: app.appURL, configuration: config) { _, error in
                     Task { @MainActor in
                         if error != nil { NSWorkspace.shared.open(url) }
                         submitFailed = false
-                        submitResult = "Opened pre-filled draft in \(app.name) — review and press Send!"
+                        submitResult = screenshots.isEmpty
+                            ? "Opened pre-filled draft in \(app.name) — review and press Send!"
+                            : "Opened \(app.name) — press Cmd+V inside the email to paste your screenshot (or use 'Send Directly' to auto-attach all \(screenshots.count))."
                     }
                 }
                 return
@@ -806,6 +813,14 @@ struct FeedbackSheetView: View {
         return components.url
     }
 
+    /// Webmail compose URLs (Gmail/Outlook/Yahoo) cannot receive image attachments via query parameters,
+    /// so we copy the attached screenshot onto the clipboard so a single Cmd+V pastes it straight into the draft.
+    private func copyFirstScreenshotToClipboardIfNeeded() {
+        guard let first = screenshots.first else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([first.preview])
+    }
+
     private func openWebmail(_ provider: WebmailProvider) {
         let label: String
         switch provider {
@@ -815,11 +830,12 @@ struct FeedbackSheetView: View {
         }
 
         if let url = webmailComposeURL(for: provider) {
+            copyFirstScreenshotToClipboardIfNeeded()
             NSWorkspace.shared.open(url)
             submitFailed = false
             submitResult = screenshots.isEmpty
                 ? "Opened pre-filled draft in \(label) — press Send!"
-                : "Opened pre-filled draft in \(label) (tip: click 'Send Directly' to auto-attach your \(screenshots.count) screenshot(s))."
+                : "Opened \(label) — press Cmd+V inside the email to paste your screenshot (or click 'Send Directly' to auto-attach all \(screenshots.count))."
         }
     }
 
