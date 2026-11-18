@@ -9,7 +9,7 @@ struct RecognitionSettingsPage: View {
     @Bindable var coordinator: FaceUnlockCoordinator
     @Bindable var pocController: POCController
     @Bindable private var settings = NEELxSettings.shared
-    private var depthDownloader = DepthModelDownloader.shared
+    private let depthDownloader = DepthModelDownloader.shared
 
     @State private var isUnlocking = false
     @State private var sessionError: String?
