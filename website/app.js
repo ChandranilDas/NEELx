@@ -1166,20 +1166,6 @@ function initDepthLab() {
 // 7. Windows 11 Fluent Prism Core — Studio-Grade Kinetic 3D Orbital Renderer
 //    (Matches real Windows 11 PrismHorizonOverlay.xaml + macOS studio quality)
 // ---------------------------------------------------------------------------
-function drawOctagonPath(ctx, cx, cy, r) {
-  const c = r * 0.414;
-  ctx.beginPath();
-  ctx.moveTo(cx - c, cy - r);
-  ctx.lineTo(cx + c, cy - r);
-  ctx.lineTo(cx + r, cy - c);
-  ctx.lineTo(cx + r, cy + c);
-  ctx.lineTo(cx + c, cy + r);
-  ctx.lineTo(cx - c, cy + r);
-  ctx.lineTo(cx - r, cy + c);
-  ctx.lineTo(cx - r, cy - c);
-  ctx.closePath();
-}
-
 function draw3DOrbitalRing(ctx, cx, cy, radius, tiltX, rotZ, strokeColor, glowColor, lineWidth, alpha) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -1225,7 +1211,7 @@ function drawKineticPrismCore(ctx, cx, cy, radius, mode, t, opts = {}) {
   let shakeX = 0;
   if (animatedLoop) {
     if (mode === "verified") {
-      // Calm 4.4s loop: 0..0.38 orbital spin -> 0.38..0.58 emerald octagon snap -> 0.52..0.76 checkmark draw -> hold
+      // Calm 4.4s loop: 0..0.38 orbital spin -> 0.38..0.58 emerald circle snap -> 0.52..0.76 checkmark draw -> hold
       phase = (t * 0.24) % 1;
     } else if (mode === "spoof") {
       // Calm 4.0s loop: 0..0.34 cyan scan -> 0.34..0.58 damped spring recoil + coral X -> hold
@@ -1272,7 +1258,7 @@ function drawKineticPrismCore(ctx, cx, cy, radius, mode, t, opts = {}) {
   const isLockedVerified = mode === "verified" && (!animatedLoop || phase >= 0.42);
   const isLockedSpoof = mode === "spoof" && (!animatedLoop || phase >= 0.38);
 
-  // 1. Dual 3D Tilted Orbital Prism Rings (gyroscopic 3D depth feel, matching macOS motion quality)
+  // 1. Dual 3D Tilted Orbital Prism Rings (scanning) OR clean luminous Circle (verified / spoof)
   if (!isLockedVerified && !isLockedSpoof) {
     const speed = mode === "verified" ? 1.5 : 1.15;
     const tiltA = 0.42 + Math.sin(t * speed) * 0.42;
@@ -1280,28 +1266,30 @@ function drawKineticPrismCore(ctx, cx, cy, radius, mode, t, opts = {}) {
     draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltA, t * 0.65, primary, primary, Math.max(2.6, radius * 0.055), 0.9);
     draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltB, -t * 0.52 + 1.1, secondary, secondary, Math.max(2.2, radius * 0.046), 0.78);
   } else {
-    // Soft converged outer halo ring
+    // Soft converged outer circular glow halo
     ctx.save();
     ctx.strokeStyle = primary;
-    ctx.globalAlpha = 0.22;
-    ctx.lineWidth = Math.max(6, radius * 0.14);
+    ctx.globalAlpha = 0.24;
+    ctx.lineWidth = Math.max(7, radius * 0.14);
     ctx.shadowColor = primary;
-    ctx.shadowBlur = 22;
-    drawOctagonPath(ctx, 0, 0, radius * 0.95);
+    ctx.shadowBlur = 24;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.94, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Crisp luminous circle enclosing the tick or cross
+    ctx.save();
+    ctx.strokeStyle = primary;
+    ctx.lineWidth = Math.max(3.6, radius * 0.068);
+    ctx.globalAlpha = 0.96;
+    ctx.shadowColor = primary;
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.94, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
-
-  // 2. Crisp Fluent Octagonal Crystal Frame (Windows-original geometric signature)
-  ctx.save();
-  ctx.strokeStyle = primary;
-  ctx.lineWidth = isLockedVerified || isLockedSpoof ? Math.max(3.6, radius * 0.068) : Math.max(1.8, radius * 0.032);
-  ctx.globalAlpha = isLockedVerified || isLockedSpoof ? 0.95 : 0.48;
-  ctx.shadowColor = primary;
-  ctx.shadowBlur = isLockedVerified || isLockedSpoof ? 18 : 8;
-  drawOctagonPath(ctx, 0, 0, radius * 0.94);
-  ctx.stroke();
-  ctx.restore();
 
   // 3. Center Biometric Emblem:
   //    - Scanning / Backlit: Proper Sculpted 3D Human Face + volumetric depth laser sweep

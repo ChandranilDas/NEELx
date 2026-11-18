@@ -14,9 +14,9 @@ public enum PrismVisualState
 
 /// <summary>
 /// Bespoke Windows 11 Fluent Prism Core biometric unlock overlay.
-/// Features a sculpted Fluent biometric face inside an octagonal crystal aperture,
-/// dual 3D tilted orbital prism rings, vertical volumetric depth-scan sweep,
-/// emerald crystal checkmark convergence, and damped horizontal spoof recoil.
+/// Features a sculpted Fluent biometric face encircled by dual 3D tilted orbital prism rings
+/// and a vertical volumetric depth-scan sweep, converging into a luminous emerald circle + tick
+/// on verified unlock or a damped coral-amber circle + cross on 2D spoof rejection.
 /// </summary>
 public partial class PrismHorizonOverlay : Window
 {
@@ -96,6 +96,7 @@ public partial class PrismHorizonOverlay : Window
                 FaceScanBeam.Opacity = 1.0;
                 VerifiedCheckPath.Opacity = 0.0;
                 SpoofCrossPath.Opacity = 0.0;
+                StatusCircleRing.Opacity = 0.0;
                 OrbitRingA.Opacity = 0.92;
                 OrbitRingB.Opacity = 0.85;
                 _scanLoopStoryboard.Begin(this, isControllable: true);
@@ -111,6 +112,7 @@ public partial class PrismHorizonOverlay : Window
                 FaceScanBeam.Opacity = 1.0;
                 VerifiedCheckPath.Opacity = 0.0;
                 SpoofCrossPath.Opacity = 0.0;
+                StatusCircleRing.Opacity = 0.0;
                 OrbitRingA.Opacity = 0.92;
                 OrbitRingB.Opacity = 0.85;
                 _scanLoopStoryboard.Begin(this, isControllable: true);
@@ -126,8 +128,9 @@ public partial class PrismHorizonOverlay : Window
                 FluentFaceGroup.Opacity = 0.0;
                 FaceScanBeam.Opacity = 0.0;
                 SpoofCrossPath.Opacity = 0.0;
-                OrbitRingA.Opacity = 0.18;
-                OrbitRingB.Opacity = 0.18;
+                OrbitRingA.Opacity = 0.0;
+                OrbitRingB.Opacity = 0.0;
+                StatusCircleRing.Opacity = 1.0;
                 VerifiedCheckPath.Opacity = 1.0;
                 break;
 
@@ -141,8 +144,9 @@ public partial class PrismHorizonOverlay : Window
                 FluentFaceGroup.Opacity = 0.0;
                 FaceScanBeam.Opacity = 0.0;
                 VerifiedCheckPath.Opacity = 0.0;
-                OrbitRingA.Opacity = 0.22;
-                OrbitRingB.Opacity = 0.22;
+                OrbitRingA.Opacity = 0.0;
+                OrbitRingB.Opacity = 0.0;
+                StatusCircleRing.Opacity = 1.0;
                 SpoofCrossPath.Opacity = 1.0;
                 _recoilStoryboard.Begin(this);
                 break;
@@ -160,8 +164,9 @@ public partial class PrismHorizonOverlay : Window
         OrbitGlowA.Color = accent;
         OrbitGlowB.Color = secondary;
 
-        OctagonCrystal.Stroke = new SolidColorBrush(Color.FromArgb(180, accent.R, accent.G, accent.B));
-        OctagonCrystal.Fill = new SolidColorBrush(Color.FromArgb(24, accent.R, accent.G, accent.B));
+        StatusCircleRing.Stroke = new SolidColorBrush(accent);
+        StatusCircleRing.Fill = new SolidColorBrush(Color.FromArgb(22, accent.R, accent.G, accent.B));
+        StatusCircleGlow.Color = accent;
         FaceContourPath.Fill = new SolidColorBrush(Color.FromArgb(22, accent.R, accent.G, accent.B));
 
         PrimaryStatusText.Text = title;

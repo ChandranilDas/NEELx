@@ -88,17 +88,18 @@
                         </Ellipse.RenderTransform>
                     </Ellipse>
 
-                    <!-- Octagonal Crystal Perimeter Ring (Snaps luminous on Verified / Spoof) -->
-                    <Polygon x:Name="OctagonCrystal"
-                             Points="46,14 90,14 122,46 122,90 90,122 46,122 14,90 14,46"
-                             Stroke="#4438BDF8"
-                             StrokeThickness="2.2"
-                             Fill="#0D38BDF8"
-                             RenderTransformOrigin="0.5,0.5">
-                        <Polygon.RenderTransform>
-                            <ScaleTransform x:Name="OctagonScale" ScaleX="1" ScaleY="1"/>
-                        </Polygon.RenderTransform>
-                    </Polygon>
+                    <!-- Luminous Circular Verification Ring (Shown ONLY on Verified Unlock / Spoof Block) -->
+                    <Ellipse x:Name="StatusCircleRing"
+                             Width="112" Height="112"
+                             Canvas.Left="12" Canvas.Top="12"
+                             Stroke="#FF30D158"
+                             StrokeThickness="3.8"
+                             Fill="#1230D158"
+                             Opacity="0">
+                        <Ellipse.Effect>
+                            <DropShadowEffect x:Name="StatusCircleGlow" Color="#30D158" BlurRadius="20" ShadowDepth="0" Opacity="0.8"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
 
                     <!-- Sculpted Fluent Biometric Face Emblem (Visible during Scanning / Backlit HDR) -->
                     <Canvas x:Name="FluentFaceGroup" Width="136" Height="136" Opacity="1">
