@@ -11,6 +11,8 @@ struct CameraSettingsPage: View {
     @Bindable private var settings = NEELxSettings.shared
     @State private var verifier = ContinuityDeviceVerifier.shared
     @State private var proximityGuard = DeviceProximityGuard.shared
+    @State private var passkeyCompanion = PasskeyCompanionManager.shared
+    @State private var isPairingSheetPresented = false
     @State private var previewCamera = CameraManager()
     @State private var isPreviewShown = false
 
@@ -77,12 +79,13 @@ struct CameraSettingsPage: View {
                 cameraPicker(title: "External display", selection: $settings.externalDisplayCameraID)
             }
 
+            // SECTION 2: iPhone & iPad Pro Continuity Camera (Option 3 - Desk Stand / Studio Optics)
             VStack(alignment: .leading, spacing: 8) {
-                SettingsSectionTitle(text: "iPhone & iPad Pro Continuity Studio")
+                SettingsSectionTitle(text: "iPhone & iPad Pro Camera (Continuity Studio)")
                 SettingsGroup {
                     SettingsRowContent(
                         title: "Use iPhone / iPad Pro Camera",
-                        subtitle: "Wirelessly connects your iPhone (iOS 16+) or iPad Pro camera for studio-quality optics, 4K clarity, and Center Stage tracking. Automatically falls back to Mac's built-in camera when disconnected.",
+                        subtitle: "Wirelessly connects your iPhone (iOS 16+) or iPad Pro camera for studio optics and 4K clarity. Works on any desk stand, wireless charger, kickstand case, or monitor mount — no special clip required! Automatically falls back to built-in webcam when disconnected.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
                         NEELxToggle(isOn: $settings.allowContinuityCamera)
@@ -93,7 +96,7 @@ struct CameraSettingsPage: View {
 
                         SettingsRowContent(
                             title: "Dual-Path Concurrent Unlock",
-                            subtitle: "Polls both your Mac's built-in camera and your iPhone/iPad camera simultaneously — unlocks from whichever detects your face first.",
+                            subtitle: "Polls both your Mac's built-in webcam and your phone/tablet camera simultaneously — unlocks from whichever sees your face first.",
                             subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                         ) {
                             NEELxToggle(isOn: $settings.dualCameraConcurrentUnlock)
@@ -111,14 +114,14 @@ struct CameraSettingsPage: View {
                     }
                 }
 
-                // Real-time hardware requirements & cross-check card
+                // Continuity hardware requirements & cross-check card
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Image(systemName: verifier.isRequirementsMet ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                             .foregroundStyle(verifier.isRequirementsMet ? Color.green : Color.yellow)
                             .font(.system(size: 14))
 
-                        Text(verifier.isRequirementsMet ? "Hardware Verified" : "Hardware Requirements Cross-Check")
+                        Text(verifier.isRequirementsMet ? "Camera Hardware Verified" : "Camera Requirements Cross-Check")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(verifier.isRequirementsMet ? Color.green : Color.yellow)
 
@@ -148,6 +151,157 @@ struct CameraSettingsPage: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius)
                         .strokeBorder(verifier.isRequirementsMet ? Color.green.opacity(0.3) : Color.yellow.opacity(0.3), lineWidth: 1)
+                )
+            }
+
+            // SECTION 3: Native Mobile Biometric Companion (Option 2 - Zero App Required)
+            VStack(alignment: .leading, spacing: 8) {
+                SettingsSectionTitle(text: "Mobile Biometric Companion (Native Passkey)")
+                SettingsGroup {
+                    SettingsRowContent(
+                        title: "Use Phone Face ID / Fingerprint",
+                        subtitle: "Unlock your Mac using your phone's native hardware biometrics (iPhone TrueDepth or Android BiometricPrompt) via standard FIDO2 Passkeys. Zero mobile app installation required.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.passkeyCompanionEnabled)
+                    }
+
+                    if settings.passkeyCompanionEnabled {
+                        SettingsGroupDivider()
+
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Paired Biometric Device")
+                                    .font(.subheadline.weight(.medium))
+                                Text(passkeyCompanion.isPaired ? passkeyCompanion.pairedDeviceName : "No phone paired yet")
+                                    .font(.caption)
+                                    .foregroundStyle(passkeyCompanion.isPaired ? Color.green : Color.secondary)
+                            }
+                            Spacer()
+                            if passkeyCompanion.isPaired {
+                                Button("Unpair") {
+                                    passkeyCompanion.unpairDevice()
+                                }
+                                .buttonStyle(.plain)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.red)
+                            } else {
+                                Button(action: {
+                                    if isPairingSheetPresented {
+                                        passkeyCompanion.stopPairingSession()
+                                        isPairingSheetPresented = false
+                                    } else {
+                                        passkeyCompanion.startPairingSession()
+                                        isPairingSheetPresented = true
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "qrcode")
+                                        Text(isPairingSheetPresented ? "Hide QR" : "Pair via QR Code")
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Capsule().fill(Color.blue.opacity(0.2)))
+                                    .overlay(Capsule().strokeBorder(Color.blue.opacity(0.5), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                    }
+                }
+
+                // QR Code Pairing Drawer
+                if isPairingSheetPresented && !passkeyCompanion.isPaired {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Scan with Phone Camera to Pair")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Button("Close") {
+                                passkeyCompanion.stopPairingSession()
+                                isPairingSheetPresented = false
+                            }
+                            .buttonStyle(.plain)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+
+                        if let qr = passkeyCompanion.pairingQRImage {
+                            Image(nsImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 170, height: 170)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .padding(6)
+                                .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.3)))
+                        }
+
+                        VStack(spacing: 4) {
+                            Text("1. Open Camera on iPhone (iOS 16+) or Android (9+)")
+                                .font(.caption.weight(.medium))
+                            Text("2. Tap the link to open Mobile Safari or Chrome")
+                                .font(.caption.weight(.medium))
+                            Text("3. Confirm with Face ID or Fingerprint — done in 5 seconds!")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(Color.green)
+                        }
+                        .foregroundStyle(.secondary)
+
+                        if let url = passkeyCompanion.pairingURL {
+                            Text(url)
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius).fill(SettingsMetrics.rowColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius)
+                            .strokeBorder(Color.blue.opacity(0.4), lineWidth: 1)
+                    )
+                }
+
+                // Companion hardware requirements & cross-check card
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: passkeyCompanion.isRequirementsMet ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(passkeyCompanion.isRequirementsMet ? Color.green : Color.yellow)
+                            .font(.system(size: 14))
+
+                        Text(passkeyCompanion.isRequirementsMet ? "Companion Requirements Verified" : "Companion Requirements Cross-Check")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(passkeyCompanion.isRequirementsMet ? Color.green : Color.yellow)
+
+                        Spacer()
+
+                        Button(action: {
+                            passkeyCompanion.evaluateRequirements()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Check")
+                            }
+                            .font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Text(passkeyCompanion.diagnosticMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                }
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius).fill(SettingsMetrics.rowColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius)
+                        .strokeBorder(passkeyCompanion.isRequirementsMet ? Color.green.opacity(0.3) : Color.yellow.opacity(0.3), lineWidth: 1)
                 )
             }
 

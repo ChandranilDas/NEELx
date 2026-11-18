@@ -122,6 +122,10 @@ final class NEELxSettings {
         static let allowContinuityCamera = "NEELxSettings.allowContinuityCamera"
         static let dualCameraConcurrentUnlock = "NEELxSettings.dualCameraConcurrentUnlock"
         static let deviceProximityGuardEnabled = "NEELxSettings.deviceProximityGuardEnabled"
+        static let passkeyCompanionEnabled = "NEELxSettings.passkeyCompanionEnabled"
+        static let passkeyCompanionDeviceName = "NEELxSettings.passkeyCompanionDeviceName"
+        static let passkeyCompanionCredentialID = "NEELxSettings.passkeyCompanionCredentialID"
+        static let passkeyCompanionPublicKey = "NEELxSettings.passkeyCompanionPublicKey"
         static let hasCompletedOnboarding = "NEELxSettings.hasCompletedOnboarding"
         static let onboardingResumeStep = "NEELxSettings.onboardingResumeStep"
         static let hasAcknowledgedSecurityNotice = "NEELxSettings.hasAcknowledgedSecurityNotice"
@@ -171,6 +175,23 @@ final class NEELxSettings {
             defaults.set(deviceProximityGuardEnabled, forKey: Key.deviceProximityGuardEnabled)
             DeviceProximityGuard.shared.updateState()
         }
+    }
+    /// Zero-App Native Biometric Companion for iPhone (Face ID TrueDepth) and Android (BiometricPrompt) via Passkeys.
+    /// Kept OFF by default.
+    var passkeyCompanionEnabled: Bool {
+        didSet {
+            defaults.set(passkeyCompanionEnabled, forKey: Key.passkeyCompanionEnabled)
+            PasskeyCompanionManager.shared.evaluateRequirements()
+        }
+    }
+    var passkeyCompanionDeviceName: String? {
+        didSet { defaults.set(passkeyCompanionDeviceName, forKey: Key.passkeyCompanionDeviceName) }
+    }
+    var passkeyCompanionCredentialID: String? {
+        didSet { defaults.set(passkeyCompanionCredentialID, forKey: Key.passkeyCompanionCredentialID) }
+    }
+    var passkeyCompanionPublicKey: String? {
+        didSet { defaults.set(passkeyCompanionPublicKey, forKey: Key.passkeyCompanionPublicKey) }
     }
     /// Active Chromatic Flash Challenge to defeat 4K video replay attacks.
     var chromaticFlashEnabled: Bool {
@@ -334,6 +355,10 @@ final class NEELxSettings {
         allowContinuityCamera = defaults.bool(forKey: Key.allowContinuityCamera)
         dualCameraConcurrentUnlock = defaults.bool(forKey: Key.dualCameraConcurrentUnlock)
         deviceProximityGuardEnabled = defaults.bool(forKey: Key.deviceProximityGuardEnabled)
+        passkeyCompanionEnabled = defaults.bool(forKey: Key.passkeyCompanionEnabled)
+        passkeyCompanionDeviceName = defaults.string(forKey: Key.passkeyCompanionDeviceName)
+        passkeyCompanionCredentialID = defaults.string(forKey: Key.passkeyCompanionCredentialID)
+        passkeyCompanionPublicKey = defaults.string(forKey: Key.passkeyCompanionPublicKey)
         let storedPresenceDelay = defaults.object(forKey: Key.presenceAutoLockSeconds) as? Int ?? 60
         presenceAutoLockSeconds = [30, 60, 120, 300].contains(storedPresenceDelay) ? storedPresenceDelay : 60
         // Matches `DetectionDistanceLevel.standard` — see RecognitionSettingsPage.swift.

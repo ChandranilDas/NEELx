@@ -368,15 +368,15 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Group 2: Mobile Device & Proximity Companion (iPhone & Android) -->
+                        <!-- Group 2: Phone Camera (Desk Stand / Studio Optics) -->
                         <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16,14" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="MOBILE DEVICE &amp; PROXIMITY COMPANION" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" Margin="0,0,0,10"/>
+                                <TextBlock Text="PHONE CAMERA (DESK STAND / STUDIO OPTICS)" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" Margin="0,0,0,10"/>
 
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Left" MaxWidth="320">
                                         <TextBlock Text="Use Phone Camera (iPhone &amp; Android)" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="Uses your connected iPhone (Windows 11 Mobile Device / Camo) or Android camera for studio optics. Falls back to built-in webcam when disconnected." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                        <TextBlock Text="Uses connected iPhone or Android (Android 14+ USB webcam or Camo) for studio optics. Works on any desk stand, wireless charger, or kickstand — no laptop clip required!" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     </StackPanel>
                                     <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
                                 </DockPanel>
@@ -403,6 +403,31 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Group 3: Native Mobile Biometric Companion (Option 2 - Zero App Needed) -->
+                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="MOBILE BIOMETRIC COMPANION (NATIVE PASSKEY)" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" Margin="0,0,0,10"/>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="320">
+                                        <TextBlock Text="Use Phone Face ID / Fingerprint" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Unlock Windows using your phone's native hardware biometrics (iPhone TrueDepth or Android BiometricPrompt) via standard FIDO2 Passkeys. Zero mobile app installation required." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Right" HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource MacToggleSwitchStyle}"/>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,12,0,12"/>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="Paired Biometric Device" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Ready to pair via QR code" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                    <Button DockPanel.Dock="Right" Content="Pair via QR Code" Style="{StaticResource MacPillButtonStyle}" HorizontalAlignment="Right" Padding="12,5"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Hardware Cross-Check Card -->
                         <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="#3338BDF8" BorderThickness="1" Padding="14" Margin="0,0,0,12">
                             <StackPanel>
@@ -410,7 +435,7 @@
                                     <TextBlock DockPanel.Dock="Left" Text="Hardware Requirements Cross-Check" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentCyanBrush}"/>
                                     <TextBlock DockPanel.Dock="Right" Text="READY" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentGreenBrush}"/>
                                 </DockPanel>
-                                <TextBlock Text="• iPhone (iOS 16+) with Windows Link or Android 11+ with Bluetooth LE&#x0a;• Windows 11 (22H2 / 24H2) with Bluetooth 4.2+ / 5.0+ adapter&#x0a;• Wi-Fi &amp; Bluetooth enabled on both devices&#x0a;🔒 Zero-Risk: Phone in range will NEVER unlock PC alone. 3D depth and gaze are still strictly verified." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="17"/>
+                                <TextBlock Text="• iPhone: iOS 16.0+ with TrueDepth Face ID or Touch ID&#x0a;• Android: Android 9.0+ with BiometricPrompt (Fingerprint or Face)&#x0a;• PC: Windows 11 (22H2 / 24H2) with Bluetooth 4.2+ / 5.0+ and Wi-Fi&#x0a;• Zero App Required: Uses built-in OS Passkey hardware and local pairing&#x0a;🔒 Zero-Risk: Phone in range will NEVER unlock PC alone. 3D depth and gaze are still strictly verified." FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="17"/>
                             </StackPanel>
                         </Border>
 
