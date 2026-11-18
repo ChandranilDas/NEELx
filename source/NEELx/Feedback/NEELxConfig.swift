@@ -51,6 +51,7 @@ enum NEELxConfig {
         - **Match Threshold**: \(String(format: "%.2f", settings.matchThreshold))
         - **Active Chromatic Flash**: \(settings.chromaticFlashEnabled ? "On" : "Off")
         - **Adaptive Learning**: \(settings.adaptiveLearningEnabled ? "On" : "Off")
+        - **Face ID for System Prompts**: \(settings.systemAuthPromptsEnabled ? "On" : "Off")
         - **Walk-Away Presence Lock**: \(settings.presenceAutoLockEnabled ? "On (\(settings.presenceAutoLockSeconds)s)" : "Off")
         """
     }

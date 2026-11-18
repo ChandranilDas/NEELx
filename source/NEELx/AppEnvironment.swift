@@ -14,6 +14,8 @@ final class AppEnvironment {
     let pocController = POCController()
     let faceLabController = FaceLabController()
     let faceUnlockCoordinator: FaceUnlockCoordinator
+    /// Face ID for macOS system Touch ID & password authorization prompts (installs, Saved Passwords, System Settings).
+    let systemAuthCoordinator: SystemAuthPromptCoordinator
     /// Held, not just constructed — owns a repeating timer that would silently stop enforcing auto-lock if deallocated.
     let sessionAutoLocker: SessionAutoLocker
     /// Optional walk-away auto-lock ("Presence Lock") timer.
@@ -26,6 +28,7 @@ final class AppEnvironment {
 
     init() {
         faceUnlockCoordinator = FaceUnlockCoordinator(pocController: pocController)
+        systemAuthCoordinator = SystemAuthPromptCoordinator(pocController: pocController)
         sessionAutoLocker = SessionAutoLocker(pocController: pocController)
     }
 }

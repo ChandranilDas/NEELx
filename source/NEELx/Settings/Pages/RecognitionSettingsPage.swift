@@ -126,6 +126,16 @@ struct RecognitionSettingsPage: View {
                     SettingsGroupDivider()
 
                     SettingsRowContent(
+                        title: "Face ID for Installs & Saved Passwords",
+                        subtitle: "Automatically approves macOS Touch ID & password prompts (app installs, System Settings, Saved Passwords) with Face ID when you look at your Mac.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.systemAuthPromptsEnabled)
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
                         title: "Silent Adaptive Learning",
                         subtitle: "Automatically adapts to gradual changes (glasses, beard, lighting) from high-confidence 3D-verified unlocks.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth

@@ -98,6 +98,7 @@ final class NEELxSettings {
         static let chromaticFlashEnabled = "NEELxSettings.chromaticFlashEnabled"
         static let intruderLogEnabled = "NEELxSettings.intruderLogEnabled"
         static let adaptiveLearningEnabled = "NEELxSettings.adaptiveLearningEnabled"
+        static let systemAuthPromptsEnabled = "NEELxSettings.systemAuthPromptsEnabled"
         static let presenceAutoLockEnabled = "NEELxSettings.presenceAutoLockEnabled"
         static let presenceAutoLockSeconds = "NEELxSettings.presenceAutoLockSeconds"
         static let minimumFaceWidth = "NEELxSettings.minimumFaceWidth"
@@ -154,6 +155,11 @@ final class NEELxSettings {
     /// Silently learns high-confidence verified appearances (glasses, beard, lighting drift).
     var adaptiveLearningEnabled: Bool {
         didSet { defaults.set(adaptiveLearningEnabled, forKey: Key.adaptiveLearningEnabled) }
+    }
+    /// iPhone/iPad Pro-style Face ID for macOS system Touch ID & admin password dialogs
+    /// (app installs, System Settings, Saved Passwords, Keychain).
+    var systemAuthPromptsEnabled: Bool {
+        didSet { defaults.set(systemAuthPromptsEnabled, forKey: Key.systemAuthPromptsEnabled) }
     }
     /// Walk-Away Auto-Lock ("Presence Lock") when user steps away from the desk.
     var presenceAutoLockEnabled: Bool {
@@ -296,6 +302,7 @@ final class NEELxSettings {
         chromaticFlashEnabled = defaults.object(forKey: Key.chromaticFlashEnabled) as? Bool ?? false
         intruderLogEnabled = defaults.object(forKey: Key.intruderLogEnabled) as? Bool ?? true
         adaptiveLearningEnabled = defaults.object(forKey: Key.adaptiveLearningEnabled) as? Bool ?? true
+        systemAuthPromptsEnabled = defaults.object(forKey: Key.systemAuthPromptsEnabled) as? Bool ?? true
         presenceAutoLockEnabled = defaults.object(forKey: Key.presenceAutoLockEnabled) as? Bool ?? false
         let storedPresenceDelay = defaults.object(forKey: Key.presenceAutoLockSeconds) as? Int ?? 60
         presenceAutoLockSeconds = [30, 60, 120, 300].contains(storedPresenceDelay) ? storedPresenceDelay : 60
