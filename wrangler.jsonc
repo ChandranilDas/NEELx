@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "neelx",
+  "main": "worker.js",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./website",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "FEEDBACK_TO": "chandranildas925@gmail.com",
+    "FEEDBACK_FROM": "chandranildas925@gmail.com"
+  }
+}
