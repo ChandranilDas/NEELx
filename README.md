@@ -42,7 +42,7 @@ chmod +x build.sh
 ./build.sh --with-depth --install
 ```
 
-> **Prefer a pre-built installer?** Download `NEELx-v2.0.0-beta.1-universal-lite.dmg` (or the full bundled DMG) directly from [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch!
+> **Prefer a pre-built installer?** Download `NEELx-v2.0.0-beta.2-universal-lite.dmg` (14 MB, 1-click in-app 3D Depth download) or the full offline DMG from [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
 
 This script automatically:
 1. Downloads Apple's official Core ML `DepthAnythingV2SmallF16.mlpackage` (when `--with-depth` is passed) and compiles both `ArcFace.mlpackage` and `DepthAnythingV2SmallF16.mlpackage` plus the asset catalog from pure source.

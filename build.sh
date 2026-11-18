@@ -69,8 +69,11 @@ if [ ! -f "$APP_BUNDLE/Contents/Resources/Assets.car" ] && [ -x "$ACTOOL" ]; the
         "$SRC_DIR/Assets.xcassets" >/dev/null
 fi
 
+VERSION="${NEELX_VERSION:-2.0.0-beta.2}"
+BUILD_NUM="${NEELX_BUILD:-3}"
+
 # Write Info.plist
-cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
+cat > "$APP_BUNDLE/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -86,9 +89,9 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << 'EOF'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.0.0</string>
+    <string>${VERSION}</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>${BUILD_NUM}</string>
     <key>CFBundleIconFile</key>
     <string>NEELx</string>
     <key>LSMinimumSystemVersion</key>

@@ -66,10 +66,20 @@ struct AboutSettingsPage: View {
 
             SettingsActionRowContent(
                 title: "Check for Updates",
-                buttonTitle: "Check",
+                subtitle: updater.statusText,
+                buttonTitle: updater.canCheckForUpdates ? "Check" : "Checking…",
                 isEnabled: updater.canCheckForUpdates
             ) {
                 updater.checkForUpdates()
+            }
+
+            SettingsGroupDivider()
+
+            SettingsRowContent(
+                title: "Automatic update checks",
+                subtitle: "Checks GitHub Releases daily and lets you install new NEELx versions in one click."
+            ) {
+                NEELxToggle(isOn: $updater.automaticallyChecksForUpdates)
             }
 
             SettingsGroupDivider()

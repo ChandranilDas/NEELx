@@ -107,6 +107,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         feedbackItem.image = NSImage(systemSymbolName: "bubble.left.and.text.bubble.right.fill", accessibilityDescription: nil)
         menu.addItem(feedbackItem)
 
+        let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        updateItem.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+        menu.addItem(updateItem)
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         quitItem.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: nil)
         menu.addItem(quitItem)
@@ -246,6 +251,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Menu bar "Send Feedback…" — opens the native feedback & bug-report window directly.
     @objc private func openFeedbackWindow() {
         FeedbackWindowController.shared.present()
+    }
+
+    /// Menu bar "Check for Updates…" — checks GitHub Releases for newer NEELx versions.
+    @objc private func checkForUpdates() {
+        environment.updater.checkForUpdates()
     }
 
     /// True whenever an updated user hasn't acknowledged the post-update security notice yet.
