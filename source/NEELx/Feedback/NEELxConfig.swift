@@ -19,6 +19,9 @@ enum NEELxConfig {
     /// When set, testers can submit feedback directly inside NEELx with 1 click and zero browser/GitHub account!
     static let feedbackWebhookURL = ""
 
+    /// Official NEELx website hosted free on GitHub Pages (and Cloudflare Pages mirror).
+    static let officialWebsiteURL = URL(string: "https://chandranildas.github.io/NEELx/")
+
     static var githubRepoURL: URL? {
         URL(string: "https://github.com/\(githubRepository)")
     }

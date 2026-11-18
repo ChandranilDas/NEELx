@@ -71,8 +71,8 @@ nonisolated enum LivenessScoring {
     // MARK: - Depth/pose consistency (confirm cue)
 
     /// Correlates nose-offset-from-eye-midline against tan(yaw): tracks yaw on a real face,
-    /// stays constant on a flat presentation. Abstains at small yaw ranges where the
-    /// predicted displacement is below Vision's landmark noise floor.
+    /// stays constant on a flat presentation. Supports both full head turns (>=12 deg) and
+    /// sub-angle Temporal Micro-Parallax (4...12 deg natural micro-motion with coherent positive slope).
     static func poseDepthConsistency(_ window: [LivenessFrame]) -> CueReading {
         let pairs = window.compactMap { frame -> (CGFloat, CGFloat)? in
             guard let offset = frame.noseOffsetRatio, let yaw = frame.yaw, frame.hasReliableLandmarks else { return nil }
@@ -80,23 +80,34 @@ nonisolated enum LivenessScoring {
         }
         guard pairs.count >= 4 else { return .none }
 
-        let yaws = pairs.map(\.1)
-        guard let minYaw = yaws.min(), let maxYaw = yaws.max() else { return .none }
+        let offsets = pairs.map(\.0)
+        let tanYaws = pairs.map(\.1)
+        guard let minYaw = tanYaws.min(), let maxYaw = tanYaws.max() else { return .none }
         let yawRange = abs(atan(maxYaw) - atan(minYaw))
-        // Below ~12 degrees the predicted displacement is sub-pixel — matches
-        // `GeometryTuning.minYawRangeDegrees`, which gates on the same underlying limit.
-        let minMeasurableRange: CGFloat = 12 * .pi / 180
-        guard yawRange > minMeasurableRange else { return .none }
+        let minFullRange: CGFloat = 12 * .pi / 180
+        let minMicroRange: CGFloat = 4 * .pi / 180
 
-        guard let correlation = pearsonCorrelation(pairs.map(\.0), pairs.map(\.1)) else { return .none }
+        guard yawRange > minMicroRange else { return .none }
+        guard let (correlation, slope) = linearCorrelationAndSlope(xs: tanYaws, ys: offsets) else { return .none }
+
+        if yawRange >= minFullRange {
+            let level = Float(clamp((correlation + 1) / 2, 0, 1))
+            // Confidence ramps in over the next ~15 degrees past the minimum —
+            // more rotation observed, more trustworthy the correlation is.
+            let confidence = Float(clamp((yawRange - minFullRange) / (15 * .pi / 180), 0, 1))
+            return CueReading(level: level, confidence: confidence)
+        }
+
+        // Temporal Micro-Parallax (4...12 deg): requires >= 5 reliable frames AND strong coherent
+        // positive parallax slope (nose shifting ahead of eye plane in exact yaw direction).
+        // Flat screens wobble with near-zero differential nose-to-eye slope and fail this gate.
+        guard pairs.count >= 5, correlation >= 0.72, slope >= 0.08 else { return .none }
         let level = Float(clamp((correlation + 1) / 2, 0, 1))
-        // Confidence ramps in over the next ~15 degrees past the minimum —
-        // more rotation observed, more trustworthy the correlation is.
-        let confidence = Float(clamp((yawRange - minMeasurableRange) / (15 * .pi / 180), 0, 1))
-        return CueReading(level: level, confidence: confidence)
+        let angleRamp = Float(clamp((yawRange - minMicroRange) / (minFullRange - minMicroRange), 0.25, 0.85))
+        return CueReading(level: level, confidence: angleRamp)
     }
 
-    private static func pearsonCorrelation(_ xs: [CGFloat], _ ys: [CGFloat]) -> CGFloat? {
+    private static func linearCorrelationAndSlope(xs: [CGFloat], ys: [CGFloat]) -> (r: CGFloat, slope: CGFloat)? {
         guard xs.count == ys.count, xs.count >= 2 else { return nil }
         let n = CGFloat(xs.count)
         let meanX = xs.reduce(0, +) / n
@@ -108,8 +119,8 @@ nonisolated enum LivenessScoring {
             varX += dx * dx
             varY += dy * dy
         }
-        guard varX > 0, varY > 0 else { return nil }
-        return covariance / (varX.squareRoot() * varY.squareRoot())
+        guard varX > 1e-9, varY > 1e-9 else { return nil }
+        return (covariance / (varX.squareRoot() * varY.squareRoot()), covariance / varX)
     }
 
     // MARK: - Blink dynamics (confirm cue)

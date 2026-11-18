@@ -69,8 +69,8 @@ if [ ! -f "$APP_BUNDLE/Contents/Resources/Assets.car" ] && [ -x "$ACTOOL" ]; the
         "$SRC_DIR/Assets.xcassets" >/dev/null
 fi
 
-VERSION="${NEELX_VERSION:-2.0.0-beta.2}"
-BUILD_NUM="${NEELX_BUILD:-3}"
+VERSION="${NEELX_VERSION:-2.0.0-beta.3}"
+BUILD_NUM="${NEELX_BUILD:-4}"
 
 # Write Info.plist
 cat > "$APP_BUNDLE/Contents/Info.plist" << EOF

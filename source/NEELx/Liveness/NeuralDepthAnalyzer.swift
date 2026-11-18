@@ -16,6 +16,7 @@ import CoreML
 import CoreGraphics
 import CoreVideo
 import Foundation
+import IOKit.ps
 import Vision
 
 /// Per-frame 3D neural depth analysis result inside the detected face oval.
@@ -175,6 +176,46 @@ nonisolated final class NeuralDepthAnalyzer: @unchecked Sendable {
         )?.reading
     }
 
+    /// Smart Thermal & Battery Gate:
+    /// - Apple Silicon runs Depth Anything V2 on the low-power ANE (~22 ms), so it stays enabled unless thermal state is `.critical`.
+    /// - Intel Macs run Core ML on CPU/GPU, so we gracefully abstain under Low Power Mode, high thermal pressure,
+    ///   or battery below 15%, falling back smoothly to Stage 1+2 + Micro-Parallax + Attention.
+    static func shouldRunForPowerAndThermalState() -> Bool {
+        let processInfo = ProcessInfo.processInfo
+        if processInfo.thermalState == .critical {
+            return false
+        }
+        #if arch(arm64)
+        return true
+        #else
+        if processInfo.isLowPowerModeEnabled || processInfo.thermalState == .serious {
+            return false
+        }
+        if let battery = currentBatteryState(), !battery.isPluggedIn, battery.percent < 15 {
+            return false
+        }
+        return true
+        #endif
+    }
+
+    private static func currentBatteryState() -> (percent: Int, isPluggedIn: Bool)? {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else {
+            return nil
+        }
+        for source in list {
+            guard let desc = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any],
+                  let current = desc[kIOPSCurrentCapacityKey as String] as? Int,
+                  let maxCap = desc[kIOPSMaxCapacityKey as String] as? Int,
+                  maxCap > 0 else { continue }
+            let state = desc[kIOPSPowerSourceStateKey as String] as? String
+            let isPluggedIn = (state == kIOPSACPowerValue as String)
+            let pct = Int((Double(current) / Double(maxCap)) * 100.0)
+            return (pct, isPluggedIn)
+        }
+        return nil
+    }
+
     /// Runs Depth Anything V2 and optionally renders a colorized Inferno-style 3D depth heatmap (for Face Lab).
     func analyzeWithHeatmap(
         frame: CGImage,
@@ -182,6 +223,9 @@ nonisolated final class NeuralDepthAnalyzer: @unchecked Sendable {
         noseNormalizedCenter: CGPoint? = nil,
         includeHeatmap: Bool
     ) -> NeuralDepthHeatmapResult? {
+        if !includeHeatmap && !Self.shouldRunForPowerAndThermalState() {
+            return nil
+        }
         guard let (loadedModel, pool) = ensureLoaded(nonBlocking: true) else { return nil }
 
         let startTime = CFAbsoluteTimeGetCurrent()

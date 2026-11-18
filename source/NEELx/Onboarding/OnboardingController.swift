@@ -411,6 +411,8 @@ final class OnboardingController {
         let quality: Float?
         /// Optional 9-zone tilt-invariant 3D neural depth signature captured at enrollment.
         let depthSignature: [Float]?
+        let noseProtrusion: Float?
+        let backgroundCliff: Float?
         /// Stamped at capture, not at save — samples sit in memory across the naming
         /// (and, on first run, password) step, so a save-time stamp would be wrong.
         let capturedAt: Date
@@ -895,17 +897,17 @@ final class OnboardingController {
             || (pose != .center && !capturedPoses.contains(pose))
         guard shouldCapture else { return }
 
-        // Capture personal 9-zone 3D facial depth signature during enrollment (~22ms on ANE)
-        var depthSig: [Float]? = nil
+        // Capture personal 9-zone 3D facial depth signature + calibrated baseline during enrollment (~22ms on ANE)
+        var depthReading: NeuralDepthReading? = nil
         if NEELxSettings.shared.neuralDepthEnabled {
             let faceBox = result.face.normalizedBoundingBox
             let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
-            depthSig = await Task.detached(priority: .userInitiated) {
+            depthReading = await Task.detached(priority: .userInitiated) {
                 NeuralDepthAnalyzer.shared.analyze(
                     frame: image,
                     normalizedFaceBox: faceBox,
                     noseNormalizedCenter: noseCenter
-                )?.depthSignature
+                )
             }.value
         }
 
@@ -914,7 +916,9 @@ final class OnboardingController {
                 embedding: result.embedding,
                 pose: .center,
                 quality: result.quality,
-                depthSignature: depthSig,
+                depthSignature: depthReading?.depthSignature,
+                noseProtrusion: depthReading?.noseProtrusion,
+                backgroundCliff: depthReading?.backgroundCliff,
                 capturedAt: Date()
             ))
             centerCapturedCount += 1
@@ -927,7 +931,9 @@ final class OnboardingController {
                 embedding: result.embedding,
                 pose: pose,
                 quality: result.quality,
-                depthSignature: depthSig,
+                depthSignature: depthReading?.depthSignature,
+                noseProtrusion: depthReading?.noseProtrusion,
+                backgroundCliff: depthReading?.backgroundCliff,
                 capturedAt: Date()
             ))
             capturedPoses.insert(pose)
@@ -1039,7 +1045,9 @@ final class OnboardingController {
                 pose: $0.pose.name,
                 capturedAt: $0.capturedAt,
                 quality: $0.quality,
-                depthSignature: $0.depthSignature
+                depthSignature: $0.depthSignature,
+                noseProtrusion: $0.noseProtrusion,
+                backgroundCliff: $0.backgroundCliff
             )
         }
         try store.commitEnrollment(

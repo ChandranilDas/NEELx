@@ -9,6 +9,12 @@
 import Foundation
 import Observation
 
+struct FaceDepthBaseline: Equatable, Sendable {
+    let medianNoseProtrusion: Float
+    let medianBackgroundCliff: Float
+    let sampleCount: Int
+}
+
 struct FaceSample: Codable, Equatable {
     let embedding: [Float]
     /// Which guided-enrollment pose this came from, or nil for untagged captures (e.g. Face Lab's manual capture).
@@ -18,19 +24,27 @@ struct FaceSample: Codable, Equatable {
     let quality: Float?
     /// Optional 9-zone tilt-invariant 3D facial depth relief vector captured during enrollment via Depth Anything V2.
     let depthSignature: [Float]?
+    /// Optional per-sample normalized nose protrusion for personal 3D baseline calibration.
+    let noseProtrusion: Float?
+    /// Optional per-sample head-to-background depth cliff for personal 3D baseline calibration.
+    let backgroundCliff: Float?
 
     init(
         embedding: [Float],
         pose: String?,
         capturedAt: Date,
         quality: Float?,
-        depthSignature: [Float]? = nil
+        depthSignature: [Float]? = nil,
+        noseProtrusion: Float? = nil,
+        backgroundCliff: Float? = nil
     ) {
         self.embedding = embedding
         self.pose = pose
         self.capturedAt = capturedAt
         self.quality = quality
         self.depthSignature = depthSignature
+        self.noseProtrusion = noseProtrusion
+        self.backgroundCliff = backgroundCliff
     }
 
     init(from decoder: Decoder) throws {
@@ -40,6 +54,8 @@ struct FaceSample: Codable, Equatable {
         capturedAt = try container.decode(Date.self, forKey: .capturedAt)
         quality = try container.decodeIfPresent(Float.self, forKey: .quality)
         depthSignature = try container.decodeIfPresent([Float].self, forKey: .depthSignature)
+        noseProtrusion = try container.decodeIfPresent(Float.self, forKey: .noseProtrusion)
+        backgroundCliff = try container.decodeIfPresent(Float.self, forKey: .backgroundCliff)
     }
 }
 
@@ -112,6 +128,21 @@ struct FaceIdentity: Codable, Identifiable, Equatable {
     /// Personalized 9-zone 3D facial depth relief centroid captured during enrollment, if available.
     nonisolated var depthProfile: [Float]? {
         NeuralDepthAnalyzer.meanSignature(of: samples.compactMap(\.depthSignature))
+    }
+
+    /// Personal calibrated 3D depth baseline (median nose protrusion & head-to-background cliff)
+    /// across enrolled and adaptive samples, adapting automatically to glasses, beards, and camera FOV.
+    nonisolated var depthBaseline: FaceDepthBaseline? {
+        let noses = samples.compactMap(\.noseProtrusion).filter { $0.isFinite && $0 > 0.005 }.sorted()
+        guard !noses.isEmpty else { return nil }
+        let cliffs = samples.compactMap(\.backgroundCliff).filter { $0.isFinite }.sorted()
+        let medianNose = noses[noses.count / 2]
+        let medianCliff = cliffs.isEmpty ? 0 : cliffs[cliffs.count / 2]
+        return FaceDepthBaseline(
+            medianNoseProtrusion: medianNose,
+            medianBackgroundCliff: medianCliff,
+            sampleCount: noses.count
+        )
     }
 
     /// True if samples came from a different embedder than the one currently active — should prompt re-enrollment.
@@ -288,7 +319,9 @@ final class FaceEnrollmentStore {
         for identityID: UUID,
         embedding: [Float],
         quality: Float?,
-        depthSignature: [Float]?
+        depthSignature: [Float]?,
+        noseProtrusion: Float? = nil,
+        backgroundCliff: Float? = nil
     ) {
         guard NEELxSettings.shared.adaptiveLearningEnabled,
               hasLoadedSuccessfully,
@@ -315,7 +348,9 @@ final class FaceEnrollmentStore {
             pose: adaptivePose,
             capturedAt: now,
             quality: quality,
-            depthSignature: depthSignature
+            depthSignature: depthSignature,
+            noseProtrusion: noseProtrusion,
+            backgroundCliff: backgroundCliff
         ))
         updated[index].samples = samples
         if (try? SecureFaceStore.save(updated)) != nil {

@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEELx — Hardened 3D Biometric Face Unlock for macOS</title>
   <meta name="description" content="NEELx brings sub-200ms Face Unlock to macOS with iPhone-style 360° circular enrollment, Apple Neural Engine 3D depth anti-spoofing, and 100% offline hardware-backed Keychain encryption." />
+  <link rel="canonical" href="https://chandranildas.github.io/NEELx/" />
+  <meta property="og:title" content="NEELx — Hardened 3D Biometric Face Unlock for macOS" />
+  <meta property="og:description" content="Sub-200ms offline Face Unlock for Mac with Stage 3 Neural 3D Depth on Apple Neural Engine, Temporal Micro-Parallax liveness, and Touch ID-gated Keychain encryption." />
+  <meta property="og:url" content="https://chandranildas.github.io/NEELx/" />
   <link rel="icon" type="image/svg+xml" href="assets/neelx-logo.svg" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -14,7 +18,7 @@
       <a href="#" class="brand">
         <img src="assets/neelx-logo.svg" alt="NEELx Logo" />
         <span>NEELx</span>
-        <span class="brand-tag" data-release-version>v2.0.0-beta.2</span>
+        <span class="brand-tag" data-release-version>v2.0.0-beta.3</span>
       </a>
       <nav class="nav-links">
         <a href="#depth-lab">3D Depth Engine</a>
@@ -41,8 +45,8 @@
             NEELx unlocks your Mac in under 200 ms using on-device 512-D ArcFace matching, Apple Core ML 3D monocular depth anti-spoofing, and eye-gaze attention verification — with zero cloud calls.
           </p>
           <div class="hero-actions">
-            <a id="btnHeroDownload" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal-lite.dmg">
-              Download Beta (<span data-release-version>v2.0.0-beta.2</span>)
+            <a id="btnHeroDownload" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.3/NEELx-v2.0.0-beta.3-universal-lite.dmg">
+              Download Beta (<span data-release-version>v2.0.0-beta.3</span>)
             </a>
             <a class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx" target="_blank" rel="noopener">
               View Open Source
@@ -249,7 +253,7 @@
       <div class="container">
         <div class="section-header">
           <div class="section-kicker">Universal macOS Installers</div>
-          <h2>Download NEELx <span data-release-version>v2.0.0-beta.2</span></h2>
+          <h2>Download NEELx <span data-release-version>v2.0.0-beta.3</span></h2>
           <p>Runs natively on Apple Silicon (M1–M4) and Intel Macs running macOS 15 Sequoia or later. Includes built-in 1-click GitHub Releases auto-updates.</p>
         </div>
 
@@ -262,10 +266,10 @@
             <p style="color: var(--text-muted); font-size: 14px;">
               Recommended for fast download. Includes the full NEELx app and lets you enable Stage 3 Neural 3D Depth with a 1-click in-app download inside Settings (zero Xcode needed).
             </p>
-            <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal-lite.dmg">
+            <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.3/NEELx-v2.0.0-beta.3-universal-lite.dmg">
               Download Lite DMG
             </a>
-            <div class="sha-box">SHA-256: 2e2d48be29a2522cb47dc5568d3fa9350034166d76d530c63ec0a08d2072691b</div>
+            <div class="sha-box">SHA-256: b9b69c7f981f8d82527d28ec5c667bac86444d20cca1983b7ed598c74ce533de</div>
           </div>
 
           <div class="dl-card">
@@ -276,14 +280,16 @@
             <p style="color: var(--text-muted); font-size: 14px;">
               Complete all-in-one offline installer with Apple's compiled <code>DepthAnythingV2SmallF16</code> Core ML 3D depth engine already bundled inside the app.
             </p>
-            <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.2/NEELx-v2.0.0-beta.2-universal.dmg">
+            <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.3/NEELx-v2.0.0-beta.3-universal.dmg">
               Download Full Offline DMG
             </a>
-            <div class="sha-box">SHA-256: 1b48a9b37b5e9f0e94516995de62a9dadc614ecf60b3e9fbc0041fbd1d4c18bc</div>
+            <div class="sha-box">SHA-256: 0836878845e0cbfd35594f74db10e9a6c4305ded8fb3b0af0819d99bc7e7a85a</div>
           </div>
         </div>
 
         <div class="code-block">
+          <span style="color: var(--text-dim);"># Install via Homebrew Cask (auto-clears Gatekeeper quarantine):</span><br />
+          brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx &amp;&amp; brew install --cask neelx<br /><br />
           <span style="color: var(--text-dim);"># Or build directly from pure Swift source on your Mac:</span><br />
           git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install
         </div>

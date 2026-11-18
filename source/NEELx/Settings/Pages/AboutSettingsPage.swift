@@ -47,6 +47,17 @@ struct AboutSettingsPage: View {
 
         SettingsGroup {
             SettingsActionRowContent(
+                title: "Official NEELx Website",
+                buttonTitle: "Visit"
+            ) {
+                if let url = NEELxConfig.officialWebsiteURL {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
                 title: "Send Feedback or Report Bug",
                 buttonTitle: "Send Feedback"
             ) {

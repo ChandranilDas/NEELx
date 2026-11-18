@@ -518,7 +518,18 @@ final class FaceUnlockCoordinator {
 
             let snapshot = liveness.observe(effectiveFrame)
             var confirmingCue: LivenessCue?
+
+            // Compare live 3D depth reading against the user's personal calibrated depth baseline (if enrolled)
+            let enrolledBaseline = matched.identity.depthBaseline
+            let personalFlatSpoof: Bool = {
+                guard let reading = depthReading,
+                      let baseline = enrolledBaseline,
+                      baseline.medianNoseProtrusion >= 0.025 else { return false }
+                return reading.noseProtrusion < baseline.medianNoseProtrusion * 0.22
+                    && reading.planarityResidual < 0.024
+            }()
             let flatSpoofSuspected = (depthReading?.flatSpoofScore ?? 0) >= LivenessTuning.default.flatDepthSpoofLevel
+                || personalFlatSpoof
             if !flatSpoofSuspected {
                 matchedNonSpoofFrames += 1
             } else {
@@ -544,15 +555,19 @@ final class FaceUnlockCoordinator {
             case .pending:
                 if let depthReading {
                     let profileMatches = depthProfileSimilarity.map { $0 >= 0.40 } ?? false
+                    let baselineMatches = enrolledBaseline.map {
+                        $0.medianNoseProtrusion >= 0.020 && depthReading.noseProtrusion >= $0.medianNoseProtrusion * 0.55
+                    } ?? false
                     let reliefConfirmed = depthReading.depth3DScore >= LivenessTuning.default.neuralDepth3DLevel
-                    // Confirm immediately when genuine 3D depth or personal 3D profile matches;
+                        || baselineMatches
+                    // Confirm immediately when genuine 3D depth, personal baseline, or 9-zone 3D profile matches;
                     // or after 2 clean non-spoof frames (prevents low-light stall while flat 2D spoofs are caught & denied).
                     if attentionVerified && !flatSpoofSuspected && (reliefConfirmed || profileMatches || matchedNonSpoofFrames >= 2) {
                         livenessConfirmed = true
                         confirmingCue = .neuralDepth3D
                     }
                 } else if attentionVerified {
-                    // Graceful fallback when neural depth model is disabled or unbundled
+                    // Graceful fallback when neural depth model is disabled, unbundled, or thermal/battery-gated on Intel
                     livenessConfirmed = true
                 }
             }
@@ -601,7 +616,9 @@ final class FaceUnlockCoordinator {
                         for: readyMatch.identity.id,
                         embedding: result.embedding,
                         quality: result.quality,
-                        depthSignature: depthReading?.depthSignature
+                        depthSignature: depthReading?.depthSignature,
+                        noseProtrusion: depthReading?.noseProtrusion,
+                        backgroundCliff: depthReading?.backgroundCliff
                     )
                 }
                 return .matched

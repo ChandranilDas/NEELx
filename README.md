@@ -2,6 +2,7 @@
 
 **NEELx** brings fast, natural, iPhone-style Face Unlock to macOS using your Mac's built-in camera and Apple Neural Engine — **100% offline, encrypted at rest, and open-source.**
 
+> **Official Website:** [https://chandranildas.github.io/NEELx/](https://chandranildas.github.io/NEELx/)  
 > Built for macOS 15+ (Apple Silicon & Intel). Runs entirely on-device with zero network connections, zero telemetry, and hardware-backed macOS Keychain protection.
 
 ---
@@ -33,7 +34,18 @@
 - **Xcode** (for `swiftc`, `coremlc`, and `actool`)
 - Built-in FaceTime HD / Center Stage camera or external USB webcam
 
-### Build & Install
+### Install via Homebrew Cask (Recommended)
+
+```bash
+brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx
+brew install --cask neelx
+```
+
+### Or Download the DMG Directly
+
+Download `NEELx-v2.0.0-beta.3-universal-lite.dmg` (13.6 MB, 1-click in-app 3D Depth download) or the full offline DMG from the [**Official Website**](https://chandranildas.github.io/NEELx/) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
+
+### Or Build From Source
 
 ```bash
 git clone https://github.com/ChandranilDas/NEELx.git
@@ -41,8 +53,6 @@ cd NEELx
 chmod +x build.sh
 ./build.sh --with-depth --install
 ```
-
-> **Prefer a pre-built installer?** Download `NEELx-v2.0.0-beta.2-universal-lite.dmg` (14 MB, 1-click in-app 3D Depth download) or the full offline DMG from [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases), drag **NEELx.app** into **Applications**, and launch! NEELx includes a built-in **GitHub Releases Auto-Updater** (**Menu Bar → Check for Updates…**) so future beta updates install and relaunch in one click while keeping your enrolled face and Keychain credentials intact.
 
 This script automatically:
 1. Downloads Apple's official Core ML `DepthAnythingV2SmallF16.mlpackage` (when `--with-depth` is passed) and compiles both `ArcFace.mlpackage` and `DepthAnythingV2SmallF16.mlpackage` plus the asset catalog from pure source.
