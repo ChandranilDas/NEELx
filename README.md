@@ -59,14 +59,14 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Apple Silicon (M1, M2, M3, M4, M5 & newer)** or **Intel Mac** (no upper chip limit)
 - Built-in FaceTime HD / Center Stage camera or external USB / Continuity webcam
 
-#### Option 1: 1-Click Terminal Quick Install (Recommended — Zero Gatekeeper Blocks)
+#### Method 1: 1-Click Terminal Quick Install (Recommended — Zero Gatekeeper Blocks)
 Downloads the all-in-one DMG, clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
 ```bash
 curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash
 ```
 *(Or install via Homebrew Cask: `brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx && brew install --cask neelx`)*
 
-#### Option 2: Download All-in-One Universal DMG Directly
+#### Method 2: Download All-in-One Universal DMG Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
 - **`NEELx-v2.0.0-beta.6-universal.dmg`** (~58.6 MB — complete offline bundle with Apple's `DepthAnythingV2SmallF16` + `ArcFace` pre-installed; zero secondary downloads required)
 
@@ -77,7 +77,7 @@ Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#
 2. **Setup Face & Password:** When prompted, allow camera access. Slowly roll your head in a natural 360° circle while the live meter captures 9 poses and your 3D depth profile. Enter your Mac password once to save it to your local hardware Touch ID Keychain vault.
 3. **Instant 3D Unlock:** Press `Cmd + Ctrl + Q` to lock your Mac. Sit in front of your display: NEELx verifies your 3D facial structure in ~25ms on the Neural Engine and unlocks instantly!
 
-#### Option 3: Build Directly from Swift Source
+#### Method 3: Build Directly from Swift Source
 ```bash
 git clone https://github.com/ChandranilDas/NEELx.git
 cd NEELx
@@ -99,14 +99,14 @@ shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.6-universal.dmg
 - Any built-in or USB RGB webcam (720p+ recommended, **no Windows Hello IR camera required**)
 - Any DirectX 12 GPU or Windows NPU for DirectML acceleration (CPU fallback built in)
 
-#### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
+#### Method 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
 Verifies the official SHA-256 checksum automatically, unblocks files from Windows Defender (`Unblock-File`), installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin required), creates a Start Menu shortcut with the official NEELx logo, and preserves 100% of your DPAPI biometric vault in `%LOCALAPPDATA%\NEELx` on every upgrade:
 ```powershell
 irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 ```
 *(Clean rollback / uninstaller preserving your vault by default: `irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex`)*
 
-#### Option 2: Download All-in-One Standalone ZIP Directly
+#### Method 2: Download All-in-One Standalone ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
 - **`NEELx-v2.0.0-beta.6-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
 
@@ -117,7 +117,7 @@ Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#
 2. **Setup Face & DPAPI Vault:** Select your webcam in Settings, position your face inside the alignment guide, and follow the on-screen steps. Enter your Windows login password once to encrypt it safely into your local Windows DPAPI vault in `%LOCALAPPDATA%\NEELx`.
 3. **Instant 3D Unlock:** Press `Win + L` to lock your PC. Look at your webcam: NEELx's dedicated Prism Horizon laser verifies your 3D depth and automatically logs you in!
 
-#### Option 3: Build & Run Directly from `.NET 8` Source
+#### Method 3: Build & Run Directly from `.NET 8` Source
 ```powershell
 git clone https://github.com/ChandranilDas/NEELx.git
 cd NEELx\windows

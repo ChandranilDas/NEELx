@@ -55,7 +55,7 @@ You can preview all four live states immediately after launching `NEELx.Windows.
 - Any built-in or USB RGB webcam (720p+ recommended)
 - DirectX 12 GPU or Windows NPU (CPU fallback supported)
 
-### Option 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
+### Method 1: 1-Click SHA-256 Verified PowerShell Installer (Recommended — Zero SmartScreen Blocks)
 Verifies the official SHA-256 checksum before extracting, strips Windows Defender Mark-of-the-Web (`Unblock-File`), installs per-user under `%LOCALAPPDATA%\NEELx-App` (zero admin rights required), creates a Start Menu shortcut, and preserves 100% of your DPAPI biometric vault & ONNX models in `%LOCALAPPDATA%\NEELx` across upgrades:
 ```powershell
 irm https://chandranildas.github.io/NEELx/install.ps1 | iex
@@ -65,7 +65,7 @@ To uninstall cleanly (keeping your DPAPI vault unless `-WipeVault` is passed):
 irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex
 ```
 
-### Option 2: All-in-One Standalone ZIP (Unzip & Run)
+### Method 2: All-in-One Standalone ZIP (Unzip & Run)
 Download the complete package from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
 - `NEELx-v2.0.0-beta.6-windows-x64-portable.zip` (~85.7 MB — complete bundle with self-contained .NET 8 runtime, DirectML engine, models, and `Run-NEELx.bat`; zero extra runtime or model downloads needed).
 
@@ -81,12 +81,12 @@ Download the complete package from the [**Official Website**](https://chandranil
    - Press <kbd>Win</kbd> + <kbd>L</kbd> to lock your PC.
    - Look at your webcam: NEELx's dedicated Prism Horizon laser verifies your 3D depth and automatically logs you into Windows!
 
-### Option 3: Verify Downloaded ZIP Checksum (Public SHA-256)
+### Verify Downloaded ZIP Checksum (Public SHA-256)
 ```powershell
 Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.6-windows-x64-portable.zip" -Algorithm SHA256
 ```
 
-### Option 3: Build & Run from `.NET 8` Source
+### Method 3: Build & Run from `.NET 8` Source
 Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0):
 ```powershell
 git clone https://github.com/ChandranilDas/NEELx.git

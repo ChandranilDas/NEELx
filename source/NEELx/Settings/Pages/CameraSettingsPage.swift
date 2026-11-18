@@ -79,7 +79,7 @@ struct CameraSettingsPage: View {
                 cameraPicker(title: "External display", selection: $settings.externalDisplayCameraID)
             }
 
-            // SECTION 2: iPhone & iPad Pro Continuity Camera (Option 3 - Desk Stand / Studio Optics)
+            // SECTION 2: iPhone & iPad Pro Continuity Camera (Desk Stand / Studio Optics)
             VStack(alignment: .leading, spacing: 8) {
                 SettingsSectionTitle(text: "iPhone & iPad Pro Camera (Continuity Studio)")
                 SettingsGroup {
@@ -154,7 +154,7 @@ struct CameraSettingsPage: View {
                 )
             }
 
-            // SECTION 3: Native Mobile Biometric Companion (Option 2 - Zero App Required)
+            // SECTION 3: Native Mobile Biometric Companion (Zero App Required)
             VStack(alignment: .leading, spacing: 8) {
                 SettingsSectionTitle(text: "Mobile Biometric Companion (Native Passkey)")
                 SettingsGroup {
