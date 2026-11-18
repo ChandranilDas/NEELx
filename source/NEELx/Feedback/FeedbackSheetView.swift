@@ -250,6 +250,7 @@ struct FeedbackSheetView: View {
     @State private var includeDiagnostics: Bool = true
     @State private var screenshots: [FeedbackScreenshot] = []
     @State private var installedMailApps: [InstalledEmailApp] = EmailAppCatalog.installedDesktopApps()
+    @State private var selectedEmailOption: SelectedEmailOption? = nil
     @State private var showEmailAppPicker: Bool = false
     @State private var isSubmitting: Bool = false
     @State private var submitResult: String?
@@ -425,14 +426,24 @@ struct FeedbackSheetView: View {
                         installedMailApps = EmailAppCatalog.installedDesktopApps()
                         showEmailAppPicker.toggle()
                     } label: {
-                        HStack(spacing: 4) {
-                            Text("Email")
+                        HStack(spacing: 5) {
+                            if case .desktop(let app) = selectedEmailOption {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: app.appURL.path))
+                                    .resizable()
+                                    .frame(width: 14, height: 14)
+                                Text(app.name)
+                            } else if case .webmail(let provider) = selectedEmailOption {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 11))
+                                Text(provider.displayName)
+                            } else {
+                                Text("Email")
+                            }
                             Image(systemName: "chevron.up.chevron.down")
                                 .font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .disabled(!canSubmit)
                     .popover(isPresented: $showEmailAppPicker, arrowEdge: .top) {
                         emailAppChooserPopover
                     }
@@ -587,6 +598,18 @@ struct FeedbackSheetView: View {
         }
     }
 
+    private enum SelectedEmailOption: Equatable {
+        case desktop(InstalledEmailApp)
+        case webmail(WebmailProvider)
+
+        var displayName: String {
+            switch self {
+            case .desktop(let app): return app.name
+            case .webmail(let provider): return provider.displayName
+            }
+        }
+    }
+
     private var emailAppChooserPopover: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Choose Email App")
@@ -597,9 +620,10 @@ struct FeedbackSheetView: View {
 
             if !installedMailApps.isEmpty {
                 ForEach(installedMailApps) { app in
+                    let isSelected = selectedEmailOption == .desktop(app)
                     Button {
+                        selectedEmailOption = .desktop(app)
                         showEmailAppPicker = false
-                        openInDesktopMailApp(app)
                     } label: {
                         HStack(spacing: 9) {
                             Image(nsImage: NSWorkspace.shared.icon(forFile: app.appURL.path))
@@ -614,9 +638,16 @@ struct FeedbackSheetView: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
+                            if isSelected {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
+                            }
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
+                        .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -626,38 +657,51 @@ struct FeedbackSheetView: View {
                     .padding(.vertical, 2)
             }
 
-            Text("Or Open Webmail in Browser")
+            Text("Webmail Options")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)
 
-            ForEach([
-                ("Gmail (Web)", WebmailProvider.gmail),
-                ("Outlook (Web)", WebmailProvider.outlook),
-                ("Yahoo Mail (Web)", WebmailProvider.yahoo),
-            ], id: \.0) { label, provider in
+            ForEach(WebmailProvider.allCases, id: \.self) { provider in
+                let isSelected = selectedEmailOption == .webmail(provider)
                 Button {
+                    selectedEmailOption = .webmail(provider)
                     showEmailAppPicker = false
-                    openWebmail(provider)
                 } label: {
                     HStack(spacing: 9) {
                         Image(systemName: "globe")
                             .frame(width: 22, height: 18)
                             .foregroundStyle(.secondary)
-                        Text(label)
+                        Text(provider.displayName)
                             .font(.system(size: 13))
                             .foregroundStyle(.primary)
                         Spacer()
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
+                    .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
+
+            Divider()
+                .padding(.vertical, 2)
+
+            Text("Click “Send Directly” to send your feedback with all attached screenshots.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 2)
         }
         .padding(10)
-        .frame(width: 255)
+        .frame(width: 265)
     }
 
     private func openInDesktopMailApp(_ app: InstalledEmailApp) {
@@ -775,8 +819,16 @@ struct FeedbackSheetView: View {
         }
     }
 
-    private enum WebmailProvider {
+    private enum WebmailProvider: CaseIterable, Equatable {
         case gmail, outlook, yahoo
+
+        var displayName: String {
+            switch self {
+            case .gmail: return "Gmail (Web)"
+            case .outlook: return "Outlook (Web)"
+            case .yahoo: return "Yahoo Mail (Web)"
+            }
+        }
     }
 
     private func webmailComposeURL(for provider: WebmailProvider) -> URL? {
@@ -853,13 +905,18 @@ struct FeedbackSheetView: View {
             ]
         }
 
+        var diagnosticsText = includeDiagnostics ? NEELxConfig.diagnosticsMarkdown() : "Omitted"
+        if let selectedEmailOption {
+            diagnosticsText += "\n- **Selected Email App**: \(selectedEmailOption.displayName)"
+        }
+
         var payload: [String: Any] = [
             "title": composedTitle(),
             "category": category.rawValue,
             "rating": rating,
             "message": messageText.trimmingCharacters(in: .whitespacesAndNewlines),
             "content": "**\(composedTitle())**\n\(composedMarkdownBody())",
-            "diagnostics": includeDiagnostics ? NEELxConfig.diagnosticsMarkdown() : "Omitted",
+            "diagnostics": diagnosticsText,
         ]
         if !encodedAttachments.isEmpty {
             payload["attachments"] = encodedAttachments
@@ -883,11 +940,22 @@ struct FeedbackSheetView: View {
                 screenshots.removeAll()
             } else {
                 submitFailed = true
-                submitResult = "Couldn't reach feedback server — use Email or GitHub Issue instead."
+                if let selectedEmailOption {
+                    openSelectedEmailFallback(selectedEmailOption)
+                } else {
+                    submitResult = "Couldn't reach feedback server — use GitHub Issue or Copy Report instead."
+                }
             }
         } catch {
             submitFailed = true
             submitResult = "Network error: \(error.localizedDescription)"
+        }
+    }
+
+    private func openSelectedEmailFallback(_ option: SelectedEmailOption) {
+        switch option {
+        case .desktop(let app): openInDesktopMailApp(app)
+        case .webmail(let provider): openWebmail(provider)
         }
     }
 }
