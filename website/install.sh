@@ -25,7 +25,7 @@ echo ""
 echo "Checking latest release..."
 VERSION=""
 if command -v curl >/dev/null 2>&1; then
-    VERSION=$(curl -sSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+    VERSION=$(curl -sSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/releases?per_page=5" 2>/dev/null | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
 fi
 if [ -z "${VERSION}" ]; then
     VERSION="${FALLBACK_VERSION}"
@@ -40,14 +40,8 @@ DMG_NAME="NEELx-${VERSION}-universal.dmg"
 DMG_URL="https://github.com/${REPO}/releases/download/${VERSION}/${DMG_NAME}"
 DMG_PATH="${TEMP_DIR}/${DMG_NAME}"
 
-# Fallback to Lite DMG if universal DMG is unavailable
-echo "Downloading ${DMG_NAME}..."
-if ! curl -fSL --progress-bar "${DMG_URL}" -o "${DMG_PATH}"; then
-    LITE_DMG="NEELx-${VERSION}-universal-lite.dmg"
-    LITE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${LITE_DMG}"
-    echo "Downloading ${LITE_DMG}..."
-    curl -fSL --progress-bar "${LITE_URL}" -o "${DMG_PATH}"
-fi
+echo "Downloading ${DMG_NAME} (All-in-One Complete Bundle)..."
+curl -fSL --progress-bar "${DMG_URL}" -o "${DMG_PATH}"
 
 # 3. Mount DMG
 echo "Mounting disk image..."

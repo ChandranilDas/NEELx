@@ -1,8 +1,8 @@
 cask "neelx" do
   version "2.0.0-beta.5"
-  sha256 "8c1e9c93e1c44fd2fc0b4acd4710719fe74e02e3b291b3aff52b0de812f70754"
+  sha256 "cd2173be4f9fa115d7b0017d9ec6fb85f871ed1845642b0631d4348ee207f7a5"
 
-  url "https://github.com/ChandranilDas/NEELx/releases/download/v#{version}/NEELx-v#{version}-universal-lite.dmg"
+  url "https://github.com/ChandranilDas/NEELx/releases/download/v#{version}/NEELx-v#{version}-universal.dmg"
   name "NEELx"
   desc "Hardened offline biometric Face Unlock for macOS with Stage 3 Neural 3D Depth"
   homepage "https://chandranildas.github.io/NEELx/"

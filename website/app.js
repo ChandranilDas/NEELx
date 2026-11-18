@@ -156,38 +156,22 @@ async function syncLatestRelease() {
       el.textContent = tag;
     });
 
-    const liteAsset = latest.assets.find((a) => a.name.includes("lite") && a.name.endsWith(".dmg"));
-    const fullAsset = latest.assets.find((a) => !a.name.includes("lite") && a.name.endsWith(".dmg"));
-    const winPortAsset = latest.assets.find((a) => a.name.includes("windows") && a.name.includes("portable") && a.name.endsWith(".zip"));
-    const winLiteAsset = latest.assets.find((a) => a.name.includes("windows") && a.name.includes("lite") && a.name.endsWith(".zip"));
+    const macAsset = latest.assets.find((a) => !a.name.includes("lite") && a.name.endsWith(".dmg"));
+    const winAsset = latest.assets.find((a) => a.name.includes("windows") && !a.name.includes("lite") && a.name.endsWith(".zip"));
 
-    if (liteAsset) {
-      const mb = (liteAsset.size / (1024 * 1024)).toFixed(1);
-      const liteBtn = document.getElementById("btnDownloadLite");
-      const liteSize = document.getElementById("liteSize");
-      if (liteBtn) liteBtn.href = liteAsset.browser_download_url;
-      if (liteSize) liteSize.textContent = `${mb} MB · Universal`;
+    if (macAsset) {
+      const mb = (macAsset.size / (1024 * 1024)).toFixed(1);
+      const macBtn = document.getElementById("btnDownloadMac") || document.getElementById("btnDownloadFull");
+      const macSize = document.getElementById("macSize") || document.getElementById("fullSize");
+      if (macBtn) macBtn.href = macAsset.browser_download_url;
+      if (macSize) macSize.textContent = `${mb} MB · Universal`;
     }
-    if (fullAsset) {
-      const mb = (fullAsset.size / (1024 * 1024)).toFixed(1);
-      const fullBtn = document.getElementById("btnDownloadFull");
-      const fullSize = document.getElementById("fullSize");
-      if (fullBtn) fullBtn.href = fullAsset.browser_download_url;
-      if (fullSize) fullSize.textContent = `${mb} MB · Universal`;
-    }
-    if (winPortAsset) {
-      const mb = (winPortAsset.size / (1024 * 1024)).toFixed(1);
-      const btn = document.getElementById("btnDownloadWinPortable");
-      const sz = document.getElementById("winPortableSize");
-      if (btn) btn.href = winPortAsset.browser_download_url;
-      if (sz) sz.textContent = `${mb} MB · Standalone Win x64`;
-    }
-    if (winLiteAsset) {
-      const mb = (winLiteAsset.size / (1024 * 1024)).toFixed(1);
-      const btn = document.getElementById("btnDownloadWinLite");
-      const sz = document.getElementById("winLiteSize");
-      if (btn) btn.href = winLiteAsset.browser_download_url;
-      if (sz) sz.textContent = `${mb} MB · Win x64`;
+    if (winAsset) {
+      const mb = (winAsset.size / (1024 * 1024)).toFixed(1);
+      const winBtn = document.getElementById("btnDownloadWin") || document.getElementById("btnDownloadWinPortable");
+      const winSize = document.getElementById("winSize") || document.getElementById("winPortableSize");
+      if (winBtn) winBtn.href = winAsset.browser_download_url;
+      if (winSize) winSize.textContent = `${mb} MB · Standalone Win x64`;
     }
   } catch {
     // Keep pre-populated links seamlessly

@@ -49,44 +49,34 @@ jobs:
             Write-Host "Validated $scriptPath cleanly."
           }
 
-      - name: Publish Windows 11 Lite & Portable Packages
+      - name: Publish Single All-in-One Windows 11 Standalone Package
         shell: pwsh
         run: |
           $tag = $env:RELEASE_TAG
           $outDir = "dist-windows"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-          # 1. Lite package (requires .NET 8 Desktop Runtime — tiny fast download)
-          dotnet publish windows/src/NEELx.App/NEELx.App.csproj `
-            -c Release -r win-x64 --self-contained false `
-            -o "$outDir/lite"
-          Copy-Item windows/README.md "$outDir/lite/README.md"
-          Copy-Item windows/Run-NEELx.bat "$outDir/lite/Run-NEELx.bat"
-          Compress-Archive -Path "$outDir/lite/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-lite.zip" -Force
-
-          # 2. Standalone Portable package (self-contained — zero prerequisites, unzip & run)
+          # Single All-in-One Standalone package (self-contained .NET 8, DirectML, models, Run-NEELx.bat; zero prerequisites)
           dotnet publish windows/src/NEELx.App/NEELx.App.csproj `
             -c Release -r win-x64 --self-contained true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
-            -o "$outDir/portable"
-          Copy-Item windows/README.md "$outDir/portable/README.md"
-          Copy-Item windows/Run-NEELx.bat "$outDir/portable/Run-NEELx.bat"
-          Compress-Archive -Path "$outDir/portable/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64-portable.zip" -Force
+            -o "$outDir/standalone"
+          Copy-Item windows/README.md "$outDir/standalone/README.md"
+          Copy-Item windows/Run-NEELx.bat "$outDir/standalone/Run-NEELx.bat"
+          Compress-Archive -Path "$outDir/standalone/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64.zip" -Force
+          Copy-Item "$outDir/NEELx-$tag-windows-x64.zip" "$outDir/NEELx-$tag-windows-x64-portable.zip" -Force
 
-          $liteHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64-lite.zip" -Algorithm SHA256).Hash.ToLower()
-          $portHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64-portable.zip" -Algorithm SHA256).Hash.ToLower()
-          $liteBytes = (Get-Item "$outDir/NEELx-$tag-windows-x64-lite.zip").Length
-          $portBytes = (Get-Item "$outDir/NEELx-$tag-windows-x64-portable.zip").Length
+          $winHash = (Get-FileHash "$outDir/NEELx-$tag-windows-x64.zip" -Algorithm SHA256).Hash.ToLower()
+          $winBytes = (Get-Item "$outDir/NEELx-$tag-windows-x64.zip").Length
 
           @"
-          $liteHash  NEELx-$tag-windows-x64-lite.zip
-          $portHash  NEELx-$tag-windows-x64-portable.zip
+          $winHash  NEELx-$tag-windows-x64.zip
+          $winHash  NEELx-$tag-windows-x64-portable.zip
           "@ | Set-Content -Path "$outDir/NEELx-$tag-windows-SHA256SUMS.txt" -Encoding UTF8
 
-          Write-Host "WIN_LITE_SHA256=$liteHash SIZE=$liteBytes"
-          Write-Host "WIN_PORTABLE_SHA256=$portHash SIZE=$portBytes"
+          Write-Host "WIN_STANDALONE_SHA256=$winHash SIZE=$winBytes"
 
-      - name: Upload Windows packages to GitHub Release (on main push)
+      - name: Upload Windows package to GitHub Release (on main push)
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         shell: pwsh
         env:
@@ -94,7 +84,7 @@ jobs:
         run: |
           $tag = $env:RELEASE_TAG
           gh release upload $tag `
-            "dist-windows/NEELx-$tag-windows-x64-lite.zip" `
+            "dist-windows/NEELx-$tag-windows-x64.zip" `
             "dist-windows/NEELx-$tag-windows-x64-portable.zip" `
             "dist-windows/NEELx-$tag-windows-SHA256SUMS.txt" `
             --clobber

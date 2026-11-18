@@ -784,6 +784,13 @@ h3 {
   margin-bottom: 20px;
 }
 
+.download-grid.single-card {
+  grid-template-columns: 1fr;
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .dl-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -792,6 +799,80 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.dl-card.single-hero {
+  padding: 28px 32px;
+  background: linear-gradient(180deg, rgba(28, 30, 38, 0.95), rgba(18, 19, 25, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Step-by-Step Setup & Usage Guides */
+.setup-steps-guide {
+  margin: 28px 0 24px;
+}
+
+.step-card {
+  display: flex;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #30D158;
+  color: #000;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-card.win-step .step-num {
+  background: #38BDF8;
+}
+
+.step-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.step-body strong {
+  display: block;
+  font-size: 14.5px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.step-body code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: #86EFAC;
+}
+
+.step-card.win-step .step-body code {
+  color: #7DD3FC;
+}
+
+.step-body kbd {
+  background: #252833;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #fff;
 }
 
 .dl-card.featured {

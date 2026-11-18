@@ -1,24 +1,19 @@
 ﻿<#
 .SYNOPSIS
-    NEELx for Windows 11 — Official 1-Click Installer & Upgrade-Safe Updater.
+    NEELx for Windows 11 — Official 1-Click Complete Installer & Upgrade-Safe Updater.
 
 .DESCRIPTION
-    Downloads the official NEELx Windows 11 package from GitHub Releases, verifies its
-    public SHA-256 file checksum before extracting, installs app binaries into
-    %LOCALAPPDATA%\NEELx-App (zero admin privileges needed), creates a Start Menu shortcut,
-    and explicitly preserves 100% of your DPAPI-encrypted biometric vault & ONNX models
-    in %LOCALAPPDATA%\NEELx across every upgrade.
+    Downloads the official all-in-one NEELx Windows 11 standalone package from GitHub Releases,
+    verifies its public SHA-256 file checksum before extracting, installs app binaries into
+    %LOCALAPPDATA%\NEELx-App (zero admin privileges needed), clears Windows Defender Mark-of-the-Web,
+    creates a Start Menu shortcut, and explicitly preserves 100% of your DPAPI-encrypted biometric vault
+    in %LOCALAPPDATA%\NEELx across every upgrade. Zero secondary downloads required.
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/install.ps1 | iex
-
-.EXAMPLE
-    .\install.ps1 -Edition lite
+    irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet("portable", "lite")]
-    [string]$Edition = "portable",
     [string]$Version = "",
     [switch]$NoLaunch
 )
@@ -49,7 +44,12 @@ try {
         $Version = $targetRelease.tag_name
     }
 
-    $ZipName = "NEELx-$Version-windows-x64-$Edition.zip"
+    $targetAsset = $targetRelease.assets | Where-Object { $_.name -like "NEELx-*-windows-x64*.zip" -and $_.name -notlike "*-lite*" } | Select-Object -First 1
+    if ($targetAsset) {
+        $ZipName = $targetAsset.name
+    } else {
+        $ZipName = "NEELx-$Version-windows-x64.zip"
+    }
     $ShaName = "NEELx-$Version-windows-SHA256SUMS.txt"
     $BaseUrl = "https://github.com/$Repo/releases/download/$Version"
 

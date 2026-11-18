@@ -65,11 +65,21 @@ To uninstall cleanly (keeping your DPAPI vault unless `-WipeVault` is passed):
 irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex
 ```
 
-### Option 2: Standalone Portable ZIP (Unzip & Run)
-If downloading the ZIP from the website or GitHub:
-1. Extract the ZIP file to any folder.
-2. Double-click **`Run-NEELx.bat`** (automatically clears Windows Defender Mark-of-the-Web and launches `NEELx.Windows.exe`).
-3. Or if launching `NEELx.Windows.exe` directly and Microsoft Defender SmartScreen prompts, click **"More info" → "Run anyway"**.
+### Option 2: All-in-One Standalone ZIP (Unzip & Run)
+Download the complete package from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
+- `NEELx-v2.0.0-beta.5-windows-x64-portable.zip` (~85.7 MB — complete bundle with self-contained .NET 8 runtime, DirectML engine, models, and `Run-NEELx.bat`; zero extra runtime or model downloads needed).
+
+### 📋 Step-by-Step Guide for Windows 11
+1. **Download & Install:**
+   - Run the 1-click command `irm https://chandranildas.github.io/NEELx/install.ps1 | iex` (clears SmartScreen and adds Start Menu shortcut automatically).
+   - Or extract the downloaded ZIP to any folder and double-click **`Run-NEELx.bat`** (it unblocks Mark-of-the-Web and starts NEELx). If double-clicking `NEELx.Windows.exe` directly and SmartScreen prompts, click **"More info" → "Run anyway"**.
+2. **Setup Face & DPAPI Vault:**
+   - In NEELx Settings, navigate to **Camera** and select your webcam.
+   - Go to **Your Face** to enroll your 3D facial topography with the guided camera viewfinder.
+   - Enter your Windows login password once: it is encrypted strictly offline into your Windows DPAPI vault under `%LOCALAPPDATA%\NEELx`.
+3. **Instant 3D Biometric Unlock:**
+   - Press <kbd>Win</kbd> + <kbd>L</kbd> to lock your PC.
+   - Look at your webcam: NEELx's dedicated Prism Horizon laser verifies your 3D depth and automatically logs you into Windows!
 
 ### Option 3: Verify Downloaded ZIP Checksum (Public SHA-256)
 ```powershell

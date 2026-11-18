@@ -41,7 +41,7 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Backlit Window HDR Shadow Recovery**: Real-time center-vs-border luminance detector automatically lifts silhouetted dark faces sitting in front of bright windows.
 - **Windows DPAPI Offline Credential Vault (`DpapiCredentialVault`)**: Encrypts your 512-D identity vector and 9-zone 3D baseline offline under `ProtectedData.Protect` (`DataProtectionScope.CurrentUser`) in `%LOCALAPPDATA%\NEELx`.
 - **WinLogon Lock Screen Architecture (`NEELx.CredentialProvider`)**: Native C++ `ICredentialProvider` COM interface communicating with `NEELx.Windows.exe` over an ACL-hardened named pipe (`\\.\pipe\NEELxBiometricUnlock`) restricted to `SYSTEM` + active user SID.
-- **Standalone Zero-Dependency Distribution**: Available as a self-contained Portable ZIP (unzip & double-click `NEELx.Windows.exe`) or Lightweight ZIP (for PCs with .NET 8 Desktop Runtime).
+- **Standalone Zero-Dependency Distribution**: Available as a complete, self-contained standalone package (unzip & double-click `Run-NEELx.bat` or run the 1-click PowerShell command; zero prerequisites, zero secondary runtime or model downloads).
 
 ---
 
@@ -55,18 +55,22 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - Built-in FaceTime HD / Center Stage camera or external USB / Continuity webcam
 
 #### Option 1: 1-Click Terminal Quick Install (Recommended — Zero Gatekeeper Blocks)
-Downloads the DMG, clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
+Downloads the all-in-one DMG, clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
 ```bash
 curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash
 ```
 *(Or install via Homebrew Cask: `brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx && brew install --cask neelx`)*
 
-#### Option 2: Download Universal DMG Directly
+#### Option 2: Download All-in-One Universal DMG Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- `NEELx-v2.0.0-beta.5-universal-lite.dmg` (~13.9 MB — fast download with 1-click in-app 3D Depth download)
-- `NEELx-v2.0.0-beta.5-universal.dmg` (~58.6 MB — complete offline bundle with `DepthAnythingV2SmallF16` pre-installed)
+- **`NEELx-v2.0.0-beta.5-universal.dmg`** (~58.6 MB — complete offline bundle with Apple's `DepthAnythingV2SmallF16` + `ArcFace` pre-installed; zero secondary downloads required)
 
 > **💡 First time opening on macOS?** In Finder, **Right-Click** `NEELx.app` in `/Applications` and select **Open** (or run `xattr -cr /Applications/NEELx.app`).
+
+### 📋 Step-by-Step Guide for Mac Users
+1. **Download & Install:** Run the 1-click terminal command above (or open the DMG, drag `NEELx.app` to `/Applications`, and Right-Click → Open).
+2. **Setup Face & Password:** When prompted, allow camera access. Slowly roll your head in a natural 360° circle while the live meter captures 9 poses and your 3D depth profile. Enter your Mac password once to save it to your local hardware Touch ID Keychain vault.
+3. **Instant 3D Unlock:** Press `Cmd + Ctrl + Q` to lock your Mac. Sit in front of your display: NEELx verifies your 3D facial structure in ~25ms on the Neural Engine and unlocks instantly!
 
 #### Option 3: Build Directly from Swift Source
 ```bash
@@ -78,7 +82,7 @@ chmod +x build.sh
 
 #### Verify macOS DMG Integrity (Public SHA-256 Checksum)
 ```bash
-shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg
+shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg
 ```
 
 ---
@@ -97,12 +101,16 @@ irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 ```
 *(Clean rollback / uninstaller preserving your vault by default: `irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall.ps1 | iex`)*
 
-#### Option 2: Download Windows ZIP Directly
+#### Option 2: Download All-in-One Standalone ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- `NEELx-v2.0.0-beta.5-windows-x64-portable.zip` (Standalone self-contained — includes `Run-NEELx.bat` to launch with zero SmartScreen friction)
-- `NEELx-v2.0.0-beta.5-windows-x64-lite.zip` (Lightweight — requires [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0))
+- **`NEELx-v2.0.0-beta.5-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
 
 > **💡 First time opening on Windows 11?** Double-click `Run-NEELx.bat` inside the unzipped folder, or click **"More info" → "Run anyway"** if SmartScreen appears.
+
+### 📋 Step-by-Step Guide for Windows Users
+1. **Download & Install:** Run the 1-click PowerShell command above (or unzip the standalone ZIP to any folder and double-click `Run-NEELx.bat`).
+2. **Setup Face & DPAPI Vault:** Select your webcam in Settings, position your face inside the alignment guide, and follow the on-screen steps. Enter your Windows login password once to encrypt it safely into your local Windows DPAPI vault in `%LOCALAPPDATA%\NEELx`.
+3. **Instant 3D Unlock:** Press `Win + L` to lock your PC. Look at your webcam: NEELx's dedicated Prism Horizon laser verifies your 3D depth and automatically logs you in!
 
 #### Option 3: Build & Run Directly from `.NET 8` Source
 ```powershell

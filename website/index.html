@@ -764,72 +764,73 @@
           </div>
 
           <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
-            No upper Apple Silicon chip limit — NEELx compiles as a native Universal Binary (<code>arm64</code> +
-            <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel
-            Macs running macOS 15 Sequoia or newer.
+            Native Universal Binary (<code>arm64</code> + <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel Macs running macOS 15 Sequoia or newer.
           </p>
 
-          <div class="download-grid">
-            <div class="dl-card featured">
+          <!-- Single All-in-One Download Card for macOS -->
+          <div class="download-grid single-card">
+            <div class="dl-card single-hero">
               <div class="dl-top">
-                <h3>macOS Universal Lite DMG</h3>
-                <span id="liteSize" class="dl-size">13.9 MB · Universal</span>
+                <div>
+                  <span class="feature-tag" style="background: rgba(48, 209, 88, 0.15); color: #30D158; margin-bottom: 8px; display: inline-block;">All-in-One · 100% Pre-Bundled</span>
+                  <h3 style="font-size: 20px; margin: 0;">NEELx for macOS (Universal DMG)</h3>
+                </div>
+                <span id="macSize" class="dl-size">58.6 MB · Universal</span>
               </div>
-              <p class="dl-copy">
-                Recommended fast installer. Includes the complete NEELx app and downloads Apple's 3D Neural Depth model
-                in 1 click inside Settings (~3 seconds on broadband, zero Xcode needed).
+              <p class="dl-copy" style="font-size: 13px; line-height: 1.6; margin: 12px 0 16px;">
+                Complete offline bundle. Pre-bundles Apple's <code>DepthAnythingV2SmallF16</code> 3D neural depth engine + 512-D <code>ArcFace</code> pre-compiled for Apple Neural Engine. <strong>Zero secondary model downloads, zero configuration needed.</strong>
               </p>
-              <a id="btnDownloadLite" class="btn btn-primary"
-                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal-lite.dmg">
-                Download macOS Lite DMG
-              </a>
-              <div class="sha-row">
-                <span class="sha-text">File SHA-256: <span
-                    id="liteSha">8c1e9c93e1c44fd2fc0b4acd4710719fe74e02e3b291b3aff52b0de812f70754</span></span>
-                <button class="btn-copy" type="button" data-copy-target="#liteSha">Copy</button>
-              </div>
-            </div>
-
-            <div class="dl-card">
-              <div class="dl-top">
-                <h3>macOS Universal Full Offline DMG</h3>
-                <span id="fullSize" class="dl-size">58.6 MB · Universal</span>
-              </div>
-              <p class="dl-copy">
-                Complete all-in-one offline installer with Apple's compiled <code>DepthAnythingV2SmallF16</code> Core ML
-                3D depth engine already bundled inside <code>NEELx.app</code>.
-              </p>
-              <a id="btnDownloadFull" class="btn btn-secondary"
+              <a id="btnDownloadMac" class="btn btn-primary" style="padding: 13px 22px; font-size: 14.5px; justify-content: center;"
                 href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-universal.dmg">
-                Download macOS Full DMG
+                Download macOS Universal DMG (All-in-One)
               </a>
-              <div class="sha-row">
+              <div class="sha-row" style="margin-top: 12px;">
                 <span class="sha-text">File SHA-256: <span
-                    id="fullSha">258421d72cf0a2a5b02dd3c7126a893a6db32591a92e8fc1ca99452f51de5427</span></span>
-                <button class="btn-copy" type="button" data-copy-target="#fullSha">Copy</button>
+                    id="macSha">cd2173be4f9fa115d7b0017d9ec6fb85f871ed1845642b0631d4348ee207f7a5</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#macSha">Copy</button>
               </div>
             </div>
           </div>
 
-          <!-- Gatekeeper First Launch Guidance -->
-          <div style="background: rgba(255, 189, 46, 0.08); border: 1px solid rgba(255, 189, 46, 0.3); border-radius: 12px; padding: 14px 18px; margin: 18px 0;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <span style="font-size: 16px;">💡</span>
-              <strong style="color: #FFBD2E; font-size: 13.5px;">First time opening DMG on macOS Sequoia or Sonoma?</strong>
+          <!-- Step-by-Step Setup & Usage Guide -->
+          <div class="setup-steps-guide">
+            <h4 style="font-size: 16px; margin: 24px 0 14px; display: flex; align-items: center; gap: 8px;">
+              <span>📋</span> Step-by-Step Guide: Download, Setup &amp; Using NEELx on Mac
+            </h4>
+
+            <div class="step-card">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <strong>Download &amp; Install (Zero Gatekeeper blocks)</strong>
+                • <strong>Fastest (1-Click Terminal):</strong> Run the command above: <code>curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>. It downloads, automatically removes quarantine, moves to Applications, and opens NEELx.<br/>
+                • <strong>Direct DMG:</strong> Open the downloaded <code>NEELx-v2.0.0-beta.5-universal.dmg</code> and drag <strong>NEELx.app</strong> into your <strong>Applications</strong> folder.<br/>
+                • <em>First time opening DMG?</em> In Finder, <strong>Right-Click</strong> (or Control-Click) <code>NEELx.app</code> in Applications and select <strong>Open</strong>, then click <strong>Open</strong> on the prompt. (Or System Settings → Privacy &amp; Security → Open Anyway).
+              </div>
             </div>
-            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 8px 0;">
-              Because NEELx is open-source and not signed with a paid Apple developer subscription, macOS Gatekeeper may show <em>"Apple could not verify NEELx is free of malware"</em>.
-            </p>
-            <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.6;">
-              • <strong>Option A (Easiest):</strong> In Finder, <strong>Right-Click</strong> (or Control-Click) <code>NEELx.app</code> in Applications and click <strong>Open</strong>, then click <strong>Open</strong> on the prompt.<br/>
-              • <strong>Option B:</strong> Go to <strong>System Settings → Privacy &amp; Security</strong>, scroll to Security, and click <strong>Open Anyway</strong>.<br/>
-              • <strong>Option C (Zero Dialogs):</strong> Run the 1-Click Terminal Command above (auto-clears quarantine).
+
+            <div class="step-card">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <strong>Setup Face &amp; Unlock Password (30 Seconds)</strong>
+                • <strong>Grant Camera Permission:</strong> When prompted, click "OK" so NEELx can access your webcam.<br/>
+                • <strong>360° Face Roll:</strong> Slowly roll your head in a natural circle. The live halo meter captures 9 biometric poses and your 3D depth profile.<br/>
+                • <strong>Store Password:</strong> Enter your Mac login password once. It is encrypted in your local hardware Touch ID Keychain vault (100% offline, zero cloud calls).
+              </div>
+            </div>
+
+            <div class="step-card">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <strong>Enjoy Instant 3D Biometric Unlock!</strong>
+                • Press <kbd>Cmd</kbd> + <kbd>Ctrl</kbd> + <kbd>Q</kbd> to lock your Mac (or wake from sleep).<br/>
+                • Sit in front of your Mac: NEELx verifies your attention and 3D face structure in ~25ms on the Apple Neural Engine and automatically logs you in without touching a key!
+              </div>
             </div>
           </div>
 
           <div class="sha-help">
             <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the installer file (not
-            a private key). You can run <code>shasum -a 256 NEELx-v2.0.0-beta.5-universal-lite.dmg</code> in Terminal to
+            a private key). You can run <code>shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg</code> in Terminal to
             verify your download matches byte-for-byte.
           </div>
 
@@ -856,7 +857,7 @@
             <div class="copy-block-content">
               <span class="copy-label"># Optional: verify downloaded DMG integrity via SHA-256</span>
               <code id="cmdMacSha"
-                class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal-lite.dmg</code>
+                class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.5-universal.dmg</code>
             </div>
             <button class="btn-copy" type="button" data-copy-target="#cmdMacSha">Copy</button>
           </div>
@@ -902,67 +903,70 @@
             with automatic CPU fallback.
           </p>
 
-          <div class="download-grid">
-            <div class="dl-card featured-win">
+          <!-- Single All-in-One Download Card for Windows 11 -->
+          <div class="download-grid single-card">
+            <div class="dl-card single-hero featured-win">
               <div class="dl-top">
-                <h3>Windows 11 Portable ZIP (Standalone)</h3>
-                <span id="winPortableSize" class="dl-size win-size">85.7 MB · Standalone Win x64</span>
+                <div>
+                  <span class="feature-tag win-tag" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; margin-bottom: 8px; display: inline-block;">All-in-One · Standalone Package</span>
+                  <h3 style="font-size: 20px; margin: 0;">NEELx for Windows 11 (Standalone ZIP)</h3>
+                </div>
+                <span id="winSize" class="dl-size win-size">85.7 MB · Standalone Win x64</span>
               </div>
-              <p class="dl-copy">
-                Recommended zero-dependency package. Self-contained <code>.NET 8</code> runtime + DirectML ONNX engine
-                bundled inside — includes <code>Run-NEELx.bat</code> to launch with zero SmartScreen friction.
+              <p class="dl-copy" style="font-size: 13px; line-height: 1.6; margin: 12px 0 16px;">
+                Complete offline bundle for Windows 11 PCs. Pre-bundles the self-contained <code>.NET 8</code> runtime, DirectML GPU/NPU 3D depth engine, ONNX models, and <code>Run-NEELx.bat</code>. <strong>Zero separate runtime downloads, zero extra model downloads required.</strong>
               </p>
-              <a id="btnDownloadWinPortable" class="btn btn-win"
+              <a id="btnDownloadWin" class="btn btn-win" style="padding: 13px 22px; font-size: 14.5px; justify-content: center;"
                 href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-portable.zip">
-                Download Windows Portable ZIP
+                Download Windows 11 Package (All-in-One)
               </a>
-              <div class="sha-row">
+              <div class="sha-row" style="margin-top: 12px;">
                 <span class="sha-text">File SHA-256: <span
-                    id="winPortableSha">ceb5146aa2bf9a217ec1a543cf8b87380e7046905ff6eac704bc6bafb0a1f3cf</span></span>
-                <button class="btn-copy" type="button" data-copy-target="#winPortableSha">Copy</button>
-              </div>
-            </div>
-
-            <div class="dl-card">
-              <div class="dl-top">
-                <h3>Windows 11 Lite ZIP</h3>
-                <span id="winLiteSize" class="dl-size win-size">17.0 MB · Win x64</span>
-              </div>
-              <p class="dl-copy">
-                Ultra-fast lightweight download for Windows 11 PCs that already have the <strong>.NET 8 Desktop
-                  Runtime</strong> installed. Includes the full Fluent Prism Core WPF app &amp; DirectML engine.
-              </p>
-              <a id="btnDownloadWinLite" class="btn btn-secondary"
-                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.5/NEELx-v2.0.0-beta.5-windows-x64-lite.zip">
-                Download Windows Lite ZIP
-              </a>
-              <div class="sha-row">
-                <span class="sha-text">File SHA-256: <span
-                    id="winLiteSha">1d7534b5627dab075830c2c5bb53d22dc559cd6a78b23cd4df4e3314ea321fc5</span></span>
-                <button class="btn-copy" type="button" data-copy-target="#winLiteSha">Copy</button>
+                    id="winSha">ceb5146aa2bf9a217ec1a543cf8b87380e7046905ff6eac704bc6bafb0a1f3cf</span></span>
+                <button class="btn-copy" type="button" data-copy-target="#winSha">Copy</button>
               </div>
             </div>
           </div>
 
-          <!-- Windows SmartScreen First Launch Guidance -->
-          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px 18px; margin: 18px 0;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <span style="font-size: 16px;">💡</span>
-              <strong style="color: #38BDF8; font-size: 13.5px;">First time opening on Windows 11?</strong>
+          <!-- Step-by-Step Setup & Usage Guide for Windows -->
+          <div class="setup-steps-guide">
+            <h4 style="font-size: 16px; margin: 24px 0 14px; display: flex; align-items: center; gap: 8px;">
+              <span>📋</span> Step-by-Step Guide: Download, Setup &amp; Using NEELx on Windows 11
+            </h4>
+
+            <div class="step-card win-step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <strong>Download &amp; Install (Zero SmartScreen blocks)</strong>
+                • <strong>Fastest (1-Click PowerShell):</strong> Run the command above: <code>irm https://chandranildas.github.io/NEELx/install.ps1 | iex</code>. It downloads the all-in-one package, unblocks SmartScreen, creates a Start Menu shortcut, and launches.<br/>
+                • <strong>Direct ZIP Download:</strong> Extract <code>NEELx-v2.0.0-beta.5-windows-x64-portable.zip</code> to any folder.<br/>
+                • <em>First launch:</em> Double-click <strong><code>Run-NEELx.bat</code></strong> inside the folder (it automatically clears Windows Defender Mark-of-the-Web and starts NEELx). If double-clicking <code>NEELx.Windows.exe</code> directly and Windows Defender SmartScreen shows <em>"Windows protected your PC"</em>, click <strong>"More info" → "Run anyway"</strong>.
+              </div>
             </div>
-            <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 8px 0;">
-              Because NEELx is open-source and not signed with an enterprise commercial certificate, Microsoft Defender SmartScreen may show <em>"Windows protected your PC"</em>.
-            </p>
-            <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.6;">
-              • <strong>Option A (Easiest):</strong> Double-click <strong><code>Run-NEELx.bat</code></strong> inside the extracted folder (automatically unblocks and starts NEELx).<br/>
-              • <strong>Option B:</strong> On the SmartScreen prompt, click <strong>"More info"</strong> → click <strong>"Run anyway"</strong>.<br/>
-              • <strong>Option C (Zero Dialogs):</strong> Run the 1-Click PowerShell command above (auto-unblocks and adds a Start Menu shortcut).
+
+            <div class="step-card win-step">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <strong>Setup Face &amp; DPAPI Vault (30 Seconds)</strong>
+                • <strong>Camera Viewfinder:</strong> Select your webcam and position your face inside the alignment guide.<br/>
+                • <strong>Enroll Face:</strong> Follow the on-screen guide to enroll your 3D facial topography.<br/>
+                • <strong>Save Password:</strong> Enter your Windows login password once. It is protected offline by Windows DPAPI in <code>%LOCALAPPDATA%\NEELx</code> (100% offline, zero cloud telemetry).
+              </div>
+            </div>
+
+            <div class="step-card win-step">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <strong>Enjoy Instant 3D Biometric Unlock!</strong>
+                • Press <kbd>Win</kbd> + <kbd>L</kbd> to lock your Windows 11 PC.<br/>
+                • Look at your webcam: NEELx's dedicated Prism Horizon laser verifies your 3D depth and automatically logs you in!
+              </div>
             </div>
           </div>
 
           <div class="sha-help">
             <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the ZIP package (not a
-            secret key). Run <code>Get-FileHash NEELx-v2.0.0-beta.5-windows-x64-portable.zip -Algorithm SHA256</code> in
+            secret key). Run <code>Get-FileHash ~/Downloads/NEELx-v2.0.0-beta.5-windows-x64-portable.zip -Algorithm SHA256</code> in
             PowerShell to verify your download.
           </div>
 

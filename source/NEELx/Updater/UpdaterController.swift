@@ -183,19 +183,15 @@ final class UpdaterController {
         }
     }
 
-    /// Matches the user's current install flavor: Lite if depth model isn't bundled inside `Bundle.main`, else Full.
+    /// Selects the complete All-in-One Universal DMG bundle so 3D depth models are always pre-bundled.
     private func selectBestDMG(from assets: [GitHubAsset]) -> GitHubAsset? {
         let dmgs = assets.filter { $0.name.lowercased().hasSuffix(".dmg") }
         guard !dmgs.isEmpty else { return nil }
 
-        let hasBundledDepth = Bundle.main.url(forResource: "DepthAnythingV2SmallF16", withExtension: "mlmodelc") != nil
-        if !hasBundledDepth, let lite = dmgs.first(where: { $0.name.lowercased().contains("lite") }) {
-            return lite
-        }
         if let full = dmgs.first(where: { !$0.name.lowercased().contains("lite") && $0.name.lowercased().contains("universal") }) {
             return full
         }
-        return dmgs.first
+        return dmgs.first(where: { !$0.name.lowercased().contains("lite") }) ?? dmgs.first
     }
 
     // MARK: - Download, Mount & Atomic Self-Install
