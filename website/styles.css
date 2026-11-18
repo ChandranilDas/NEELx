@@ -906,7 +906,8 @@ h3 {
   align-items: center;
 }
 
-#windowsPrismCanvas {
+#windowsPrismCanvas,
+#macNotchArchCanvas {
   width: 100%;
   height: 150px;
   border-radius: 14px;

@@ -1429,6 +1429,136 @@ function initWindowsPrismCanvas() {
   frame();
 }
 
+function initMacNotchArchCanvas() {
+  const canvas = document.getElementById("macNotchArchCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const W = 420;
+  const H = 150;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  let t = 0;
+  let blinkPhase = 0;
+
+  function frame() {
+    t += 0.022;
+    blinkPhase = (blinkPhase + 0.007) % 1;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#06080d";
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W * 0.5;
+    const cy = H * 0.47;
+    const cycle = (t * 0.24) % 1; // smooth 4.4s cycle: scan -> verify emerald checkmark
+    const verified = cycle >= 0.58;
+
+    // Subtle MacBook top hardware notch pill
+    ctx.fillStyle = "#000000";
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(cx - 38, -4, 76, 16, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Subtle FaceTime camera dot
+    ctx.fillStyle = verified ? "#30d158" : "#243b55";
+    ctx.beginPath();
+    ctx.arc(cx, 5, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Soft emerald radial aura behind the notch ring
+    const aura = ctx.createRadialGradient(cx, cy, 8, cx, cy, 62);
+    aura.addColorStop(0, verified ? "rgba(48, 209, 88, 0.24)" : "rgba(48, 209, 88, 0.12)");
+    aura.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 62, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 48 crisp radial Face ID ticks
+    const tickCount = 48;
+    const sweepHead = (cycle / 0.58) * tickCount;
+    for (let i = 0; i < tickCount; i++) {
+      const ang = (i / tickCount) * Math.PI * 2 - Math.PI / 2;
+      const lit = verified || i <= sweepHead;
+      const rIn = 34;
+      const rOut = lit ? 43 : 40;
+      ctx.strokeStyle = lit ? "#30d158" : "rgba(255, 255, 255, 0.16)";
+      ctx.lineWidth = lit ? 2 : 1.3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang) * rIn, cy + Math.sin(ang) * rIn);
+      ctx.lineTo(cx + Math.cos(ang) * rOut, cy + Math.sin(ang) * rOut);
+      ctx.stroke();
+    }
+
+    if (!verified) {
+      // Proper sculpted 3D human face inside the Face ID ring
+      renderSculptedHumanFace(ctx, {
+        cx,
+        cy,
+        scale: 0.64,
+        yaw: Math.sin(t * 1.1) * 0.55,
+        pitch: Math.cos(t * 0.85) * 0.3,
+        blinkPhase,
+        strokeMain: "rgba(245, 245, 247, 0.92)",
+        strokeSoft: "rgba(48, 209, 88, 0.34)",
+        fillTop: "rgba(48, 209, 88, 0.20)",
+        fillMid: "rgba(120, 126, 140, 0.10)",
+        fillEdge: "rgba(12, 16, 20, 0.55)",
+        pupilColor: "#30d158",
+        showShoulders: false,
+        showMeridians: true,
+        lineWidthScale: 1.25,
+      });
+    } else {
+      // Smooth spring-drawn emerald Face ID checkmark
+      const drawP = Math.min(1, (cycle - 0.58) / 0.16);
+      const eased = 1 - Math.pow(1 - drawP, 3);
+      const p0 = { x: cx - 14, y: cy + 1 };
+      const p1 = { x: cx - 3, y: cy + 12 };
+      const p2 = { x: cx + 16, y: cy - 11 };
+
+      ctx.save();
+      ctx.strokeStyle = "#30d158";
+      ctx.lineWidth = 3.8;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.shadowColor = "#30d158";
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      if (eased < 0.42) {
+        const f = eased / 0.42;
+        ctx.lineTo(p0.x + (p1.x - p0.x) * f, p0.y + (p1.y - p0.y) * f);
+      } else {
+        ctx.lineTo(p1.x, p1.y);
+        const f = (eased - 0.42) / 0.58;
+        ctx.lineTo(p1.x + (p2.x - p1.x) * f, p1.y + (p2.y - p1.y) * f);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.fillStyle = verified ? "#5ee984" : "rgba(245, 245, 247, 0.72)";
+    ctx.font = "500 10px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      verified ? "NEELx macOS · KEYCHAIN UNLOCK VERIFIED" : "NEELx macOS · ANE 3D DEPTH SCANNING",
+      cx,
+      H - 10
+    );
+
+    requestAnimationFrame(frame);
+  }
+
+  frame();
+}
+
 function initWinHeroCanvas() {
   const canvas = document.getElementById("winHeroCanvas");
   if (!canvas) return;
@@ -1930,5 +2060,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initWinHowItWorksSimulators();
   initDepthLab();
   initWindowsPrismCanvas();
+  initMacNotchArchCanvas();
   initFeedbackForm();
 });
