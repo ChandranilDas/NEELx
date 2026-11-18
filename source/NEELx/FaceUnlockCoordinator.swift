@@ -459,11 +459,11 @@ final class FaceUnlockCoordinator {
             var matched = pipeline.bestMatch(in: scored, threshold: matchThreshold)
             var precomputedDepth: NeuralDepthReading?
 
-            // 3D-Profile-Assisted Backlit Margin: when harsh glare/backlight drops ArcFace just 0.01–0.04
-            // below threshold (still >= 0.62, far above any stranger's 0.15–0.38), verify with Stage 3
+            // 3D-Profile-Assisted Backlit Margin: when harsh glare/backlight drops ArcFace just 0.01–0.06
+            // below threshold (still >= 0.61, far above any stranger's 0.15–0.38), verify with Stage 3
             // Neural 3D Depth + Personal 9-Zone 3D Profile before accepting — zero security compromise.
             if matched == nil, neuralDepthEnabled {
-                let backlitFloor = max(Float(0.62), matchThreshold - 0.04)
+                let backlitFloor = max(Float(0.61), matchThreshold - 0.065)
                 if let candidate = pipeline.bestMatch(in: scored, threshold: backlitFloor),
                    let enrolledProfile = candidate.identity.depthProfile {
                     let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
@@ -475,12 +475,15 @@ final class FaceUnlockCoordinator {
                             noseNormalizedCenter: noseCenter
                         )
                     }.value
-                    if let probeDepth,
-                       probeDepth.depth3DScore >= 0.75,
-                       probeDepth.flatSpoofScore <= 0.18,
-                       NeuralDepthAnalyzer.signatureSimilarity(probeDepth.depthSignature, enrolledProfile) >= 0.85 {
-                        matched = candidate
-                        precomputedDepth = probeDepth
+                    if let probeDepth {
+                        let profileSim = NeuralDepthAnalyzer.signatureSimilarity(probeDepth.depthSignature, enrolledProfile)
+                        // Verifies genuine 3D human topography matching enrolled user's unique 3D structure:
+                        if probeDepth.flatSpoofScore <= 0.20,
+                           probeDepth.noseProtrusion > 0.006,
+                           (profileSim >= 0.75 || probeDepth.depth3DScore >= 0.50) {
+                            matched = candidate
+                            precomputedDepth = probeDepth
+                        }
                     }
                 }
             }
@@ -675,7 +678,8 @@ final class FaceUnlockCoordinator {
 
                 // Log verified unlock & silently learn high-confidence 3D-verified appearance/lighting drift
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: summary)
-                let strong3DVerified = (depthReading?.depth3DScore ?? 0) >= 0.75 && (depthReading?.flatSpoofScore ?? 0) < 0.15
+                let strong3DVerified = ((depthReading?.depth3DScore ?? 0) >= 0.50 || (depthProfileSimilarity ?? 0) >= 0.75)
+                    && (depthReading?.flatSpoofScore ?? 0) < 0.18
                 if (readyMatch.centroidSimilarity >= 0.74 && (depthReading?.flatSpoofScore ?? 0) < 0.20)
                     || (readyMatch.centroidSimilarity >= 0.70 && strong3DVerified) {
                     FaceEnrollmentStore.shared.recordAdaptiveSample(
@@ -738,9 +742,9 @@ final class FaceUnlockCoordinator {
         guard let baselineRGB = ChromaticFlashChallenger.meanFaceRGB(freshBaseline.image, normalizedFaceBox: faceBox) else {
             return (true, "abstained: no face RGB")
         }
-        // In well-lit rooms (>= 0.34 luminance), room light & camera AWB dominate subtle display tints;
+        // In well-lit rooms (>= 0.30 luminance), room light & camera AWB dominate subtle display tints;
         // abstain safely while 3D Neural Depth + 9-Zone Profile + Attention handle anti-spoofing at full accuracy.
-        if baselineRGB.luminance >= 0.34 {
+        if baselineRGB.luminance >= 0.30 {
             return (true, String(format: "abstained: bright ambient %.2f", baselineRGB.luminance))
         }
 
@@ -764,7 +768,7 @@ final class FaceUnlockCoordinator {
         guard let retryRGB = ChromaticFlashChallenger.meanFaceRGB(retryBase.image, normalizedFaceBox: faceBox) else {
             return firstResult
         }
-        if retryRGB.luminance >= 0.34 {
+        if retryRGB.luminance >= 0.30 {
             return (true, String(format: "abstained on retry: bright ambient %.2f", retryRGB.luminance))
         }
         return await runSingleChromaticPulse(

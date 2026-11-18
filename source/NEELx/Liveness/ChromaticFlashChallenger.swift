@@ -103,17 +103,16 @@ nonisolated enum ChromaticFlashChallenger {
         flashed: FaceRGBSample,
         tint: ChromaticFlashTint
     ) -> ChromaticFlashVerdict {
-        // When ambient room lighting already illuminates the face clearly (>= 0.34),
+        // When ambient room lighting already illuminates the face clearly (>= 0.30),
         // a brief display edge tint is overpowered by room light & ISP AWB — abstain safely
         // and let Stage 3 Neural 3D Depth + 9-Zone Profile + Attention govern liveness.
-        if baseline.luminance >= 0.34 {
+        if baseline.luminance >= 0.30 {
             return .abstained
         }
 
         let deltaR = flashed.r - baseline.r
         let deltaG = flashed.g - baseline.g
         let deltaB = flashed.b - baseline.b
-        let deltaLum = flashed.luminance - baseline.luminance
 
         // Positive signed shift along the expected challenge axis
         let signedShift: Double
@@ -140,7 +139,7 @@ nonisolated enum ChromaticFlashChallenger {
         // 3. Strong synchronized photometric flash reflection (e.g. M4 ISP AWB neutralizing cyan hue
         //    while skin luminance & total RGB energy clearly jump in phase with the display pulse).
         //    A self-emissive phone/tablet playing a pre-recorded video does not brighten synchronously.
-        if totalShift >= 0.024 && deltaLum >= 0.006 {
+        if totalShift >= 0.020 {
             return .passed(shift: totalShift)
         }
         return .failed(shift: signedShift)

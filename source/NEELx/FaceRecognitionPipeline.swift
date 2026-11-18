@@ -172,14 +172,15 @@ extension FaceRecognitionPipeline {
 
     /// Shared by Face Lab and FaceUnlockCoordinator so tuning stays consistent.
     /// Because `centroidSimilarity` averages all 9 poses (including 8 turned/tilted 360° poses),
-    /// a straight-on match can score ≥ threshold on `maxSampleSimilarity` while its 9-pose centroid
-    /// sits ~0.04–0.06 lower (especially under dark-room or strong flash lighting). Requiring strict
-    /// peak sample agreement (`>= threshold`) plus strong centroid agreement (`>= threshold - 0.06`)
-    /// keeps false-accept rate ultra-low (impostors score < 0.38) while eliminating real-owner misses.
+    /// a straight-on match can score ≥ threshold on `centroidSimilarity` while single turned poses
+    /// sit slightly lower, or vice-versa. Requiring primary agreement (`max(maxSim, centroidSim) >= threshold`)
+    /// plus strong secondary agreement (`min(maxSim, centroidSim) >= threshold - 0.06`) prevents
+    /// impostor flukes (strangers score < 0.38) while eliminating false rejections for the enrolled user.
     nonisolated func bestMatch(in scored: [ScoredIdentity], threshold: Float) -> ScoredIdentity? {
         guard let first = scored.first, !first.identity.isStale(comparedTo: embedder) else { return nil }
-        let centroidFloor = max(threshold - 0.06, 0.50)
-        guard first.maxSampleSimilarity >= threshold, first.centroidSimilarity >= centroidFloor else { return nil }
+        let effectiveSim = max(first.maxSampleSimilarity, first.centroidSimilarity)
+        let secondaryFloor = max(threshold - 0.06, 0.48)
+        guard effectiveSim >= threshold, min(first.maxSampleSimilarity, first.centroidSimilarity) >= secondaryFloor else { return nil }
         return first
     }
 }
