@@ -48,15 +48,46 @@ async function handleFeedback(request, env) {
     const toEmail = env.FEEDBACK_TO || "chandranildas925@gmail.com";
     const fromEmail = env.FEEDBACK_FROM || toEmail;
 
+    // Sanitize up to 3 optional screenshot attachments (base64-encoded PNG/JPEG/WebP, max ~3.5 MB total)
+    const cleanAttachments = [];
+    if (Array.isArray(body.attachments)) {
+      let totalB64Chars = 0;
+      for (const item of body.attachments.slice(0, 3)) {
+        if (!item || typeof item.content !== "string") continue;
+        const stripped = item.content.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "").replace(/\s+/g, "");
+        if (!stripped || stripped.length > 2_000_000) continue;
+        if (totalB64Chars + stripped.length > 4_800_000) break;
+        totalB64Chars += stripped.length;
+        const rawName = String(item.name || `screenshot-${cleanAttachments.length + 1}.jpg`)
+          .replace(/[^a-zA-Z0-9._-]/g, "_")
+          .slice(0, 80);
+        const safeName = /\.(png|jpe?g|webp|gif)$/i.test(rawName) ? rawName : `${rawName}.jpg`;
+        cleanAttachments.push({ name: safeName, content: stripped });
+      }
+    }
+
     const textContent = [
       `Category: ${category}`,
       `Rating: ${rating}`,
       `Mac: ${macModel}`,
+      cleanAttachments.length > 0 ? `Screenshots attached: ${cleanAttachments.length}` : "",
       "",
       "Message:",
       message,
       diagnostics ? `\n${diagnostics}` : "",
-    ].join("\n");
+    ]
+      .filter((line) => line !== undefined)
+      .join("\n");
+
+    const brevoPayload = {
+      sender: { name: "NEELx Feedback", email: fromEmail },
+      to: [{ email: toEmail, name: "Chandranil Das" }],
+      subject: title,
+      textContent,
+    };
+    if (cleanAttachments.length > 0) {
+      brevoPayload.attachment = cleanAttachments;
+    }
 
     const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -65,12 +96,7 @@ async function handleFeedback(request, env) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        sender: { name: "NEELx Feedback", email: fromEmail },
-        to: [{ email: toEmail, name: "Chandranil Das" }],
-        subject: title,
-        textContent,
-      }),
+      body: JSON.stringify(brevoPayload),
     });
 
     if (!brevoRes.ok) {

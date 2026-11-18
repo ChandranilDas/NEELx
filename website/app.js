@@ -397,14 +397,134 @@ function initDepthLab() {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Direct Feedback Form (Cloudflare Pages Function + GitHub/Email fallback)
+// 4. Direct Feedback Form (Screenshots + Cloudflare/Brevo + Email App Chooser)
 // ---------------------------------------------------------------------------
 function initFeedbackForm() {
   const form = document.getElementById("feedbackForm");
   if (!form) return;
   const statusEl = document.getElementById("feedbackStatus");
   const githubBtn = document.getElementById("btnFeedbackGitHub");
-  const emailBtn = document.getElementById("btnFeedbackEmail");
+  const emailMenuBtn = document.getElementById("btnEmailMenu");
+  const emailMenu = document.getElementById("emailMenu");
+  const dropzone = document.getElementById("fbDropzone");
+  const fileInput = document.getElementById("fbFiles");
+  const pickBtn = document.getElementById("btnPickScreenshots");
+  const previewsEl = document.getElementById("fbPreviews");
+
+  // Stores up to 3 compressed screenshots: { id, name, dataUrl, base64 }
+  const screenshots = [];
+
+  async function compressImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read image"));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Unsupported image format"));
+        img.onload = () => {
+          const maxDim = 1440;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          const base64 = dataUrl.split(",")[1] || "";
+          const baseName = (file.name || `screenshot-${Date.now()}`).replace(/\.[^.]+$/, "");
+          resolve({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: `${baseName}.jpg`,
+            dataUrl,
+            base64,
+          });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPreviews() {
+    if (!previewsEl) return;
+    previewsEl.innerHTML = "";
+    for (const item of screenshots) {
+      const card = document.createElement("div");
+      card.className = "upload-thumb";
+      card.title = item.name;
+      const img = document.createElement("img");
+      img.src = item.dataUrl;
+      img.alt = item.name;
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "upload-thumb-remove";
+      rm.textContent = "×";
+      rm.setAttribute("aria-label", `Remove ${item.name}`);
+      rm.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = screenshots.findIndex((s) => s.id === item.id);
+        if (idx >= 0) screenshots.splice(idx, 1);
+        renderPreviews();
+      });
+      card.appendChild(img);
+      card.appendChild(rm);
+      previewsEl.appendChild(card);
+    }
+  }
+
+  async function addFiles(fileList) {
+    const remaining = 3 - screenshots.length;
+    if (remaining <= 0) {
+      statusEl.textContent = "Maximum 3 screenshots allowed.";
+      statusEl.style.color = "#fbbf24";
+      return;
+    }
+    const candidates = Array.from(fileList).filter((f) => f.type.startsWith("image/")).slice(0, remaining);
+    for (const file of candidates) {
+      try {
+        const compressed = await compressImageFile(file);
+        screenshots.push(compressed);
+      } catch {
+        statusEl.textContent = `Could not process ${file.name}.`;
+        statusEl.style.color = "#f87171";
+      }
+    }
+    renderPreviews();
+  }
+
+  pickBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    fileInput?.click();
+  });
+  dropzone?.addEventListener("click", () => fileInput?.click());
+  fileInput?.addEventListener("change", () => {
+    if (fileInput.files?.length) addFiles(fileInput.files);
+    fileInput.value = "";
+  });
+  dropzone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("drag-over");
+  });
+  dropzone?.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("drag-over");
+    if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+  });
+  form.addEventListener("paste", (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imgs = [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const f = item.getAsFile();
+        if (f) imgs.push(f);
+      }
+    }
+    if (imgs.length) addFiles(imgs);
+  });
 
   function collectData() {
     return {
@@ -412,11 +532,16 @@ function initFeedbackForm() {
       macModel: document.getElementById("fbMac")?.value.trim() || "Unspecified Mac",
       rating: document.getElementById("fbRating")?.value || "5/5",
       message: document.getElementById("fbMessage")?.value.trim() || "",
+      attachments: screenshots.map((s) => ({ name: s.name, content: s.base64 })),
     };
   }
 
   function buildBody(d) {
-    return `**Category:** ${d.category}\n**Mac / macOS:** ${d.macModel}\n**Rating:** ${d.rating}\n\n${d.message}`;
+    return `Category: ${d.category}\nMac / macOS: ${d.macModel}\nRating: ${d.rating}\n\n${d.message}`;
+  }
+
+  function buildSubject(d) {
+    return `[${d.category}] NEELx Beta Feedback (${d.rating})`;
   }
 
   form.addEventListener("submit", async (e) => {
@@ -427,7 +552,9 @@ function initFeedbackForm() {
       statusEl.style.color = "#f87171";
       return;
     }
-    statusEl.textContent = "Sending feedback…";
+    statusEl.textContent = screenshots.length
+      ? `Sending feedback + ${screenshots.length} screenshot(s)…`
+      : "Sending feedback…";
     statusEl.style.color = "#38bdf8";
 
     try {
@@ -440,39 +567,111 @@ function initFeedbackForm() {
         body: JSON.stringify(d),
       });
       if (res.ok) {
-        statusEl.textContent = "Feedback sent directly to Chandranil — thank you!";
+        statusEl.textContent = screenshots.length
+          ? `Feedback + ${screenshots.length} screenshot(s) sent directly to Chandranil — thank you!`
+          : "Feedback sent directly to Chandranil — thank you!";
         statusEl.style.color = "#34d399";
         form.reset();
+        screenshots.length = 0;
+        renderPreviews();
         return;
       }
     } catch {
-      // Static preview without Cloudflare Function configured -> fall back cleanly to Email/GitHub
+      // Fall back cleanly if offline
     }
 
-    // Fallback: open pre-filled GitHub Issue so feedback never drops
     const params = new URLSearchParams({
-      title: `[${d.category}] NEELx Beta Feedback (${d.rating})`,
+      title: buildSubject(d),
       body: buildBody(d),
     });
     window.open(`https://github.com/${REPO}/issues/new?${params.toString()}`, "_blank", "noopener");
-    statusEl.textContent = "Opened pre-filled GitHub Issue (direct email endpoint activates once Brevo API key is added in Cloudflare).";
+    statusEl.textContent = "Opened pre-filled GitHub Issue.";
     statusEl.style.color = "#34d399";
   });
 
   githubBtn?.addEventListener("click", () => {
     const d = collectData();
     const params = new URLSearchParams({
-      title: `[${d.category}] NEELx Beta Feedback (${d.rating})`,
+      title: buildSubject(d),
       body: buildBody(d),
     });
     window.open(`https://github.com/${REPO}/issues/new?${params.toString()}`, "_blank", "noopener");
   });
 
-  emailBtn?.addEventListener("click", () => {
+  // Email App Chooser popover
+  emailMenuBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isHidden = emailMenu.hasAttribute("hidden");
+    if (isHidden) {
+      emailMenu.removeAttribute("hidden");
+      emailMenuBtn.setAttribute("aria-expanded", "true");
+    } else {
+      emailMenu.setAttribute("hidden", "");
+      emailMenuBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  document.addEventListener("click", () => {
+    if (emailMenu && !emailMenu.hasAttribute("hidden")) {
+      emailMenu.setAttribute("hidden", "");
+      emailMenuBtn?.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  emailMenu?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-email-client]");
+    if (!btn) return;
+    const client = btn.getAttribute("data-email-client");
+    emailMenu.setAttribute("hidden", "");
+    emailMenuBtn?.setAttribute("aria-expanded", "false");
+
     const d = collectData();
-    const subject = encodeURIComponent(`[${d.category}] NEELx Beta Feedback (${d.rating})`);
+    const subject = encodeURIComponent(buildSubject(d));
     const body = encodeURIComponent(buildBody(d));
-    window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+
+    if (client === "gmail") {
+      window.open(
+        `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(FEEDBACK_EMAIL)}&su=${subject}&body=${body}`,
+        "_blank",
+        "noopener"
+      );
+      statusEl.textContent = "Opened pre-filled draft in Gmail.";
+      statusEl.style.color = "#34d399";
+    } else if (client === "outlook") {
+      window.open(
+        `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(FEEDBACK_EMAIL)}&subject=${subject}&body=${body}`,
+        "_blank",
+        "noopener"
+      );
+      statusEl.textContent = "Opened pre-filled draft in Outlook Web.";
+      statusEl.style.color = "#34d399";
+    } else if (client === "yahoo") {
+      window.open(
+        `https://compose.mail.yahoo.com/?to=${encodeURIComponent(FEEDBACK_EMAIL)}&subject=${subject}&body=${body}`,
+        "_blank",
+        "noopener"
+      );
+      statusEl.textContent = "Opened pre-filled draft in Yahoo Mail.";
+      statusEl.style.color = "#34d399";
+    } else if (client === "native") {
+      const a = document.createElement("a");
+      a.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      statusEl.textContent = "Handed draft to your default Mail app.";
+      statusEl.style.color = "#34d399";
+    } else if (client === "copy") {
+      try {
+        await navigator.clipboard.writeText(`To: ${FEEDBACK_EMAIL}\nSubject: ${buildSubject(d)}\n\n${buildBody(d)}`);
+        statusEl.textContent = `Copied draft & ${FEEDBACK_EMAIL} to clipboard!`;
+        statusEl.style.color = "#34d399";
+      } catch {
+        statusEl.textContent = `Email: ${FEEDBACK_EMAIL}`;
+        statusEl.style.color = "#38bdf8";
+      }
+    }
   });
 }
 

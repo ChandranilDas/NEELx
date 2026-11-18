@@ -269,7 +269,7 @@
             <a id="btnDownloadLite" class="btn btn-primary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.3/NEELx-v2.0.0-beta.3-universal-lite.dmg">
               Download Lite DMG
             </a>
-            <div class="sha-box">SHA-256: 7d1722de1fe4702ce07d3fab057275121405b8b4e0e41889ee5d30821426b5c6</div>
+            <div class="sha-box">SHA-256: 873356da7563206a67718a3b4329888eff0fc57ea6f06b226b2d96f7ca6063a3</div>
           </div>
 
           <div class="dl-card">
@@ -283,7 +283,7 @@
             <a id="btnDownloadFull" class="btn btn-secondary" href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.3/NEELx-v2.0.0-beta.3-universal.dmg">
               Download Full Offline DMG
             </a>
-            <div class="sha-box">SHA-256: ad3cc48f92f063c202708fcc09e9dc266481a239b06f6a956fb5adfa0b012fee</div>
+            <div class="sha-box">SHA-256: 8b639ee2643b7d7312d6482b712266147c6e7a0adab79c345b674f6dde2741ae</div>
           </div>
         </div>
 
@@ -324,10 +324,34 @@
             <input id="fbMac" type="text" placeholder="Your Mac & macOS version (e.g. MacBook Air M4 · macOS 15.3)" />
           </div>
           <textarea id="fbMessage" placeholder="Share your unlock speed, dark-room lighting results, spoof test notes, or feature ideas…"></textarea>
+
+          <!-- Screenshot Uploader -->
+          <div id="fbDropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="Attach up to 3 screenshots">
+            <input id="fbFiles" type="file" accept="image/png,image/jpeg,image/webp,image/heic" multiple hidden />
+            <div class="upload-copy">
+              <span class="upload-title">Attach screenshots (optional · up to 3 images)</span>
+              <span class="upload-sub">Click to choose, drag &amp; drop, or press <code>Cmd+V</code> to paste a screenshot</span>
+            </div>
+            <button id="btnPickScreenshots" type="button" class="btn btn-secondary btn-sm">Add Images</button>
+          </div>
+          <div id="fbPreviews" class="upload-previews"></div>
+
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Send Feedback</button>
             <button id="btnFeedbackGitHub" type="button" class="btn btn-secondary">Open GitHub Issue</button>
-            <button id="btnFeedbackEmail" type="button" class="btn btn-secondary">Email Directly</button>
+            <div class="email-chooser">
+              <button id="btnEmailMenu" type="button" class="btn btn-secondary" aria-haspopup="true" aria-expanded="false">
+                Email via… ▾
+              </button>
+              <div id="emailMenu" class="email-menu" hidden>
+                <button type="button" data-email-client="gmail">Gmail (Web Compose)</button>
+                <button type="button" data-email-client="outlook">Outlook (Web Compose)</button>
+                <button type="button" data-email-client="yahoo">Yahoo Mail (Web Compose)</button>
+                <div class="email-menu-sep"></div>
+                <button type="button" data-email-client="native">Default Mail App (Apple Mail / Spark / Outlook)</button>
+                <button type="button" data-email-client="copy">Copy Email Address &amp; Draft</button>
+              </div>
+            </div>
             <span id="feedbackStatus" class="form-status"></span>
           </div>
         </form>
