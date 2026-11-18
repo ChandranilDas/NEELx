@@ -437,16 +437,48 @@ final class FaceUnlockCoordinator {
             // Face is visible — measure face-region brightness and hold once well-illuminated
             scanLighting.consider(frame.image, faceVisible: true, faceBox: result.face.normalizedBoundingBox)
             lastFaceBoundingBox = result.face.normalizedBoundingBox
-            let scanSnapshot = scanLiveness.observe(livenessFrame)
-            if scanSnapshot.decision.isDenied {
-                let reason = scanSnapshot.decision.denialReason ?? "Spoof detected."
-                lastOutcome = reason
-                SecurityAuditLog.shared.record(kind: .spoofBlocked, detail: reason, snapshotImage: frame.image)
-                return .spoofSuspected
+
+            let neuralDepthEnabled = NEELxSettings.shared.neuralDepthEnabled
+            if !neuralDepthEnabled {
+                let scanSnapshot = scanLiveness.observe(livenessFrame)
+                if scanSnapshot.decision.isDenied {
+                    let reason = scanSnapshot.decision.denialReason ?? "Spoof detected."
+                    lastOutcome = reason
+                    SecurityAuditLog.shared.record(kind: .spoofBlocked, detail: reason, snapshotImage: frame.image)
+                    return .spoofSuspected
+                }
             }
 
             let scored = pipeline.score(result.embedding, against: FaceEnrollmentStore.shared.activeIdentities)
-            let matched = pipeline.bestMatch(in: scored, threshold: matchThreshold)
+            var matched = pipeline.bestMatch(in: scored, threshold: matchThreshold)
+            var precomputedDepth: NeuralDepthReading?
+
+            // 3D-Profile-Assisted Backlit Margin: when harsh glare/backlight drops ArcFace just 0.01–0.04
+            // below threshold (still >= 0.62, far above any stranger's 0.15–0.38), verify with Stage 3
+            // Neural 3D Depth + Personal 9-Zone 3D Profile before accepting — zero security compromise.
+            if matched == nil, neuralDepthEnabled {
+                let backlitFloor = max(Float(0.62), matchThreshold - 0.04)
+                if let candidate = pipeline.bestMatch(in: scored, threshold: backlitFloor),
+                   let enrolledProfile = candidate.identity.depthProfile {
+                    let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
+                    let faceBox = result.face.normalizedBoundingBox
+                    let probeDepth = await Task.detached(priority: .userInitiated) {
+                        NeuralDepthAnalyzer.shared.analyze(
+                            frame: frame.image,
+                            normalizedFaceBox: faceBox,
+                            noseNormalizedCenter: noseCenter
+                        )
+                    }.value
+                    if let probeDepth,
+                       probeDepth.depth3DScore >= 0.75,
+                       probeDepth.flatSpoofScore <= 0.18,
+                       NeuralDepthAnalyzer.signatureSimilarity(probeDepth.depthSignature, enrolledProfile) >= 0.85 {
+                        matched = candidate
+                        precomputedDepth = probeDepth
+                    }
+                }
+            }
+
             guard let matched else {
                 readyMatch = nil
                 livenessIdentity = nil
@@ -478,19 +510,22 @@ final class FaceUnlockCoordinator {
 
             // Stage 3 Neural 3D Depth Anti-Spoofing (Core ML Depth Anything V2 on ANE):
             // Run on matched frames only to keep idle power zero while catching 2D photo/screen spoofs in ~22ms.
-            let neuralDepthEnabled = NEELxSettings.shared.neuralDepthEnabled
             let depthReading: NeuralDepthReading?
             let effectiveFrame: LivenessFrame
             if neuralDepthEnabled {
-                let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
-                let faceBox = result.face.normalizedBoundingBox
-                depthReading = await Task.detached(priority: .userInitiated) {
-                    NeuralDepthAnalyzer.shared.analyze(
-                        frame: frame.image,
-                        normalizedFaceBox: faceBox,
-                        noseNormalizedCenter: noseCenter
-                    )
-                }.value
+                if let precomputedDepth {
+                    depthReading = precomputedDepth
+                } else {
+                    let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
+                    let faceBox = result.face.normalizedBoundingBox
+                    depthReading = await Task.detached(priority: .userInitiated) {
+                        NeuralDepthAnalyzer.shared.analyze(
+                            frame: frame.image,
+                            normalizedFaceBox: faceBox,
+                            noseNormalizedCenter: noseCenter
+                        )
+                    }.value
+                }
                 effectiveFrame = LivenessFrame(
                     timestamp: livenessFrame.timestamp,
                     landmarks: livenessFrame.landmarks,
@@ -630,9 +665,11 @@ final class FaceUnlockCoordinator {
                 scanLighting.hide()
                 NEELxSettings.shared.playUnlockFeedback()
 
-                // Log verified unlock & silently learn high-confidence appearance drift (glasses/beard/lighting)
+                // Log verified unlock & silently learn high-confidence 3D-verified appearance/lighting drift
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: summary)
-                if readyMatch.centroidSimilarity >= 0.74, (depthReading?.flatSpoofScore ?? 0) < 0.20 {
+                let strong3DVerified = (depthReading?.depth3DScore ?? 0) >= 0.75 && (depthReading?.flatSpoofScore ?? 0) < 0.15
+                if (readyMatch.centroidSimilarity >= 0.74 && (depthReading?.flatSpoofScore ?? 0) < 0.20)
+                    || (readyMatch.centroidSimilarity >= 0.70 && strong3DVerified) {
                     FaceEnrollmentStore.shared.recordAdaptiveSample(
                         for: readyMatch.identity.id,
                         embedding: result.embedding,
