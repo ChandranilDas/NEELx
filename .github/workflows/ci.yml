@@ -48,7 +48,7 @@ jobs:
           # Create release if it doesn't exist, or upload assets
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
             --title "NEELx $TAG" \
-            --notes "NEELx $TAG — 100% Offline 3D Biometric Face Unlock with Passkey Companion & Desk Stand Continuity Studio." \
+            --notes "NEELx $TAG — 100% Offline 3D Biometric Face Unlock with Desk Stand Continuity Studio." \
             --prerelease
           
           gh release upload "$TAG" \
