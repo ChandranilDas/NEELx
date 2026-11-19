@@ -72,7 +72,7 @@
               </p>
               <div class="hero-actions">
                 <button class="btn btn-primary" type="button" data-go-tab="download" data-select-dl="macos">
-                  Download for macOS (<span data-release-version>v2.0.0-beta.10</span>)
+                  Install for macOS (<span data-release-version>v2.0.0-beta.10</span>)
                 </button>
                 <button class="btn btn-secondary" type="button" data-go-tab="how-it-works">
                   Watch How It Works
@@ -757,66 +757,60 @@
 
         <div class="platform-switch" role="tablist" aria-label="Choose download platform">
           <button class="platform-pill active" type="button" data-platform-group="download" data-platform="macos">macOS
-            15+ (DMG &amp; Homebrew)</button>
+            15+ (1-Click Terminal &amp; Homebrew)</button>
           <button class="platform-pill" type="button" data-platform-group="download" data-platform="windows">Windows 11
             (ZIP &amp; PowerShell)</button>
         </div>
 
         <!-- MACOS DOWNLOAD PANE -->
-        <!-- MACOS DOWNLOAD PANE -->
         <div id="download-macos" class="platform-pane active">
-          <!-- Recommended 1-Click Terminal Quick Install (Zero Gatekeeper Blocks) -->
-          <div class="copy-block" style="border: 1px solid rgba(48, 209, 88, 0.45); background: rgba(48, 209, 88, 0.08); padding: 16px; border-radius: 14px; margin-bottom: 20px;">
+          <!-- Primary 1-Click Terminal Install (Bypasses Gatekeeper with Zero Developer Fees) -->
+          <div class="copy-block" style="border: 1px solid rgba(48, 209, 88, 0.45); background: rgba(48, 209, 88, 0.08); padding: 20px; border-radius: 16px; margin-bottom: 22px;">
             <div class="copy-block-content">
-              <span class="copy-label" style="color: #30D158; font-weight: 600; display: block; margin-bottom: 6px;">⚡ Recommended 1-Click Install (Zero Gatekeeper blocks · Opens instantly)</span>
-              <code id="cmdMacOneClick" class="copy-cmd">curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>
-            </div>
-            <button class="btn-copy" type="button" data-copy-target="#cmdMacOneClick">Copy</button>
-          </div>
-
-          <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 18px;">
-            Native Universal Binary (<code>arm64</code> + <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel Macs running macOS 15 Sequoia or newer.
-          </p>
-
-          <!-- Single All-in-One Download Card for macOS -->
-          <div class="download-grid single-card">
-            <div class="dl-card single-hero">
-              <div class="dl-top">
-                <div>
-                  <span class="feature-tag" style="background: rgba(48, 209, 88, 0.15); color: #30D158; margin-bottom: 8px; display: inline-block;">All-in-One · 100% Pre-Bundled</span>
-                  <h3 style="font-size: 20px; margin: 0;">NEELx for macOS (Universal DMG)</h3>
-                </div>
-                <span id="macSize" class="dl-size">58.6 MB · Universal</span>
-              </div>
-              <p class="dl-copy" style="font-size: 13px; line-height: 1.6; margin: 12px 0 16px;">
-                Complete offline bundle. Pre-bundles Apple's <code>DepthAnythingV2SmallF16</code> 3D neural depth engine + 512-D <code>ArcFace</code> pre-compiled for Apple Neural Engine. <strong>Zero secondary model downloads, zero configuration needed.</strong>
+              <span class="copy-label" style="color: #30D158; font-weight: 700; font-size: 14.5px; display: block; margin-bottom: 6px;">⚡ Recommended: 1-Click Terminal Install (Zero Gatekeeper Blocks · Opens Instantly)</span>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.5;">
+                Downloads the complete all-in-one pre-bundled package, automatically strips macOS quarantine attributes, installs to <code>/Applications/NEELx.app</code>, and launches immediately. Zero Gatekeeper blocks, 100% free open-source.
               </p>
-              <a id="btnDownloadMac" class="btn btn-primary" style="padding: 13px 22px; font-size: 14.5px; justify-content: center;"
-                href="https://github.com/ChandranilDas/NEELx/releases/download/v2.0.0-beta.10/NEELx-v2.0.0-beta.10-universal.dmg">
-                Download macOS Universal DMG (All-in-One)
-              </a>
-              <div class="sha-row" style="margin-top: 12px;">
-                <span class="sha-text">File SHA-256: <span
-                    id="macSha">97c4ddde1840c82da9e6207a2ccf77c23fbbdff91b92259635cb2d01fbd9b7af</span></span>
-                <button class="btn-copy" type="button" data-copy-target="#macSha">Copy</button>
-              </div>
+              <code id="cmdMacOneClick" class="copy-cmd" style="font-size: 14px; font-weight: 600;">curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>
             </div>
+            <button class="btn-copy btn btn-primary" type="button" data-copy-target="#cmdMacOneClick" style="padding: 10px 18px; font-size: 13.5px;">Copy</button>
           </div>
+
+          <div class="copy-block" style="border: 1px solid rgba(255, 255, 255, 0.12); padding: 16px; border-radius: 14px; margin-bottom: 18px;">
+            <div class="copy-block-content">
+              <span class="copy-label" style="font-weight: 600; display: block; margin-bottom: 6px;">🍺 Method 2: Install via Homebrew Cask</span>
+              <code id="cmdBrew"
+                class="copy-cmd">brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx &amp;&amp; brew install --cask neelx</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdBrew">Copy</button>
+          </div>
+
+          <div class="copy-block" style="border: 1px solid rgba(255, 255, 255, 0.12); padding: 16px; border-radius: 14px; margin-bottom: 22px;">
+            <div class="copy-block-content">
+              <span class="copy-label" style="font-weight: 600; display: block; margin-bottom: 6px;">🛠️ Method 3: Build from Pure Swift Source</span>
+              <code id="cmdSource"
+                class="copy-cmd">git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install</code>
+            </div>
+            <button class="btn-copy" type="button" data-copy-target="#cmdSource">Copy</button>
+          </div>
+
+          <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px;">
+            Native Universal Binary (<code>arm64</code> + <code>x86_64</code>) for <strong>M1, M2, M3, M4, M5, and all future Apple Silicon Macs</strong>, plus Intel Macs running macOS 15 Sequoia or newer. Pre-bundles Apple's <code>DepthAnythingV2SmallF16</code> 3D neural depth engine + 512-D <code>ArcFace</code>.
+          </p>
 
           <!-- Step-by-Step Setup & Usage Guide -->
           <div class="setup-steps-guide">
             <h4 style="font-size: 16px; margin: 24px 0 14px; display: flex; align-items: center; gap: 8px;">
-              <span>📋</span> Step-by-Step Guide: Download, Setup &amp; Using NEELx on Mac
+              <span>📋</span> Step-by-Step Guide: Install, Setup &amp; Using NEELx on Mac
             </h4>
 
             <div class="step-card">
               <div class="step-num">1</div>
               <div class="step-body">
-                <strong>Download &amp; Install (Zero Gatekeeper blocks)</strong>
-                • <strong>Fastest (1-Click Terminal):</strong> Run the command above: <code>curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>. It downloads, automatically removes quarantine, moves to Applications, and opens NEELx.<br/>
-                • <strong>Direct DMG:</strong> Open the downloaded <code>NEELx-v2.0.0-beta.10-universal.dmg</code> and drag <strong>NEELx.app</strong> into your <strong>Applications</strong> folder.<br/>
-                • <em>macOS 15 Sequoia Gatekeeper:</em> Apple displays <em>"Apple could not verify NEELx"</em>. To open: double-click <strong>Open NEELx (Fix Gatekeeper).command</strong> inside the DMG, or go to <strong>System Settings → Privacy &amp; Security</strong>, scroll down and click <strong>Open Anyway</strong>.<br/>
-                • <em>To Quit or Uninstall:</em> Click the menu bar icon → <strong>Quit</strong> (or in NEELx Settings → About → <strong>Quit</strong>). You can also run <code>pkill -9 NEELx; rm -rf /Applications/NEELx.app</code> or use the <strong>Uninstall or Quit NEELx.command</strong> inside the DMG.
+                <strong>Install in Seconds (Zero Gatekeeper Blocks)</strong>
+                • <strong>Run in Terminal:</strong> Run <code>curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash</code>. It automatically clears macOS quarantine, installs NEELx to your Applications folder, and opens it.<br/>
+                • <em>Why Terminal / Homebrew?</em> Apple blocks apps downloaded directly through web browsers unless the author pays $99/year for Apple Developer ID notarization. Downloading via Terminal or Homebrew completely bypasses browser quarantine, allowing 100% free open-source software to open instantly without alerts.<br/>
+                • <em>To Quit or Uninstall:</em> Click the menu bar icon → <strong>Quit</strong>, then run <code>curl -fsSL https://chandranildas.github.io/NEELx/uninstall.sh | bash</code> (or <code>pkill -9 NEELx; rm -rf /Applications/NEELx.app</code>).
               </div>
             </div>
 
@@ -838,40 +832,6 @@
                 • Sit in front of your Mac: NEELx verifies your attention and 3D face structure in ~25ms on the Apple Neural Engine and automatically logs you in without touching a key!
               </div>
             </div>
-          </div>
-
-          <div class="sha-help">
-            <strong>What is File SHA-256?</strong> It is a 100% public integrity fingerprint of the installer file (not
-            a private key). You can run <code>shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.10-universal.dmg</code> in Terminal to
-            verify your download matches byte-for-byte.
-          </div>
-
-          <div class="copy-block">
-            <div class="copy-block-content">
-              <span class="copy-label"># Install via Homebrew Cask (auto-clears Gatekeeper &amp; preserves your free
-                local Apple Development cert)</span>
-              <code id="cmdBrew"
-                class="copy-cmd">brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx &amp;&amp; brew install --cask neelx</code>
-            </div>
-            <button class="btn-copy" type="button" data-copy-target="#cmdBrew">Copy</button>
-          </div>
-
-          <div class="copy-block">
-            <div class="copy-block-content">
-              <span class="copy-label"># Or build directly from pure Swift source on your Mac</span>
-              <code id="cmdSource"
-                class="copy-cmd">git clone https://github.com/ChandranilDas/NEELx.git &amp;&amp; cd NEELx &amp;&amp; ./build.sh --with-depth --install</code>
-            </div>
-            <button class="btn-copy" type="button" data-copy-target="#cmdSource">Copy</button>
-          </div>
-
-          <div class="copy-block">
-            <div class="copy-block-content">
-              <span class="copy-label"># Optional: verify downloaded DMG integrity via SHA-256</span>
-              <code id="cmdMacSha"
-                class="copy-cmd">shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.10-universal.dmg</code>
-            </div>
-            <button class="btn-copy" type="button" data-copy-target="#cmdMacSha">Copy</button>
           </div>
 
           <div class="windows-banner">

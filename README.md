@@ -58,24 +58,18 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - Built-in FaceTime HD / Center Stage camera or external USB / Continuity webcam
 
 #### Method 1: 1-Click Terminal Quick Install (Recommended — Zero Gatekeeper Blocks)
-Downloads the all-in-one DMG, clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
+Downloads the pre-bundled all-in-one package, automatically clears macOS Gatekeeper quarantine (`xattr -cr`), installs to `/Applications`, and launches automatically:
 ```bash
 curl -fsSL https://chandranildas.github.io/NEELx/install.sh | bash
 ```
-*(Or install via Homebrew Cask: `brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx && brew install --cask neelx`)*
 
-#### Method 2: Download All-in-One Universal DMG Directly
-Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- **`NEELx-v2.0.0-beta.10-universal.dmg`** (~58.6 MB — complete offline bundle with Apple's `DepthAnythingV2SmallF16` + `ArcFace` pre-installed; zero secondary downloads required)
+#### Method 2: Install via Homebrew Cask
+```bash
+brew tap ChandranilDas/NEELx https://github.com/ChandranilDas/NEELx
+brew install --cask neelx
+```
 
-> **💡 First time opening on macOS?** In Finder, **Right-Click** `NEELx.app` in `/Applications` and select **Open** (or run `xattr -cr /Applications/NEELx.app`).
-
-### 📋 Step-by-Step Guide for Mac Users
-1. **Download & Install:** Run the 1-click terminal command above (or open the DMG, drag `NEELx.app` to `/Applications`, and Right-Click → Open).
-2. **Setup Face & Password:** When prompted, allow camera access. Slowly roll your head in a natural 360° circle while the live meter captures 9 poses and your 3D depth profile. Enter your Mac password once to save it to your local hardware Touch ID Keychain vault.
-3. **Instant 3D Unlock:** Press `Cmd + Ctrl + Q` to lock your Mac. Sit in front of your display: NEELx verifies your 3D facial structure in ~25ms on the Neural Engine and unlocks instantly!
-
-#### Method 3: Build Directly from Swift Source
+#### Method 3: Build Directly from Pure Swift Source
 ```bash
 git clone https://github.com/ChandranilDas/NEELx.git
 cd NEELx
@@ -83,10 +77,14 @@ chmod +x build.sh
 ./build.sh --with-depth --install
 ```
 
-#### Verify macOS DMG Integrity (Public SHA-256 Checksum)
-```bash
-shasum -a 256 ~/Downloads/NEELx-v2.0.0-beta.10-universal.dmg
-```
+### 📋 Step-by-Step Guide for Mac Users
+1. **Install:** Run the 1-click terminal command above (or install via Homebrew). It bypasses browser quarantine automatically so the app opens instantly with zero alerts.
+2. **Setup Face & Password:** When prompted, allow camera access. Slowly roll your head in a natural 360° circle while the live meter captures 9 poses and your 3D depth profile. Enter your Mac password once to save it to your local hardware Touch ID Keychain vault.
+3. **Instant 3D Unlock:** Press `Cmd + Ctrl + Q` to lock your Mac. Sit in front of your display: NEELx verifies your 3D facial structure in ~25ms on the Neural Engine and unlocks instantly!
+4. **Uninstall (if needed):** In the menu bar, click NEELx → **Quit**, then run:
+   ```bash
+   curl -fsSL https://chandranildas.github.io/NEELx/uninstall.sh | bash
+   ```
 
 ---
 
