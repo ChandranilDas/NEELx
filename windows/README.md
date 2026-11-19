@@ -67,7 +67,7 @@ irm https://raw.githubusercontent.com/ChandranilDas/NEELx/main/windows/uninstall
 
 ### Method 2: All-in-One Standalone ZIP (Unzip & Run)
 Download the complete package from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- `NEELx-v2.0.0-beta.9-windows-x64-portable.zip` (~85.7 MB — complete bundle with self-contained .NET 8 runtime, DirectML engine, models, and `Run-NEELx.bat`; zero extra runtime or model downloads needed).
+- `NEELx-v2.0.0-beta.10-windows-x64-portable.zip` (~85.7 MB — complete bundle with self-contained .NET 8 runtime, DirectML engine, models, and `Run-NEELx.bat`; zero extra runtime or model downloads needed).
 
 ### 📋 Step-by-Step Guide for Windows 11
 1. **Download & Install:**
@@ -83,7 +83,7 @@ Download the complete package from the [**Official Website**](https://chandranil
 
 ### Verify Downloaded ZIP Checksum (Public SHA-256)
 ```powershell
-Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.9-windows-x64-portable.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.10-windows-x64-portable.zip" -Algorithm SHA256
 ```
 
 ### Method 3: Build & Run from `.NET 8` Source

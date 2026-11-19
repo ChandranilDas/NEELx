@@ -485,15 +485,25 @@ final class OnboardingController {
         targetPose
     }
 
-    /// User-facing warning explaining why capture is held back (too dark, harsh backlight, too far, or looking wrong way)
+    /// Checks if the user's current head orientation matches the target enrollment pose.
+    /// For center, allows a natural, comfortable frontal cone (±16° yaw and pitch) so laptop users looking at the screen/notch register effortlessly.
+    private func isPoseMatchingTarget(detected: EnrollmentPose?, target: EnrollmentPose, yaw: Float, pitch: Float) -> Bool {
+        if target == .center {
+            let r = hypot(Double(yaw), Double(pitch))
+            return r < 0.28 || (abs(yaw) < 0.26 && abs(pitch) < 0.26)
+        }
+        guard let detected else { return false }
+        return detected == target
+    }
+
+    /// User-facing warning explaining why capture is held back (too far, or looking away from target)
     var enrollmentWarning: String? {
         if enrollmentComplete { return nil }
         if !faceDetected { return "Center your face in the camera frame" }
         if isTooFar { return "Bring your face closer to the camera" }
-        if lightingState == .tooDark { return "Lighting is too dark · Face a light source" }
-        if lightingState == .severeBacklight { return "Harsh backlight · Avoid bright lights behind you" }
-        if let yaw = currentYaw, let pitch = currentPitch, let detected = determinePose(yaw: yaw, pitch: pitch) {
-            if detected != targetPose {
+        if let yaw = currentYaw, let pitch = currentPitch {
+            let matches = isPoseMatchingTarget(detected: determinePose(yaw: yaw, pitch: pitch), target: targetPose, yaw: yaw, pitch: pitch)
+            if !matches {
                 if targetPose == .center {
                     return "Look straight at the camera"
                 } else {
@@ -508,7 +518,7 @@ final class OnboardingController {
     var enrollmentInstruction: String {
         if enrollmentComplete { return "Face captured successfully" }
         if let warning = enrollmentWarning { return warning }
-        if holdProgress > 0.1 { return "Scanning angle… Hold steady" }
+        if holdProgress > 0.08 { return "Scanning angle… Hold steady" }
         return targetPose.instruction
     }
 
@@ -523,21 +533,22 @@ final class OnboardingController {
     /// Below this fraction of the threshold the direction is mostly sensor noise.
     private let headTurnDeadzone: Double = 0.12
 
-    /// Live head direction, or `nil` when there's nothing to point at. Axes are normalized
-    /// against the current pose's thresholds, so `progress` hits 1 as the pose starts matching.
+    /// Live head direction, or `nil` when looking straight ahead. Axes activate only when turning outside center cone.
     var headTurn: HeadTurn? {
         guard step == .enroll, !enrollmentComplete, faceDetected, !isTooFar,
               let yaw = currentYaw, let pitch = currentPitch else { return nil }
 
-        let x = Double(-yaw / 0.18)
-        let y = Double(-pitch / 0.14)
+        let x = Double(-yaw)
+        let y = Double(-pitch)
+        let r = hypot(x, y)
 
-        let magnitude = (x * x + y * y).squareRoot()
-        guard magnitude > headTurnDeadzone else { return nil }
+        // Only show live directional needle when deliberately turning outside the frontal center cone
+        guard r >= 0.24 else { return nil }
 
         var degrees = atan2(x, y) * 180 / .pi
         if degrees < 0 { degrees += 360 }
-        return HeadTurn(angle: degrees, progress: min(magnitude, 1))
+        let progress = min(max((r - 0.24) / 0.18, 0.2), 1.0)
+        return HeadTurn(angle: degrees, progress: progress)
     }
 
     private enum EnrollFrameOutcome: Sendable {
@@ -878,17 +889,24 @@ final class OnboardingController {
             }
         }.value
 
-        // Update Live Lighting Readiness Meter (Ideal / Good / Low Light / Backlit)
+        // Update Live Lighting Readiness Meter directly on face region (smooth, accurate, non-blocking)
+        var faceLum: Double = 0.35
         let frameLum = ScanLightingController.meanLuminance(image, normalizedRect: nil)
-        let centerLum = ScanLightingController.meanLuminance(image, normalizedRect: CGRect(x: 0.30, y: 0.25, width: 0.40, height: 0.50))
-        if centerLum < 0.16 || frameLum < 0.16 {
-            lightingState = .tooDark
-        } else if centerLum < 0.22 && (frameLum - centerLum) >= 0.16 {
-            lightingState = .severeBacklight
-        } else if centerLum < 0.24 || frameLum < 0.22 {
-            lightingState = .acceptable
+        if case .ready(let result) = outcome {
+            let box = result.face.normalizedBoundingBox
+            faceLum = ScanLightingController.meanLuminance(image, normalizedRect: box)
         } else {
+            faceLum = ScanLightingController.meanLuminance(image, normalizedRect: CGRect(x: 0.30, y: 0.30, width: 0.40, height: 0.40))
+        }
+
+        if faceLum >= 0.22 {
             lightingState = .ideal
+        } else if faceLum >= 0.10 {
+            lightingState = .acceptable
+        } else if (frameLum - faceLum) >= 0.28 && faceLum < 0.12 {
+            lightingState = .severeBacklight
+        } else {
+            lightingState = .acceptable
         }
 
         switch outcome {
@@ -933,13 +951,12 @@ final class OnboardingController {
     }
 
     private func determinePose(yaw: Float, pitch: Float) -> EnrollmentPose? {
-        // Vision: +yaw turns left, +pitch looks down. Normalize against the same comfortable
-        // range as `headTurn` (0.18 rad yaw, 0.14 rad pitch) so vertical tilts feel as natural as horizontal turns.
-        let x = Double(-yaw / 0.18)
-        let y = Double(-pitch / 0.14)
+        let x = Double(-yaw)
+        let y = Double(-pitch)
         let r = hypot(x, y)
 
-        if r < 0.55 {
+        // Generous natural frontal cone for center:
+        if r < 0.26 || (abs(yaw) < 0.24 && abs(pitch) < 0.24) {
             return .center
         }
 
@@ -968,22 +985,18 @@ final class OnboardingController {
         let qualityOK = result.quality.map { $0 >= qualityFloor } ?? true
         // Allow both 5-point full landmarks and 2-point eye alignment so head-turn poses are never dropped
         let alignmentOK = result.alignmentTier == .fivePoint || result.alignmentTier == .twoPoint
-        guard qualityOK, alignmentOK, !isTooFar, !lightingState.isUnacceptable else {
+        guard qualityOK, alignmentOK, !isTooFar else {
             poseHoldStartedAt = nil
             matchStreak = 0
             holdProgress = 0.0
             return
         }
 
-        guard let detectedPose = determinePose(yaw: yaw, pitch: pitch) else {
-            poseHoldStartedAt = nil
-            matchStreak = 0
-            holdProgress = 0.0
-            return
-        }
-
+        let detectedPose = determinePose(yaw: yaw, pitch: pitch)
         let currentTarget = targetPose
-        guard detectedPose == currentTarget else {
+        let isMatching = isPoseMatchingTarget(detected: detectedPose, target: currentTarget, yaw: yaw, pitch: pitch)
+
+        guard isMatching else {
             poseHoldStartedAt = nil
             matchStreak = 0
             holdProgress = 0.0
@@ -1001,10 +1014,10 @@ final class OnboardingController {
         matchStreak += 1
         let elapsed = ContinuousClock.now - poseHoldStartedAt!
         let elapsedSeconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) * 1e-18
-        let requiredSeconds: Double = 0.40 // 400ms steady deliberate hold
+        let requiredSeconds: Double = (currentTarget == .center) ? 0.30 : 0.35
         holdProgress = min(max(elapsedSeconds / requiredSeconds, 0.15), 1.0)
 
-        guard elapsedSeconds >= requiredSeconds && matchStreak >= 3 else {
+        guard elapsedSeconds >= requiredSeconds && matchStreak >= 2 else {
             return
         }
 
