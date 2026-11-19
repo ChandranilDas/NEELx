@@ -115,6 +115,40 @@ codesign --verify --deep --strict "$STAGE_DIR/NEELx.app"
 
 ln -s /Applications "$STAGE_DIR/Applications"
 
+# Add 1-click helper scripts inside DMG for macOS Sequoia Gatekeeper & clean uninstall
+cat << 'EOF' > "$STAGE_DIR/Open NEELx (Fix Gatekeeper).command"
+#!/usr/bin/env bash
+cd "$(dirname "$0")"
+echo "=========================================="
+echo "   NEELx macOS Gatekeeper Quick-Fix"
+echo "=========================================="
+echo "Clearing macOS quarantine attribute..."
+xattr -cr /Applications/NEELx.app 2>/dev/null || xattr -cr "./NEELx.app" 2>/dev/null || true
+echo "Launching NEELx..."
+open /Applications/NEELx.app 2>/dev/null || open "./NEELx.app" 2>/dev/null || true
+echo "Done! You can close this window."
+EOF
+chmod +x "$STAGE_DIR/Open NEELx (Fix Gatekeeper).command"
+
+cat << 'EOF' > "$STAGE_DIR/Uninstall or Quit NEELx.command"
+#!/usr/bin/env bash
+echo "=========================================="
+echo "   NEELx Uninstaller & Process Quitter"
+echo "=========================================="
+echo "Quitting all active NEELx processes..."
+pkill -9 NEELx 2>/dev/null || true
+sleep 1
+if [ -d "/Applications/NEELx.app" ]; then
+    echo "Removing /Applications/NEELx.app..."
+    rm -rf /Applications/NEELx.app
+    echo "✅ NEELx has been completely uninstalled from Applications."
+else
+    echo "✅ NEELx process has been quit."
+fi
+echo "You can now close this window."
+EOF
+chmod +x "$STAGE_DIR/Uninstall or Quit NEELx.command"
+
 hdiutil create \
     -volname "NEELx" \
     -srcfolder "$STAGE_DIR" \

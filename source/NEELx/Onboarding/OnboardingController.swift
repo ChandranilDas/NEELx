@@ -375,7 +375,7 @@ final class OnboardingController {
     private let poseHoldDuration: Duration = .milliseconds(500)
     /// Permissive floor for Vision's capture-quality score (no fixed universal cutoff) —
     /// better to accept a mediocre sample than stall the whole flow.
-    private let qualityFloor: Float = 0.2
+    private let qualityFloor: Float = 0.12
     /// Hold off accepting captures briefly once the camera comes up so preview initializes.
     private let initialCaptureDelay: Duration = .milliseconds(300)
     /// Enrollment wants a closer face than unlock's bystander cutoff — sitting back in a
@@ -510,7 +510,7 @@ final class OnboardingController {
 
     var overallEnrollmentProgress: Double {
         let done = Double(capturedPoses.count + (isCenterCaptured ? 1 : 0))
-        return min(done / 9.0, 1.0)
+        return min(done / 7.0, 1.0)
     }
 
     // MARK: - Naming
@@ -923,7 +923,8 @@ final class OnboardingController {
         guard ContinuousClock.now >= captureReadyAt else { return }
 
         let qualityOK = result.quality.map { $0 >= qualityFloor } ?? true
-        let alignmentOK = result.alignmentTier == .fivePoint
+        // Allow both 5-point full landmarks and 2-point eye alignment so head-turn poses are never dropped
+        let alignmentOK = result.alignmentTier == .fivePoint || result.alignmentTier == .twoPoint
         guard qualityOK, alignmentOK, !isTooFar else { return }
 
         guard let pose = determinePose(yaw: yaw, pitch: pitch) else { return }
@@ -977,7 +978,7 @@ final class OnboardingController {
             }
         }
 
-        if capturedPoses.count >= 8 && centerCapturedCount >= 1 {
+        if (capturedPoses.count >= 6 && centerCapturedCount >= 1) || capturedPoses.count >= 8 {
             await finishEnrollment()
         }
     }

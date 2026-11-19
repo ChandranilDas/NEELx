@@ -103,6 +103,16 @@ struct AboutSettingsPage: View {
                     NSWorkspace.shared.open(url)
                 }
             }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
+                title: "Quit NEELx",
+                subtitle: "Completely quits all background biometric processes so you can move or delete the app.",
+                buttonTitle: "Quit"
+            ) {
+                NSApplication.shared.terminate(nil)
+            }
         }
         .sheet(isPresented: $showFeedbackSheet) {
             FeedbackSheetView {
