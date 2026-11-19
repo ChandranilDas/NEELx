@@ -139,17 +139,93 @@ function initCopyButtons() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Live GitHub Releases Sync
+// 3. Live GitHub Releases Sync (SemVer-Aware & Downgrade-Protected)
 // ---------------------------------------------------------------------------
+function parseSemVer(tag) {
+  const clean = String(tag || "").replace(/^v/, "").trim();
+  const match = clean.match(/^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.]+))?$/);
+  if (!match) return { major: 0, minor: 0, patch: 0, beta: 0, raw: clean };
+  const major = parseInt(match[1], 10) || 0;
+  const minor = parseInt(match[2], 10) || 0;
+  const patch = parseInt(match[3], 10) || 0;
+  let beta = 0;
+  if (match[4]) {
+    const betaMatch = match[4].match(/(?:beta|alpha|rc)\.?(\d+)/i);
+    if (betaMatch) {
+      beta = parseInt(betaMatch[1], 10) || 0;
+    } else {
+      const numMatch = match[4].match(/\d+/);
+      beta = numMatch ? parseInt(numMatch[0], 10) : 1;
+    }
+  } else {
+    beta = 999999;
+  }
+  return { major, minor, patch, beta, raw: clean };
+}
+
+function compareSemVer(v1, v2) {
+  const p1 = parseSemVer(v1);
+  const p2 = parseSemVer(v2);
+  if (p1.major !== p2.major) return p1.major - p2.major;
+  if (p1.minor !== p2.minor) return p1.minor - p2.minor;
+  if (p1.patch !== p2.patch) return p1.patch - p2.patch;
+  return p1.beta - p2.beta;
+}
+
 async function syncLatestRelease() {
   try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=5`, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) return;
-    const releases = await res.json();
-    const latest = releases.find((r) => !r.draft && r.assets && r.assets.length > 0);
+    let latest = null;
+
+    // 1. Try official releases/latest endpoint first
+    try {
+      const latestRes = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (latestRes.ok) {
+        const item = await latestRes.json();
+        if (item && !item.draft && Array.isArray(item.assets) && item.assets.length > 0) {
+          latest = item;
+        }
+      }
+    } catch {
+      // Fall through to list query
+    }
+
+    // 2. Fetch recent releases list (up to 20) and sort descending by SemVer
+    let sortedLatest = null;
+    try {
+      const listRes = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (listRes.ok) {
+        const releases = await listRes.json();
+        if (Array.isArray(releases)) {
+          const valid = releases.filter((r) => !r.draft && Array.isArray(r.assets) && r.assets.length > 0);
+          valid.sort((a, b) => compareSemVer(b.tag_name, a.tag_name));
+          if (valid.length > 0) {
+            sortedLatest = valid[0];
+          }
+        }
+      }
+    } catch {
+      // Ignore network errors
+    }
+
+    // Select the highest SemVer candidate between /releases/latest and sorted list
+    if (sortedLatest) {
+      if (!latest || compareSemVer(sortedLatest.tag_name, latest.tag_name) > 0) {
+        latest = sortedLatest;
+      }
+    }
+
     if (!latest) return;
+
+    // 3. Downgrade prevention: never overwrite static HTML with an older version
+    const firstVerEl = document.querySelector("[data-release-version]");
+    const currentDomTag = firstVerEl ? firstVerEl.textContent.trim() : "";
+    if (currentDomTag && compareSemVer(latest.tag_name, currentDomTag) < 0) {
+      return;
+    }
 
     const tag = latest.tag_name;
     document.querySelectorAll("[data-release-version]").forEach((el) => {

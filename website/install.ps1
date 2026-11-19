@@ -32,16 +32,42 @@ Write-Host "   NEELx for Windows 11 — Installer" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 try {
-    # 1. Resolve latest release tag from GitHub API
+    # 1. Resolve latest release tag from GitHub API (SemVer-aware with fallback)
+    $FallbackVersion = "v2.0.0-beta.10"
+    $targetRelease = $null
     if ([string]::IsNullOrWhiteSpace($Version)) {
         Write-Host "Checking latest NEELx release..."
         $headers = @{ "User-Agent" = "NEELx-Windows-Installer"; "Accept" = "application/vnd.github+json" }
-        $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=5" -Headers $headers
-        $targetRelease = $releases | Where-Object { -not $_.draft -and $_.assets.Count -gt 0 } | Select-Object -First 1
+        try {
+            $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers -ErrorAction SilentlyContinue
+            if ($latest -and -not $latest.draft -and $latest.assets.Count -gt 0) {
+                $targetRelease = $latest
+                $Version = $latest.tag_name
+            }
+        } catch {}
+
         if (-not $targetRelease) {
-            throw "Could not locate a published NEELx release on GitHub."
+            try {
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=20" -Headers $headers -ErrorAction SilentlyContinue
+                if ($releases) {
+                    $validReleases = @($releases | Where-Object { -not $_.draft -and $_.assets.Count -gt 0 })
+                    if ($validReleases.Count -gt 0) {
+                        $targetRelease = $validReleases | Sort-Object {
+                            if ($_.tag_name -match 'v?(\d+)\.(\d+)\.(\d+)(?:-beta\.?(\d+))?') {
+                                [int]$matches[1] * 1000000 + [int]$matches[2] * 10000 + [int]$matches[3] * 100 + [int]($matches[4] -as [int])
+                            } else { 0 }
+                        } -Descending | Select-Object -First 1
+                        if ($targetRelease) {
+                            $Version = $targetRelease.tag_name
+                        }
+                    }
+                }
+            } catch {}
         }
-        $Version = $targetRelease.tag_name
+
+        if (-not $targetRelease -or [string]::IsNullOrWhiteSpace($Version)) {
+            $Version = $FallbackVersion
+        }
     }
 
     $targetAsset = $targetRelease.assets | Where-Object { $_.name -like "NEELx-*-windows-x64*.zip" -and $_.name -notlike "*-lite*" } | Select-Object -First 1

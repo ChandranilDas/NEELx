@@ -21,14 +21,25 @@ echo "   NEELx for macOS — 1-Click Installer"
 echo "=========================================="
 echo ""
 
-# 1. Resolve latest release version
+# 1. Resolve latest release version (SemVer-aware with fallback)
 echo "Checking latest release..."
 VERSION=""
 if command -v curl >/dev/null 2>&1; then
-    VERSION=$(curl -sSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/releases?per_page=5" 2>/dev/null | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+    # Try official releases/latest endpoint first
+    VERSION=$(curl -sSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+
+    # Fallback to listing releases and sorting by version
+    if [ -z "${VERSION}" ]; then
+        VERSION=$(curl -sSL -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/releases?per_page=20" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' | sort -V | tail -n1 || true)
+    fi
 fi
+
+# If remote returned nothing, or if fallback is higher, use fallback
 if [ -z "${VERSION}" ]; then
     VERSION="${FALLBACK_VERSION}"
+else
+    HIGHEST=$(printf "%s\n%s\n" "${VERSION}" "${FALLBACK_VERSION}" | sort -V | tail -n1)
+    VERSION="${HIGHEST}"
 fi
 echo "Target version: ${VERSION}"
 

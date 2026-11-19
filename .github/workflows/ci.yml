@@ -49,9 +49,12 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
             --title "NEELx $TAG" \
             --notes "NEELx $TAG — 100% Offline 3D Biometric Face Unlock with Desk Stand Continuity Studio." \
-            --prerelease
+            --latest
           
           gh release upload "$TAG" \
             "NEELx-v${VERSION}-universal.dmg" \
             "NEELx-v${VERSION}-macOS-SHA256SUMS.txt" \
             --clobber
+          
+          # Explicitly ensure this release is marked as the repository's Latest release
+          gh release edit "$TAG" --latest --prerelease=false || true
