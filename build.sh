@@ -106,6 +106,10 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << EOF
     <true/>
     <key>NSCameraUsageDescription</key>
     <string>NEELx uses the camera on-device to recognize your face for unlocking your Mac.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>NEELx uses Bluetooth Low Energy to detect proximity to your paired phone or tablet for companion biometric unlock.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>NEELx uses Bluetooth to securely communicate with your paired iPhone or iPad.</string>
     <key>NSHumanReadableCopyright</key>
     <string>NEELx — Open-Source Biometric Face Unlock for macOS (MIT License)</string>
 </dict>

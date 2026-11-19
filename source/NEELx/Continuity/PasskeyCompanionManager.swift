@@ -19,14 +19,15 @@ import Observation
 
 @Observable
 @MainActor
-final class PasskeyCompanionManager: NSObject, CBCentralManagerDelegate {
+final class PasskeyCompanionManager: NSObject {
     static let shared = PasskeyCompanionManager()
 
-    private var centralManager: CBCentralManager?
     private var listener: NWListener?
     private var serverPort: UInt16 = 8765
 
-    private(set) var isBluetoothPoweredOn: Bool = true
+    var isBluetoothPoweredOn: Bool {
+        ContinuityDeviceVerifier.shared.isBluetoothPoweredOn
+    }
     private(set) var isPairingServerRunning: Bool = false
     private(set) var pairingURL: String? = nil
     private(set) var pairingQRImage: NSImage? = nil
@@ -45,16 +46,7 @@ final class PasskeyCompanionManager: NSObject, CBCentralManagerDelegate {
 
     override init() {
         super.init()
-        self.centralManager = CBCentralManager(delegate: self, queue: .main)
         evaluateRequirements()
-    }
-
-    // MARK: - CBCentralManagerDelegate
-    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        Task { @MainActor in
-            self.isBluetoothPoweredOn = (central.state == .poweredOn)
-            self.evaluateRequirements()
-        }
     }
 
     // MARK: - Requirements Cross-Checker

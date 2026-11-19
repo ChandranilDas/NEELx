@@ -47,8 +47,8 @@ final class ContinuityDeviceVerifier: NSObject, CBCentralManagerDelegate {
             position: .unspecified
         )
 
-        // Initialize CoreBluetooth to cross-check real-time Bluetooth power state
-        self.centralManager = CBCentralManager(delegate: self, queue: .main)
+        // Initialize CoreBluetooth with silenced power alerts to cross-check real-time Bluetooth power state
+        self.centralManager = CBCentralManager(delegate: self, queue: .main, options: [CBCentralManagerOptionShowPowerAlertKey: false])
 
         // Observe hardware connects and disconnects dynamically
         NotificationCenter.default.addObserver(
