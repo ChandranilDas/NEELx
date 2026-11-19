@@ -30,7 +30,6 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Backlit Window HDR Shadow Recovery**: GPU Core Image tone mapping (`CIHighlightShadowAdjust`) lifts crushed facial shadows when sitting with a bright sunlit window behind you.
 - **Luxury Studio Light Softbox & Spectral Chromatic Rim (with Live Preview)**: Crystal-clear screen center surrounded by a 3800K warm champagne perimeter softbox + softened pastel cyan/magenta reflection check against 4K video replay. Preview anytime via **Settings → General → Preview**.
 - **Subtle Spatial Haptic + Optional Soft Glass Sound Cue**: Trackpad `.alignment` haptic + optional muted Glass chime (off by default).
-- **Mobile Biometric Companion (Native Passkey — Zero App Needed)**: Unlock your Mac or PC using your phone's native hardware biometrics (iPhone TrueDepth Face ID in Secure Enclave or Android BiometricPrompt in Keystore) via standard FIDO2 Passkeys. Pair in 5 seconds by pointing your camera at a local QR code. Zero mobile apps required.
 - **iPhone & iPad Pro Continuity Studio (Desk Stand / Studio Optics)**: Seamlessly use your iPhone (iOS 16+) or iPad Pro camera for studio-quality 4K optics, dual-path concurrent unlock, and Bluetooth LE arm's-reach proximity gating (< 1.5m). Works on any standard desk stand, wireless charger, kickstand case, or monitor mount — no proprietary laptop clip required! Includes live hardware cross-checks.
 - **Attention & Eye Gaze Verification**: Checks open eyes (`EAR`) and active gaze before unlocking.
 - **Hardcoded Zero-Compromise Security**: 3D Neural Depth (ANE), Eye Gaze, and Multi-Frame Anti-Spoofing are hardcoded active so security cannot be accidentally disabled.
@@ -44,8 +43,7 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Backlit Window HDR Shadow Recovery**: Real-time center-vs-border luminance detector automatically lifts silhouetted dark faces sitting in front of bright windows.
 - **Windows DPAPI Offline Credential Vault (`DpapiCredentialVault`)**: Encrypts your 512-D identity vector and 9-zone 3D baseline offline under `ProtectedData.Protect` (`DataProtectionScope.CurrentUser`) in `%LOCALAPPDATA%\NEELx`.
 - **WinLogon Lock Screen Architecture (`NEELx.CredentialProvider`)**: Native C++ `ICredentialProvider` COM interface communicating with `NEELx.Windows.exe` over an ACL-hardened named pipe (`\\.\pipe\NEELxBiometricUnlock`) restricted to `SYSTEM` + active user SID.
-- **Mobile Biometric Companion (Native Passkey — Zero App Needed)**: Unlock Windows 11 using your phone's native hardware biometrics (iPhone TrueDepth Face ID or Android BiometricPrompt) via standard FIDO2 Passkeys. Pair in 5 seconds via QR code, zero apps required.
-- **Phone Camera Studio (Android 14+ USB Webcam & iPhone Video)**: Use your Android phone's front camera via native Android 14+ USB-C webcam mode or iPhone wirelessly on any desk stand or kickstand — zero laptop clip required! Includes Bluetooth LE proximity gating (< 1.5m).
+- **Phone Camera Studio (Android 14+ USB Webcam & iPhone Video)**: Use your phone's camera via native USB-C webcam mode or wireless camera on any desk stand or kickstand — zero laptop clip required! Includes Bluetooth LE proximity gating (< 1.5m).
 - **Standalone Zero-Dependency Distribution**: Available as a complete, self-contained standalone package (unzip & double-click `Run-NEELx.bat` or run the 1-click PowerShell command; zero prerequisites, zero secondary runtime or model downloads).
 
 ---

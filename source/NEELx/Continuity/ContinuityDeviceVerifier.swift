@@ -81,12 +81,23 @@ final class ContinuityDeviceVerifier: NSObject, CBCentralManagerDelegate {
 
     // MARK: - Status Evaluation
     func evaluateStatus() {
-        let rawDevices = discoverySession?.devices ?? []
+        // Query a fresh discovery session dynamically each time so newly connected/unlocked devices are captured immediately
+        let session = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.continuityCamera, .external],
+            mediaType: .video,
+            position: .unspecified
+        )
+
+        let rawDevices = session.devices.filter { dev in
+            dev.deviceType == .continuityCamera ||
+            dev.localizedName.lowercased().contains("iphone") ||
+            dev.localizedName.lowercased().contains("ipad")
+        }
+
         let mapped = rawDevices.map { dev -> ContinuityDeviceInfo in
             let name = dev.localizedName
             let model = name.lowercased().contains("ipad") ? "iPad Pro" : "iPhone"
-            // Wired Continuity cameras report true for isSuspended when disconnected or connected via USB
-            let isWireless = !dev.isConnected // AVFoundation flag: wired devices are marked connected physically
+            let isWireless = dev.deviceType == .continuityCamera && !dev.isConnected
             return ContinuityDeviceInfo(
                 id: dev.uniqueID,
                 name: name,
@@ -108,17 +119,17 @@ final class ContinuityDeviceVerifier: NSObject, CBCentralManagerDelegate {
 
         if let device = primaryDevice {
             isRequirementsMet = true
-            let linkType = device.isWireless ? "Wireless (AWDL · 1080p 60fps)" : "High-Speed USB-C"
+            let linkType = device.isWireless ? "Wireless (AWDL · 1080p 60fps)" : "USB-C Cable"
             diagnosticMessage = "✅ Ready: \(device.name) (\(linkType)). Dual-path 3D unlock active."
         } else {
             isRequirementsMet = false
             diagnosticMessage = """
             ⚠️ No iPhone or iPad Pro detected.
-            Minimum Requirements:
-            • iPhone XR/11+ (iOS 16.0+) or iPad Pro with Face ID (iPadOS 16.0+)
-            • Wi-Fi & Bluetooth turned ON on both Mac and iPhone/iPad
-            • Both devices signed into the same Apple ID with 2FA, or connected via USB-C cable (tap 'Trust')
-            • Mac running macOS 15.0+ Sequoia with Bluetooth active
+            To connect your iPhone wirelessly:
+            1. Lock your iPhone screen and place it on a desk stand or charger. (Apple automatically disconnects Continuity Camera if the iPhone is unlocked and in use!)
+            2. Both Mac and iPhone must be signed into the SAME Apple ID with Wi-Fi & Bluetooth turned ON.
+            3. On iPhone: Settings → General → AirPlay & Continuity → Continuity Camera must be ON.
+            Tip: You can also connect via USB-C / Lightning cable (unlock iPhone and tap 'Trust').
             """
         }
     }
