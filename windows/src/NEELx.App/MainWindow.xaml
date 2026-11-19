@@ -426,7 +426,7 @@
                                 <Image Source="Assets/neelx-logo.png" Width="64" Height="64" Margin="0,0,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 <TextBlock Text="NEELx" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Windows 11 Edition · Fluent Prism" FontSize="13" Foreground="{StaticResource AccentCyanBrush}" HorizontalAlignment="Center" Margin="0,2,0,4"/>
-                                <TextBlock Text="Version 2.0.0-beta.8 (x64 &amp; ARM64)" FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                                <TextBlock Text="Version 2.0.0-beta.9 (x64 &amp; ARM64)" FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
 
                                 <TextBlock Text="100% Offline 3D Biometric Face Unlock using standard webcams." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap" Margin="0,0,0,16"/>
 

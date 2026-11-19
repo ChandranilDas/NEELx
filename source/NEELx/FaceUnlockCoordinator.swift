@@ -465,7 +465,8 @@ final class FaceUnlockCoordinator {
                 }
             }
 
-            let scored = pipeline.score(result.embedding, against: FaceEnrollmentStore.shared.activeIdentities)
+            let validIdentities = FaceEnrollmentStore.shared.activeIdentities.filter { $0.samples.count >= 4 }
+            let scored = pipeline.score(result.embedding, against: validIdentities)
             var matched = pipeline.bestMatch(in: scored, threshold: matchThreshold)
             var precomputedDepth: NeuralDepthReading?
 
@@ -488,9 +489,10 @@ final class FaceUnlockCoordinator {
                     if let probeDepth {
                         let profileSim = NeuralDepthAnalyzer.signatureSimilarity(probeDepth.depthSignature, enrolledProfile)
                         // Verifies genuine 3D human topography matching enrolled user's unique 3D structure:
-                        if probeDepth.flatSpoofScore <= 0.20,
-                           probeDepth.noseProtrusion > 0.006,
-                           (profileSim >= 0.75 || probeDepth.depth3DScore >= 0.50) {
+                        if probeDepth.flatSpoofScore <= 0.15,
+                           probeDepth.noseProtrusion > 0.008,
+                           probeDepth.depth3DScore >= 0.60,
+                           profileSim >= 0.82 {
                             matched = candidate
                             precomputedDepth = probeDepth
                         }

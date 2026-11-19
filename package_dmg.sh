@@ -122,28 +122,35 @@ cd "$(dirname "$0")"
 echo "=========================================="
 echo "   NEELx macOS Gatekeeper Quick-Fix"
 echo "=========================================="
-echo "Clearing macOS quarantine attribute..."
-xattr -cr /Applications/NEELx.app 2>/dev/null || xattr -cr "./NEELx.app" 2>/dev/null || true
+echo "Removing quarantine flag from NEELx..."
+xattr -dr com.apple.quarantine /Applications/NEELx.app 2>/dev/null || true
+xattr -cr /Applications/NEELx.app 2>/dev/null || true
+xattr -cr "./NEELx.app" 2>/dev/null || true
 echo "Launching NEELx..."
 open /Applications/NEELx.app 2>/dev/null || open "./NEELx.app" 2>/dev/null || true
-echo "Done! You can close this window."
+echo "✅ Done! NEELx is now trusted. You can close this window."
 EOF
 chmod +x "$STAGE_DIR/Open NEELx (Fix Gatekeeper).command"
 
 cat << 'EOF' > "$STAGE_DIR/Uninstall or Quit NEELx.command"
 #!/usr/bin/env bash
 echo "=========================================="
-echo "   NEELx Uninstaller & Process Quitter"
+echo "   NEELx Uninstaller & Clean Reset"
 echo "=========================================="
 echo "Quitting all active NEELx processes..."
 pkill -9 NEELx 2>/dev/null || true
 sleep 1
+echo "Purging application data, enrolled face models, and preferences..."
+rm -rf "$HOME/Library/Application Support/NEELx" 2>/dev/null || true
+rm -f "$HOME/Library/Preferences/local.neelx.plist" 2>/dev/null || true
+defaults delete local.neelx 2>/dev/null || true
+security delete-generic-password -s "local.neelx" 2>/dev/null || true
 if [ -d "/Applications/NEELx.app" ]; then
     echo "Removing /Applications/NEELx.app..."
     rm -rf /Applications/NEELx.app
-    echo "✅ NEELx has been completely uninstalled from Applications."
+    echo "✅ NEELx has been completely uninstalled and all data wiped."
 else
-    echo "✅ NEELx process has been quit."
+    echo "✅ NEELx processes quit and all stored data wiped."
 fi
 echo "You can now close this window."
 EOF

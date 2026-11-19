@@ -17,6 +17,7 @@ struct AboutSettingsPage: View {
     @State private var lastTapDate: Date?
     @State private var didCopyDiagnostics = false
     @State private var showFeedbackSheet = false
+    @State private var showResetConfirmation = false
     private let requiredTapCount = 5
     private let tapResetInterval: TimeInterval = 1.0
 
@@ -107,6 +108,16 @@ struct AboutSettingsPage: View {
             SettingsGroupDivider()
 
             SettingsActionRowContent(
+                title: "Reset to Factory Defaults",
+                subtitle: "Wipes all enrolled faces, clears passwords, and restores clean defaults.",
+                buttonTitle: "Reset…"
+            ) {
+                showResetConfirmation = true
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
                 title: "Quit NEELx",
                 subtitle: "Completely quits all background biometric processes so you can move or delete the app.",
                 buttonTitle: "Quit"
@@ -118,6 +129,18 @@ struct AboutSettingsPage: View {
             FeedbackSheetView {
                 showFeedbackSheet = false
             }
+        }
+        .alert("Reset NEELx to Factory Defaults?", isPresented: $showResetConfirmation) {
+            Button("Reset and Start Setup", role: .destructive) {
+                NEELxSettings.shared.resetToFactoryDefaults()
+                for window in NSApp.windows where window.canBecomeMain {
+                    window.close()
+                }
+                OnboardingController.startFlow(resumingAt: nil)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All enrolled face templates and preferences will be permanently wiped. Setup will restart fresh.")
         }
     }
 

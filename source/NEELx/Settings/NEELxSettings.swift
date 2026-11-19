@@ -419,4 +419,48 @@ final class NEELxSettings {
             }
         }
     }
+
+    /// Wipes all stored credentials, enrolled face profiles, and resets all settings to fresh out-of-the-box defaults.
+    func resetToFactoryDefaults() {
+        SecureCredentialManager.resetAllState()
+        FaceEnrollmentStore.shared.deleteAll()
+        if let bundleID = Bundle.main.bundleIdentifier {
+            defaults.removePersistentDomain(forName: bundleID)
+        }
+        defaults.synchronize()
+
+        // Reset runtime properties to clean defaults
+        isFaceUnlockEnabled = true
+        matchThreshold = 0.63
+        livenessChecksEnabled = true
+        livenessMode = .light
+        chromaticFlashEnabled = false
+        intruderLogEnabled = true
+        adaptiveLearningEnabled = true
+        systemAuthPromptsEnabled = true
+        presenceAutoLockEnabled = false
+        allowContinuityCamera = false
+        dualCameraConcurrentUnlock = false
+        deviceProximityGuardEnabled = false
+        presenceAutoLockSeconds = 60
+        minimumFaceWidth = 0.19
+        unlockAnimationStyle = .original
+        showUnlockAnimation = true
+        unlockTriggers = [.onWake, .onLock]
+        retryOnHover = false
+        faceDetectionSeconds = 5
+        autoRetryOnce = false
+        hapticFeedbackEnabled = true
+        unlockSoundEnabled = false
+        preferredDisplayID = nil
+        preferredDisplayName = nil
+        autoLockInterval = .sevenDays
+        defaultCameraID = nil
+        builtInDisplayCameraID = nil
+        externalDisplayCameraID = nil
+        hasCompletedOnboarding = false
+        onboardingResumeStep = nil
+        hasAcknowledgedSecurityNotice = false
+        FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
+    }
 }

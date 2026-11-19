@@ -133,7 +133,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Deferred until onboarding is done — Sparkle's own "Check for updates automatically?" consent alert fires the moment
         // it starts on a fresh install, and starting unconditionally here used to pop it mid-onboarding.
-        if NEELxSettings.shared.hasCompletedOnboarding {
+        let hasValidEnrollment = FaceEnrollmentStore.shared.hasValidEnrollment
+        if NEELxSettings.shared.hasCompletedOnboarding && hasValidEnrollment {
             if NEELxSettings.shared.hasAcknowledgedSecurityNotice {
                 startUpdaterIfNeeded()
                 // Prompt Touch ID once on launch/update so Face Unlock is immediately armed and ready.
@@ -154,6 +155,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 presentPostUpdateSecurityNotice()
             }
         } else {
+            // Fresh launch or reinstall without valid enrollment:
+            // Ensure settings are clean defaults and present the onboarding flow!
+            if !hasValidEnrollment {
+                NEELxSettings.shared.resetToFactoryDefaults()
+            }
             presentOnboardingGate()
         }
     }
@@ -296,7 +302,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        guard NEELxSettings.shared.hasCompletedOnboarding else {
+        guard NEELxSettings.shared.hasCompletedOnboarding && FaceEnrollmentStore.shared.hasValidEnrollment else {
             // Re-present rather than restart: a fresh startFlow() would throw away the in-session step already navigated to,
             // since it only knows the last step written to disk.
             if NotchOverlayController.shared.phase != .onboarding {

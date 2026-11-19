@@ -80,8 +80,17 @@ struct EnrollmentRingView: View {
         return controller.capturedPoses.contains(pose)
     }
 
+    private func isTargetSector(_ index: Int) -> Bool {
+        guard !isComplete, controller.targetPose != .center, let pose = sectorPose(for: index) else { return false }
+        return pose == controller.targetPose
+    }
+
     private func length(for index: Int, intensity: Double) -> CGFloat {
         if isLit(index) || pulseActive { return OnboardingMetrics.tickLengthLit }
+        if isTargetSector(index) {
+            let holdBoost = CGFloat(controller.holdProgress) * (OnboardingMetrics.tickLengthLit - OnboardingMetrics.tickLengthUnlit)
+            return OnboardingMetrics.tickLengthUnlit + holdBoost + OnboardingMetrics.turnIndicatorLengthBoost * intensity
+        }
         return OnboardingMetrics.tickLengthUnlit + OnboardingMetrics.turnIndicatorLengthBoost * intensity
     }
 
@@ -91,6 +100,13 @@ struct EnrollmentRingView: View {
 
     private func color(for index: Int, intensity: Double) -> Color {
         if isLit(index) || isComplete { return NEELxTheme.accent }
+        if isTargetSector(index) {
+            if controller.holdProgress > 0.05 {
+                return NEELxTheme.accent.opacity(0.45 + 0.55 * controller.holdProgress)
+            } else {
+                return NEELxTheme.accent.opacity(0.38)
+            }
+        }
         return NEELxTheme.whiteToAccent(intensity)
     }
 

@@ -56,9 +56,17 @@ enum OnboardingStep: String, CaseIterable {
 }
 
 /// A single guided head pose captured during enrollment — center plus the
-/// 8 compass directions, in the exact order presented to the user.
+/// 8 compass directions, strictly in clockwise order.
 enum EnrollmentPose: Int, CaseIterable {
-    case center, left, topLeft, top, topRight, right, bottomRight, bottom, bottomLeft
+    case center = 0
+    case top = 1
+    case topRight = 2
+    case right = 3
+    case bottomRight = 4
+    case bottom = 5
+    case bottomLeft = 6
+    case left = 7
+    case topLeft = 8
 
     enum YawBand { case left, none, right }
     enum PitchBand { case up, none, down }
@@ -85,28 +93,28 @@ enum EnrollmentPose: Int, CaseIterable {
     var compassAngle: Double? {
         switch self {
         case .center: return nil
-        case .left: return 270
-        case .topLeft: return 315
         case .top: return 0
         case .topRight: return 45
         case .right: return 90
         case .bottomRight: return 135
         case .bottom: return 180
         case .bottomLeft: return 225
+        case .left: return 270
+        case .topLeft: return 315
         }
     }
 
     var instruction: String {
         switch self {
         case .center: return "Look straight at the camera"
-        case .left: return "Turn your head slightly left"
-        case .topLeft: return "Turn your head to the top left"
-        case .top: return "Turn your head slightly up"
-        case .topRight: return "Turn your head to the top right"
+        case .top: return "Tilt your head slightly up"
+        case .topRight: return "Turn slightly up and to the right"
         case .right: return "Turn your head slightly right"
-        case .bottomRight: return "Turn your head to the bottom right"
-        case .bottom: return "Turn your head slightly down"
-        case .bottomLeft: return "Turn your head to the bottom left"
+        case .bottomRight: return "Turn slightly down and to the right"
+        case .bottom: return "Tilt your head slightly down"
+        case .bottomLeft: return "Turn slightly down and to the left"
+        case .left: return "Turn your head slightly left"
+        case .topLeft: return "Turn slightly up and to the left"
         }
     }
 
@@ -124,36 +132,43 @@ enum EnrollmentPose: Int, CaseIterable {
     var name: String {
         switch self {
         case .center: return "center"
-        case .left: return "left"
-        case .topLeft: return "top_left"
         case .top: return "top"
         case .topRight: return "top_right"
         case .right: return "right"
         case .bottomRight: return "bottom_right"
         case .bottom: return "bottom"
         case .bottomLeft: return "bottom_left"
+        case .left: return "left"
+        case .topLeft: return "top_left"
         }
     }
 }
 
 enum EnrollmentLightingState: Equatable {
     case ideal
-    case backlit
-    case lowLight
+    case acceptable
+    case tooDark
+    case severeBacklight
+
+    var isUnacceptable: Bool {
+        self == .tooDark || self == .severeBacklight
+    }
 
     var label: String {
         switch self {
         case .ideal: return "Ideal Lighting"
-        case .backlit: return "Backlit · HDR Active"
-        case .lowLight: return "Low Light · Studio Fill"
+        case .acceptable: return "Good Lighting"
+        case .tooDark: return "Too Dark · Face Light"
+        case .severeBacklight: return "Backlit · Face Light"
         }
     }
 
     var color: Color {
         switch self {
         case .ideal: return Color(red: 0.19, green: 0.82, blue: 0.35)
-        case .backlit: return Color(red: 1.0, green: 0.76, blue: 0.28)
-        case .lowLight: return Color(red: 0.98, green: 0.82, blue: 0.52)
+        case .acceptable: return Color(red: 0.25, green: 0.78, blue: 0.92)
+        case .tooDark: return Color(red: 1.0, green: 0.45, blue: 0.30)
+        case .severeBacklight: return Color(red: 1.0, green: 0.65, blue: 0.20)
         }
     }
 }
@@ -400,7 +415,7 @@ final class OnboardingController {
     private(set) var currentPoseIndex = 0
     private(set) var capturedForCurrentPose = 0
     private(set) var centerCapturedCount = 0
-    var isCenterCaptured: Bool { centerCapturedCount >= 1 }
+    var isCenterCaptured: Bool { centerCapturedCount >= 2 }
     private(set) var faceDetected = false
     private(set) var currentYaw: Float?
     private(set) var currentPitch: Float?
@@ -427,6 +442,8 @@ final class OnboardingController {
     private(set) var showCheckmark = false
     /// Live lighting quality badge shown subtly during 360° notch enrollment.
     private(set) var lightingState: EnrollmentLightingState = .ideal
+    /// Live hold progress for active target pose (0.0 to 1.0)
+    private(set) var holdProgress: Double = 0.0
 
     private struct CollectedSample {
         let embedding: [Float]
@@ -454,24 +471,45 @@ final class OnboardingController {
     /// Capture waits `poseHoldDuration` past this instant.
     private var poseHoldStartedAt: ContinuousClock.Instant?
 
-    var currentPose: EnrollmentPose? {
-        if !isCenterCaptured { return .center }
-        let directionalOrder: [EnrollmentPose] = [
-            .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left, .topLeft
-        ]
-        return directionalOrder.first { !capturedPoses.contains($0) }
+    /// Directional order strictly clockwise
+    static let clockwiseOrder: [EnrollmentPose] = [
+        .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left, .topLeft
+    ]
+
+    var targetPose: EnrollmentPose {
+        if centerCapturedCount < 2 { return .center }
+        return Self.clockwiseOrder.first { !capturedPoses.contains($0) } ?? .center
     }
 
-    /// Copy shown under the camera: pose guidance, a closer-up prompt, or the
-    /// completion line.
-    var enrollmentInstruction: String {
-        if enrollmentComplete { return "Face captured" }
-        if isTooFar { return "Bring your face closer" }
-        if !isCenterCaptured { return "Look straight at the camera" }
-        if capturedPoses.count < 8 {
-            return "Slowly rotate your head in a circle"
+    var currentPose: EnrollmentPose? {
+        targetPose
+    }
+
+    /// User-facing warning explaining why capture is held back (too dark, harsh backlight, too far, or looking wrong way)
+    var enrollmentWarning: String? {
+        if enrollmentComplete { return nil }
+        if !faceDetected { return "Center your face in the camera frame" }
+        if isTooFar { return "Bring your face closer to the camera" }
+        if lightingState == .tooDark { return "Lighting is too dark · Face a light source" }
+        if lightingState == .severeBacklight { return "Harsh backlight · Avoid bright lights behind you" }
+        if let yaw = currentYaw, let pitch = currentPitch, let detected = determinePose(yaw: yaw, pitch: pitch) {
+            if detected != targetPose {
+                if targetPose == .center {
+                    return "Look straight at the camera"
+                } else {
+                    return "Turn clockwise: \(targetPose.instruction.lowercased())"
+                }
+            }
         }
-        return "All angles captured"
+        return nil
+    }
+
+    /// Copy shown under the camera: pose guidance, a closer-up prompt, or the completion line.
+    var enrollmentInstruction: String {
+        if enrollmentComplete { return "Face captured successfully" }
+        if let warning = enrollmentWarning { return warning }
+        if holdProgress > 0.1 { return "Scanning angle… Hold steady" }
+        return targetPose.instruction
     }
 
     /// Where the head is currently turned, for the ring's live indicator.
@@ -509,8 +547,8 @@ final class OnboardingController {
     }
 
     var overallEnrollmentProgress: Double {
-        let done = Double(capturedPoses.count + (isCenterCaptured ? 1 : 0))
-        return min(done / 7.0, 1.0)
+        let totalCaptured = Double(capturedPoses.count + min(centerCapturedCount, 2))
+        return min(totalCaptured / 10.0, 1.0)
     }
 
     // MARK: - Naming
@@ -840,13 +878,15 @@ final class OnboardingController {
             }
         }.value
 
-        // Update Live Lighting Readiness Meter (Ideal / Backlit HDR / Low Light Studio Fill)
+        // Update Live Lighting Readiness Meter (Ideal / Good / Low Light / Backlit)
         let frameLum = ScanLightingController.meanLuminance(image, normalizedRect: nil)
         let centerLum = ScanLightingController.meanLuminance(image, normalizedRect: CGRect(x: 0.30, y: 0.25, width: 0.40, height: 0.50))
-        if centerLum < 0.24 && (frameLum - centerLum) >= 0.12 {
-            lightingState = .backlit
+        if centerLum < 0.16 || frameLum < 0.16 {
+            lightingState = .tooDark
+        } else if centerLum < 0.22 && (frameLum - centerLum) >= 0.16 {
+            lightingState = .severeBacklight
         } else if centerLum < 0.24 || frameLum < 0.22 {
-            lightingState = .lowLight
+            lightingState = .acceptable
         } else {
             lightingState = .ideal
         }
@@ -859,6 +899,7 @@ final class OnboardingController {
             currentPitch = nil
             matchStreak = 0
             poseHoldStartedAt = nil
+            holdProgress = 0.0
             isTooFar = false
             return
         case .tooFar:
@@ -868,6 +909,7 @@ final class OnboardingController {
             currentPitch = nil
             matchStreak = 0
             poseHoldStartedAt = nil
+            holdProgress = 0.0
             isTooFar = true
             return
         case .ready(let result):
@@ -878,6 +920,7 @@ final class OnboardingController {
                 currentPitch = nil
                 matchStreak = 0
                 poseHoldStartedAt = nil
+                holdProgress = 0.0
                 isTooFar = false
                 return
             }
@@ -925,15 +968,47 @@ final class OnboardingController {
         let qualityOK = result.quality.map { $0 >= qualityFloor } ?? true
         // Allow both 5-point full landmarks and 2-point eye alignment so head-turn poses are never dropped
         let alignmentOK = result.alignmentTier == .fivePoint || result.alignmentTier == .twoPoint
-        guard qualityOK, alignmentOK, !isTooFar else { return }
+        guard qualityOK, alignmentOK, !isTooFar, !lightingState.isUnacceptable else {
+            poseHoldStartedAt = nil
+            matchStreak = 0
+            holdProgress = 0.0
+            return
+        }
 
-        guard let pose = determinePose(yaw: yaw, pitch: pitch) else { return }
+        guard let detectedPose = determinePose(yaw: yaw, pitch: pitch) else {
+            poseHoldStartedAt = nil
+            matchStreak = 0
+            holdProgress = 0.0
+            return
+        }
 
-        let shouldCapture = (pose == .center && centerCapturedCount < 1)
-            || (pose != .center && !capturedPoses.contains(pose))
-        guard shouldCapture else { return }
+        let currentTarget = targetPose
+        guard detectedPose == currentTarget else {
+            poseHoldStartedAt = nil
+            matchStreak = 0
+            holdProgress = 0.0
+            return
+        }
 
-        // Capture personal 9-zone 3D facial depth signature + calibrated baseline during enrollment (~22ms on ANE)
+        // Target pose matched! Check hold duration and match streak.
+        if poseHoldStartedAt == nil {
+            poseHoldStartedAt = ContinuousClock.now
+            matchStreak = 1
+            holdProgress = 0.15
+            return
+        }
+
+        matchStreak += 1
+        let elapsed = ContinuousClock.now - poseHoldStartedAt!
+        let elapsedSeconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) * 1e-18
+        let requiredSeconds: Double = 0.40 // 400ms steady deliberate hold
+        holdProgress = min(max(elapsedSeconds / requiredSeconds, 0.15), 1.0)
+
+        guard elapsedSeconds >= requiredSeconds && matchStreak >= 3 else {
+            return
+        }
+
+        // Successfully held the pose! Capture personal 9-zone 3D facial depth signature + calibrated baseline
         var depthReading: NeuralDepthReading? = nil
         if NEELxSettings.shared.neuralDepthEnabled {
             let faceBox = result.face.normalizedBoundingBox
@@ -947,38 +1022,33 @@ final class OnboardingController {
             }.value
         }
 
-        if pose == .center {
-            collectedSamples.append(CollectedSample(
-                embedding: result.embedding,
-                pose: .center,
-                quality: result.quality,
-                depthSignature: depthReading?.depthSignature,
-                noseProtrusion: depthReading?.noseProtrusion,
-                backgroundCliff: depthReading?.backgroundCliff,
-                capturedAt: Date()
-            ))
+        collectedSamples.append(CollectedSample(
+            embedding: result.embedding,
+            pose: currentTarget,
+            quality: result.quality,
+            depthSignature: depthReading?.depthSignature,
+            noseProtrusion: depthReading?.noseProtrusion,
+            backgroundCliff: depthReading?.backgroundCliff,
+            capturedAt: Date()
+        ))
+
+        if currentTarget == .center {
             centerCapturedCount += 1
             centerPulseTick += 1
-            if NEELxSettings.shared.hapticFeedbackEnabled {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-            }
         } else {
-            collectedSamples.append(CollectedSample(
-                embedding: result.embedding,
-                pose: pose,
-                quality: result.quality,
-                depthSignature: depthReading?.depthSignature,
-                noseProtrusion: depthReading?.noseProtrusion,
-                backgroundCliff: depthReading?.backgroundCliff,
-                capturedAt: Date()
-            ))
-            capturedPoses.insert(pose)
-            if NEELxSettings.shared.hapticFeedbackEnabled {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-            }
+            capturedPoses.insert(currentTarget)
         }
 
-        if (capturedPoses.count >= 6 && centerCapturedCount >= 1) || capturedPoses.count >= 8 {
+        if NEELxSettings.shared.hapticFeedbackEnabled {
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        }
+
+        // Reset hold state for next pose
+        poseHoldStartedAt = nil
+        matchStreak = 0
+        holdProgress = 0.0
+
+        if capturedPoses.count >= 8 && centerCapturedCount >= 2 {
             await finishEnrollment()
         }
     }

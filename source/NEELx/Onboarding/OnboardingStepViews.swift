@@ -328,15 +328,32 @@ struct EnrollStepView: View {
 
     private var instructionLabel: some View {
         VStack(spacing: 6) {
-            Text(controller.enrollmentInstruction)
-                .font(NEELxTheme.Font.instruction)
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-                .id(controller.enrollmentInstruction)
+            if let warning = controller.enrollmentWarning {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.yellow)
+                    Text(warning)
+                        .font(NEELxTheme.Font.instruction)
+                        .foregroundStyle(Color.yellow)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                }
+                .id(warning)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.2), value: controller.enrollmentInstruction)
+                .animation(.easeInOut(duration: 0.2), value: warning)
+            } else {
+                Text(controller.enrollmentInstruction)
+                    .font(NEELxTheme.Font.instruction)
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .id(controller.enrollmentInstruction)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: controller.enrollmentInstruction)
+            }
 
             HStack(spacing: 5) {
                 Circle()

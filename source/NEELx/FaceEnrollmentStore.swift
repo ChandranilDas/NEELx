@@ -179,9 +179,14 @@ final class FaceEnrollmentStore {
     /// False until a load succeeds. Guards `persist()` so an unreadable store is never overwritten by an empty array.
     private var hasLoadedSuccessfully = false
 
-    /// Everyone the user hasn't switched off — what unlock actually scores against. `identities` stays the full list.
+    /// Everyone the user hasn't switched off with at least 4 valid 3D samples — what unlock actually scores against. `identities` stays the full list.
     var activeIdentities: [FaceIdentity] {
-        identities.filter(\.isEnabled)
+        identities.filter { $0.isEnabled && $0.samples.count >= 4 }
+    }
+
+    /// Whether any fully enrolled identity exists in storage with comprehensive multi-angle coverage.
+    var hasValidEnrollment: Bool {
+        activeIdentities.contains { $0.samples.count >= 4 }
     }
 
     private init() {
