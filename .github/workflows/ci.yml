@@ -35,7 +35,8 @@ jobs:
       - name: Build NEELx.app & Package Universal DMG
         run: |
           chmod +x build.sh package_dmg.sh
-          ./package_dmg.sh --universal
+          python3 source/tools/fetch_depth_model.py
+          ./package_dmg.sh --universal --with-depth
           shasum -a 256 "NEELx-v${VERSION}-universal.dmg" > "NEELx-v${VERSION}-macOS-SHA256SUMS.txt"
           cat "NEELx-v${VERSION}-macOS-SHA256SUMS.txt"
 

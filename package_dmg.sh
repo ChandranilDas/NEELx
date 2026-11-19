@@ -30,6 +30,10 @@ for arg in "$@"; do
     esac
 done
 
+if [[ "$IS_LITE" == "false" ]]; then
+    BUILD_ARGS+=("--with-depth")
+fi
+
 SUFFIX="$ARCH"
 if [[ "$IS_UNIVERSAL" == "true" ]]; then
     SUFFIX="universal"

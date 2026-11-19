@@ -81,9 +81,16 @@ cp -R "${SOURCE_APP}" "${TARGET_APP}"
 echo "Clearing macOS Gatekeeper quarantine..."
 xattr -cr "${TARGET_APP}" 2>/dev/null || true
 
-# Re-sign ad-hoc so macOS TCC permissions remain rock solid
+# Re-sign: prefer user's local Apple Development certificate if available in Keychain;
+# otherwise fall back to ad-hoc (-) so macOS TCC permissions remain rock solid
 if command -v codesign >/dev/null 2>&1; then
-    codesign --force --deep -s - "${TARGET_APP}" 2>/dev/null || true
+    DEV_CERT=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development:" | head -n 1 | awk '{print $2}' || true)
+    if [ -n "${DEV_CERT}" ]; then
+        echo "Found local developer certificate (${DEV_CERT}) — signing with your certificate to preserve macOS permissions across updates..."
+        codesign --force --deep -s "${DEV_CERT}" "${TARGET_APP}" 2>/dev/null || codesign --force --deep -s - "${TARGET_APP}" 2>/dev/null || true
+    else
+        codesign --force --deep -s - "${TARGET_APP}" 2>/dev/null || true
+    fi
 fi
 
 # 7. Unmount DMG cleanly

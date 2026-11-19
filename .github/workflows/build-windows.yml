@@ -88,6 +88,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = $env:RELEASE_TAG
+          # Ensure release exists first so upload never fails if Windows finishes before macOS
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "NEELx $tag" --notes "NEELx $tag — 100% Offline 3D Biometric Face Unlock" --prerelease
+          }
           gh release upload $tag `
             "dist-windows/NEELx-$tag-windows-x64.zip" `
             "dist-windows/NEELx-$tag-windows-x64-portable.zip" `
