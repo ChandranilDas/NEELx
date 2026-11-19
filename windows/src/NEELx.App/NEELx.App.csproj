@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>NEELx.Windows</AssemblyName>
     <RootNamespace>NEELx.Windows</RootNamespace>
-    <Version>2.0.0-beta.6</Version>
+    <Version>2.0.0-beta.7</Version>
     <Authors>Chandranil Das</Authors>
     <Product>NEELx for Windows 11</Product>
     <Description>100% offline 3D biometric Face Unlock for Windows 11 using standard RGB webcams and DirectML neural depth.</Description>
