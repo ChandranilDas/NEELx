@@ -67,9 +67,9 @@ if [ -f "$SCRIPT_DIR/website/install.sh" ]; then
     sed -i '' "s/FALLBACK_VERSION=\"v[^\"]*\"/FALLBACK_VERSION=\"v$TARGET_VERSION\"/" "$SCRIPT_DIR/website/install.sh"
 fi
 
-# 5. Update README.md
+# 5. Update README.md (macOS sections)
 if [ -f "$SCRIPT_DIR/README.md" ]; then
-    sed -i '' "s/$CURRENT_VERSION/$TARGET_VERSION/g" "$SCRIPT_DIR/README.md"
+    sed -i '' "s/macOS: v$CURRENT_VERSION/macOS: v$TARGET_VERSION/g" "$SCRIPT_DIR/README.md"
 fi
 
 # 6. Update source/README.md
@@ -77,22 +77,7 @@ if [ -f "$SCRIPT_DIR/source/README.md" ]; then
     sed -i '' "s/$CURRENT_VERSION/$TARGET_VERSION/g" "$SCRIPT_DIR/source/README.md"
 fi
 
-# 7. Update windows/README.md
-if [ -f "$SCRIPT_DIR/windows/README.md" ]; then
-    sed -i '' "s/$CURRENT_VERSION/$TARGET_VERSION/g" "$SCRIPT_DIR/windows/README.md"
-fi
-
-# 8. Update windows/src/NEELx.App/MainWindow.xaml
-if [ -f "$SCRIPT_DIR/windows/src/NEELx.App/MainWindow.xaml" ]; then
-    sed -i '' "s/Version [0-9a-zA-Z.-]* (x64/Version $TARGET_VERSION (x64/" "$SCRIPT_DIR/windows/src/NEELx.App/MainWindow.xaml"
-fi
-
-# 9. Update windows/src/NEELx.App/NEELx.App.csproj
-if [ -f "$SCRIPT_DIR/windows/src/NEELx.App/NEELx.App.csproj" ]; then
-    sed -i '' "s/<Version>[^<]*<\/Version>/<Version>$TARGET_VERSION<\/Version>/" "$SCRIPT_DIR/windows/src/NEELx.App/NEELx.App.csproj"
-fi
-
-echo "✅ All 9 version manifests updated to $TARGET_VERSION!"
+echo "✅ macOS version manifests updated to $TARGET_VERSION!"
 
 if [[ "$DO_PACKAGE" == "true" ]]; then
     echo ""

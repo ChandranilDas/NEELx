@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     NEELx for Windows 11 — Official 1-Click Complete Installer & Upgrade-Safe Updater.
 
@@ -33,7 +33,7 @@ Write-Host "==========================================" -ForegroundColor Cyan
 
 try {
     # 1. Resolve latest release tag from GitHub API (SemVer-aware with fallback)
-    $FallbackVersion = "v2.0.0-beta.11"
+    $FallbackVersion = "windows-v2.0.0-beta.1"
     $targetRelease = $null
     if ([string]::IsNullOrWhiteSpace($Version)) {
         Write-Host "Checking latest NEELx release..."

@@ -3,8 +3,20 @@ name: Build NEELx (macOS)
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'source/**'
+      - 'build.sh'
+      - 'package_dmg.sh'
+      - '.github/workflows/ci.yml'
+      - 'VERSION'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'source/**'
+      - 'build.sh'
+      - 'package_dmg.sh'
+      - '.github/workflows/ci.yml'
+      - 'VERSION'
   workflow_dispatch:
 
 permissions:
