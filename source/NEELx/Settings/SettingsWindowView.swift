@@ -36,12 +36,16 @@ struct SettingsWindowView: View {
     @State private var headerTrailingAction: HeaderAction?
     @Environment(\.dismissWindow) private var dismissWindow
 
+    private var isExistingUser: Bool {
+        NEELxSettings.shared.hasCompletedOnboarding || SecureFaceStore.exists || SecureCredentialManager.hasStoredPassword()
+    }
+
     /// Defense-in-depth, not the primary gate: Settings is `.suppressed` at
     /// launch and `AppDelegate.revealSettingsWindow()` refuses to open it
     /// while onboarding is incomplete. A real user should never hit this
     /// branch, only a blank frame before `dismissWindow` closes it.
     var body: some View {
-        if NEELxSettings.shared.hasCompletedOnboarding {
+        if isExistingUser {
             settingsContent
         } else {
             Color.clear

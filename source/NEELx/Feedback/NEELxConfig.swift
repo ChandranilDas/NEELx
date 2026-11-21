@@ -33,6 +33,14 @@ enum NEELxConfig {
         return "Version \(short) (\(build))"
     }
 
+    /// Current biometric capture and authentication engine schema version.
+    /// Version 1: Initial 2D ArcFace baseline
+    /// Version 2: 512-D ArcFace + Stage 3 Neural 3D Depth (ANE) + 9-Zone Angular Consistency
+    ///
+    /// Bump this integer ONLY when face capture, embedding extraction, or 3D depth verification algorithms
+    /// receive a major upgrade that genuinely benefits from user recalibration.
+    static let currentBiometricSchemaVersion: Int = 2
+
     /// Privacy-scrubbed Markdown environment summary (zero names, passwords, or biometric data).
     @MainActor
     static func diagnosticsMarkdown() -> String {

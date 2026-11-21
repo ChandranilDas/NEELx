@@ -126,6 +126,7 @@ final class NEELxSettings {
         static let onboardingResumeStep = "NEELxSettings.onboardingResumeStep"
         static let hasAcknowledgedSecurityNotice = "NEELxSettings.hasAcknowledgedSecurityNotice"
         static let welcomeBannerEnabled = "NEELxSettings.welcomeBannerEnabled"
+        static let enrolledBiometricSchemaVersion = "NEELxSettings.enrolledBiometricSchemaVersion"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -303,6 +304,11 @@ final class NEELxSettings {
     var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding) }
     }
+    /// Biometric engine schema version that the user's face was captured with.
+    /// Preserved across app updates & macOS updates; only prompts recalibration if biometric algorithms genuinely upgrade.
+    var enrolledBiometricSchemaVersion: Int {
+        didSet { defaults.set(enrolledBiometricSchemaVersion, forKey: Key.enrolledBiometricSchemaVersion) }
+    }
     /// Where to resume first-run onboarding if the app quit mid-flow; `nil`
     /// starts fresh at `.intro`. Steps depending on in-memory capture state
     /// collapse to `.preSetup` before storing, since that state doesn't
@@ -398,10 +404,12 @@ final class NEELxSettings {
         defaultCameraID = defaults.string(forKey: Key.defaultCameraID)
         builtInDisplayCameraID = defaults.string(forKey: Key.builtInDisplayCameraID)
         externalDisplayCameraID = defaults.string(forKey: Key.externalDisplayCameraID)
-        hasCompletedOnboarding = defaults.object(forKey: Key.hasCompletedOnboarding) as? Bool ?? false
+        let completed = defaults.object(forKey: Key.hasCompletedOnboarding) as? Bool ?? false
+        hasCompletedOnboarding = completed
         onboardingResumeStep = defaults.string(forKey: Key.onboardingResumeStep)
             .flatMap(OnboardingStep.init(rawValue:))
         hasAcknowledgedSecurityNotice = defaults.object(forKey: Key.hasAcknowledgedSecurityNotice) as? Bool ?? false
+        enrolledBiometricSchemaVersion = defaults.object(forKey: Key.enrolledBiometricSchemaVersion) as? Int ?? (completed ? NEELxConfig.currentBiometricSchemaVersion : 0)
 
         // Push into the nonisolated mirror immediately, or FaceRecognitionPipeline
         // would keep its own default until the slider is first touched.
@@ -467,6 +475,7 @@ final class NEELxSettings {
         hasCompletedOnboarding = false
         onboardingResumeStep = nil
         hasAcknowledgedSecurityNotice = false
+        enrolledBiometricSchemaVersion = 0
         FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
     }
 }

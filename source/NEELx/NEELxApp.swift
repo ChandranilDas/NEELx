@@ -131,10 +131,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             name: NSWindow.willCloseNotification, object: nil
         )
 
-        // Deferred until onboarding is done — Sparkle's own "Check for updates automatically?" consent alert fires the moment
-        // it starts on a fresh install, and starting unconditionally here used to pop it mid-onboarding.
-        let hasValidEnrollment = FaceEnrollmentStore.shared.hasValidEnrollment
-        if NEELxSettings.shared.hasCompletedOnboarding && hasValidEnrollment {
+        // Determine whether this user has already completed onboarding or has existing biometric credentials.
+        let hasExistingBiometrics = SecureFaceStore.exists || SecureCredentialManager.hasStoredPassword()
+        let isExistingUser = NEELxSettings.shared.hasCompletedOnboarding || hasExistingBiometrics
+
+        if isExistingUser {
+            // Ensure onboarding flag is preserved
+            if !NEELxSettings.shared.hasCompletedOnboarding {
+                NEELxSettings.shared.hasCompletedOnboarding = true
+            }
+
+            // Check if an update introduced a major biometric improvement requiring face recalibration
+            let enrolledVersion = NEELxSettings.shared.enrolledBiometricSchemaVersion
+            if enrolledVersion > 0 && enrolledVersion < NEELxConfig.currentBiometricSchemaVersion {
+                // Biometric capture / authentication pipeline was improved!
+                // Offer direct recalibration straight in the face capture ring (zero setup steps).
+                presentBiometricRecalibrationNoticeIfNeeded()
+            }
+
             if NEELxSettings.shared.hasAcknowledgedSecurityNotice {
                 startUpdaterIfNeeded()
                 // Prompt Touch ID once on launch/update so Face Unlock is immediately armed and ready.
@@ -155,12 +169,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 presentPostUpdateSecurityNotice()
             }
         } else {
-            // Fresh launch or reinstall without valid enrollment:
-            // Ensure settings are clean defaults and present the onboarding flow!
-            if !hasValidEnrollment {
-                NEELxSettings.shared.resetToFactoryDefaults()
-            }
+            // Genuine fresh launch: zero enrolled faces, no stored password, never onboarded.
             presentOnboardingGate()
+        }
+    }
+
+    /// Prompted ONLY when an app update or macOS update introduces a breaking biometric model upgrade
+    /// or major face-capture improvement. Skips all earlier setup steps (intro, permissions, camera setup, password)
+    /// and opens directly into the guided 360° face-capture ring.
+    private func presentBiometricRecalibrationNoticeIfNeeded() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = "Biometric Face Recognition Upgraded"
+        alert.informativeText = "This update to NEELx includes enhanced 3D facial capture and authentication accuracy.\n\nWould you like to recalibrate your face now? This opens the 360° face-capture ring directly with zero setup steps."
+        alert.addButton(withTitle: "Recalibrate Face Now")
+        alert.addButton(withTitle: "Later")
+        if alert.runModal() == .alertFirstButtonReturn {
+            OnboardingController.startEnrollmentOnly()
         }
     }
 
@@ -302,7 +328,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        guard NEELxSettings.shared.hasCompletedOnboarding && FaceEnrollmentStore.shared.hasValidEnrollment else {
+        let isExistingUser = NEELxSettings.shared.hasCompletedOnboarding || SecureFaceStore.exists || SecureCredentialManager.hasStoredPassword()
+        guard isExistingUser else {
             // Re-present rather than restart: a fresh startFlow() would throw away the in-session step already navigated to,
             // since it only knows the last step written to disk.
             if NotchOverlayController.shared.phase != .onboarding {

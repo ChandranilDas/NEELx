@@ -196,6 +196,7 @@ final class OnboardingController {
             guard isFirstRunFlow else { return }
             if step == .complete {
                 NEELxSettings.shared.hasCompletedOnboarding = true
+                NEELxSettings.shared.enrolledBiometricSchemaVersion = NEELxConfig.currentBiometricSchemaVersion
                 // Normal onboarding now passes through `.securityNotice` on its own —
                 // completing it here means the standalone post-update notice never needs to.
                 NEELxSettings.shared.hasAcknowledgedSecurityNotice = true
@@ -1175,6 +1176,7 @@ final class OnboardingController {
             samples: samples,
             embedder: pipeline.embedder
         )
+        NEELxSettings.shared.enrolledBiometricSchemaVersion = NEELxConfig.currentBiometricSchemaVersion
     }
 
     /// Only a pre-fill for the first-run flow's naming step — never the
