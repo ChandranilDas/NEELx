@@ -112,6 +112,20 @@ public partial class MainWindow : Window
         };
     }
 
+    private bool _welcomeBannerEnabled = true;
+
+    private void OnWelcomeBannerToggled(object sender, RoutedEventArgs e)
+    {
+        _welcomeBannerEnabled = ToggleWelcomeBanner?.IsChecked ?? true;
+    }
+
+    private void OnPreviewWelcomeClick(object sender, RoutedEventArgs e)
+    {
+        string rawName = Environment.UserName;
+        string formattedName = string.IsNullOrEmpty(rawName) ? "User" : char.ToUpper(rawName[0]) + rawName[1..];
+        WelcomeBannerWindow.ShowBanner(formattedName);
+    }
+
     // Overlay Previews (Preserves the dedicated Windows 11 Prism Horizon top-blade laser animation)
     private void ShowOverlay(PrismVisualState state)
     {
@@ -124,7 +138,16 @@ public partial class MainWindow : Window
     }
 
     private void OnPreviewScanClick(object sender, RoutedEventArgs e) => ShowOverlay(PrismVisualState.Scanning);
-    private void OnPreviewVerifiedClick(object sender, RoutedEventArgs e) => ShowOverlay(PrismVisualState.VerifiedUnlock);
+    private void OnPreviewVerifiedClick(object sender, RoutedEventArgs e)
+    {
+        ShowOverlay(PrismVisualState.VerifiedUnlock);
+        if (_welcomeBannerEnabled)
+        {
+            string rawName = Environment.UserName;
+            string formattedName = string.IsNullOrEmpty(rawName) ? "User" : char.ToUpper(rawName[0]) + rawName[1..];
+            WelcomeBannerWindow.ShowBanner(formattedName);
+        }
+    }
     private void OnPreviewSpoofClick(object sender, RoutedEventArgs e) => ShowOverlay(PrismVisualState.SpoofRejected);
 
     private void OnHideOverlayClick(object sender, RoutedEventArgs e)

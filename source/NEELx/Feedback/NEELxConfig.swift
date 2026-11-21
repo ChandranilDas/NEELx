@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import AVFoundation
 
 enum NEELxConfig {
     /// Your GitHub repository slug (`owner/repo`) used for pre-filled bug reports & feature requests.

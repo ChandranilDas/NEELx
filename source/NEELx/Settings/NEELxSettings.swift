@@ -125,6 +125,7 @@ final class NEELxSettings {
         static let hasCompletedOnboarding = "NEELxSettings.hasCompletedOnboarding"
         static let onboardingResumeStep = "NEELxSettings.onboardingResumeStep"
         static let hasAcknowledgedSecurityNotice = "NEELxSettings.hasAcknowledgedSecurityNotice"
+        static let welcomeBannerEnabled = "NEELxSettings.welcomeBannerEnabled"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -188,6 +189,10 @@ final class NEELxSettings {
     /// (app installs, System Settings, Saved Passwords, Keychain).
     var systemAuthPromptsEnabled: Bool {
         didSet { defaults.set(systemAuthPromptsEnabled, forKey: Key.systemAuthPromptsEnabled) }
+    }
+    /// Floating "Welcome Back (Name)!" popup message right after unlocking screen.
+    var welcomeBannerEnabled: Bool {
+        didSet { defaults.set(welcomeBannerEnabled, forKey: Key.welcomeBannerEnabled) }
     }
     /// Walk-Away Auto-Lock ("Presence Lock") when user steps away from the desk.
     var presenceAutoLockEnabled: Bool {
@@ -330,6 +335,7 @@ final class NEELxSettings {
         intruderLogEnabled = defaults.object(forKey: Key.intruderLogEnabled) as? Bool ?? true
         adaptiveLearningEnabled = defaults.object(forKey: Key.adaptiveLearningEnabled) as? Bool ?? true
         systemAuthPromptsEnabled = defaults.object(forKey: Key.systemAuthPromptsEnabled) as? Bool ?? true
+        welcomeBannerEnabled = defaults.object(forKey: Key.welcomeBannerEnabled) as? Bool ?? true
         presenceAutoLockEnabled = defaults.object(forKey: Key.presenceAutoLockEnabled) as? Bool ?? false
         allowContinuityCamera = defaults.bool(forKey: Key.allowContinuityCamera)
         dualCameraConcurrentUnlock = defaults.bool(forKey: Key.dualCameraConcurrentUnlock)

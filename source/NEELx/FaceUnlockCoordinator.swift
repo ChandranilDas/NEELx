@@ -688,6 +688,11 @@ final class FaceUnlockCoordinator {
                 scanLighting.hide()
                 NEELxSettings.shared.playUnlockFeedback()
 
+                // Floating "Welcome Back (Name)!" popup message right after unlocking screen
+                let rawName = readyMatch.identity.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let faceName = (!rawName.isEmpty && rawName.lowercased() != "default") ? rawName : (NSFullUserName().isEmpty ? "User" : NSFullUserName())
+                WelcomeBannerWindowController.shared.show(name: faceName)
+
                 // Log verified unlock & silently learn high-confidence 3D-verified appearance/lighting drift
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: summary)
                 let strong3DVerified = ((depthReading?.depth3DScore ?? 0) >= 0.50 || (depthProfileSimilarity ?? 0) >= 0.75)

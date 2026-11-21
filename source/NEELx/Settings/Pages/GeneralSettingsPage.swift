@@ -61,6 +61,25 @@ struct GeneralSettingsPage: View {
                 NEELxToggle(isOn: $settings.systemAuthPromptsEnabled)
             }
             SettingsGroupDivider()
+            SettingsRowContent(
+                title: "Welcome Back Notification",
+                subtitle: "Show a floating \"Welcome Back (Name)!\" pill at the top of your screen right after successful Face Unlock."
+            ) {
+                HStack(spacing: 12) {
+                    if settings.welcomeBannerEnabled {
+                        Button("Preview") {
+                            let registeredName = FaceEnrollmentStore.shared.identities.first?.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let previewName = (registeredName != nil && !registeredName!.isEmpty && registeredName!.lowercased() != "default") ? registeredName! : (NSFullUserName().isEmpty ? "User" : NSFullUserName())
+                            WelcomeBannerWindowController.shared.show(name: previewName)
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    NEELxToggle(isOn: $settings.welcomeBannerEnabled)
+                }
+            }
+            SettingsGroupDivider()
             UnlockTriggerPicker(selection: $settings.unlockTriggers, isEnabled: coordinator.isEnabled)
             SettingsGroupDivider()
             displayPicker()

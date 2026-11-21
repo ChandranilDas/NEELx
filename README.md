@@ -32,6 +32,7 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 ## ✨ Key Features
 
 ### 🍎 NEELx for macOS 15+
+- **Floating "Welcome Back (Name)!" Unlock Notification**: Shows a sleek, non-intrusive floating glass pill at the top of the screen (`"Welcome Back, <Name>!"`) with a subtle spring entrance and graceful retreat right after successful face authorization (includes settings toggle and 1-click live preview in Settings → General).
 - **Smooth 360° Circular Face Enrollment + Live Lighting Readiness Meter**: Slowly roll your head in one natural circle while a live micro-pill (`Ideal Lighting` / `Backlit · HDR Active` / `Low Light · Studio Fill`) guides optimal 512-D ArcFace + **9-zone 3D depth** capture.
 - **Face ID for System Touch ID & Password Prompts**: Approves macOS Touch ID & admin password prompts everywhere — System Settings, app/pkg installers, Saved Passwords (Safari, Chrome, Passwords app), Finder, and Keychain — while strictly excluding Apple Pay, payments, and FileVault.
 - **Stage 3 Neural 3D Depth + Multi-Frame Temporal Consistency (Apple Neural Engine)**: Runs Apple's Core ML `DepthAnythingV2SmallF16` in FP16 (~22.6 ms on ANE), validating nose protrusion, non-planar surface curvature, head-to-background cliff, and **2 consecutive physically consistent 3D frames**.
@@ -45,6 +46,7 @@ NEELx runs completely offline on your device with zero cloud servers and zero te
 - **Auto Local-Cert Signing & 1-Click GitHub Auto-Updater**: Preserves your own free local `Apple Development` certificate on upgrades so macOS Accessibility & Keychain permissions stay intact.
 
 ### 🪟 NEELx for Windows 11 (Fluent Prism Edition)
+- **Floating "Welcome Back (Name)!" Unlock Notification**: Displays a minimal top-edge dark acrylic capsule with emerald checkmark and smooth cubic slide-down/up animation right after verified facial unlock (includes settings toggle and 1-click preview).
 - **Original Fluent Prism Horizon Unlock Blade (`PrismHorizonOverlay`)**: Dedicated top-edge dark Mica glass overlay with counter-rotating faceted diamond-iris aperture, horizontal aurora laser sweep, and four distinct states (`Scanning 3D Depth`, `Backlit HDR Lift`, `Verified Unlock`, `2D Spoof Blocked`) — live-previewable right inside `NEELx.Windows.exe`.
 - **ONNX Runtime DirectML GPU/NPU Engine (`OnnxFaceEngine`)**: Runs 512-D ArcFace + `DepthAnythingV2Small` on any DirectX 12 GPU (Intel Iris Xe/Arc, AMD Radeon, NVIDIA RTX/GTX) or Copilot+ NPU, with automatic CPU fallback.
 - **Multi-Frame Temporal 3D Depth Consistency**: Enforces 2 consecutive physically consistent 3D depth frames (nose protrusion `>= 0.042`, curvature RMSE `>= 0.024`, head-to-background cliff `>= 0.065`) to block flat photos, phone displays, and transient glare.
