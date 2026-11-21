@@ -4,6 +4,14 @@
 
 # NEELx — Fast, Hardened 3D Biometric Face Unlock for macOS & Windows 11
 
+<p align="center">
+  <a href="https://github.com/ChandranilDas/NEELx/releases"><img src="https://img.shields.io/github/v/release/ChandranilDas/NEELx?style=flat-square&color=0A84FF&label=Latest%20Release" alt="Latest Release" /></a>
+  <a href="https://github.com/ChandranilDas/NEELx/releases"><img src="https://img.shields.io/github/downloads/ChandranilDas/NEELx/total.svg?style=flat-square&color=30D158&label=Total%20Downloads" alt="Total Downloads" /></a>
+  <a href="https://hits.sh/github.com/ChandranilDas/NEELx/"><img src="https://hits.sh/github.com/ChandranilDas/NEELx.svg?style=flat-square&label=GitHub%20Visitors&color=64D2FF" alt="GitHub Visitors" /></a>
+  <a href="https://chandranildas.github.io/NEELx/"><img src="https://hits.sh/chandranildas.github.io/NEELx.svg?style=flat-square&label=Site%20Visitors&color=BF5AF2" alt="Website Visitors" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-FFD60A.svg?style=flat-square" alt="License: MIT" /></a>
+</p>
+
 **NEELx** brings fast, natural, 3D biometric Face Unlock to **macOS** and **Windows 11** using any standard built-in or USB RGB webcam — **no IR camera required, 100% offline, hardware-encrypted at rest, and open-source (MIT License).**
 
 > **Official Website:** [https://chandranildas.github.io/NEELx/](https://chandranildas.github.io/NEELx/)  

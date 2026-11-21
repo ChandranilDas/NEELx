@@ -170,6 +170,37 @@ code {
   gap: 10px;
 }
 
+.nav-stats-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.nav-stats-pill .stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #30D158;
+  box-shadow: 0 0 8px #30D158;
+}
+
+.nav-stats-pill .stat-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 960px) {
+  .nav-stats-pill {
+    display: none;
+  }
+}
+
 .nav-gh {
   font-size: 13px;
   color: var(--text-secondary);
@@ -346,6 +377,21 @@ h3 {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--text-muted);
+}
+
+.hero-chips .chip-highlight {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hero-chips .chip-highlight strong {
+  color: #30D158;
+}
+
+.hero-chips .chip-highlight.chip-traffic strong {
+  color: #64D2FF;
 }
 
 /* Interactive Notch + 3D Face Stage */

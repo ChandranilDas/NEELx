@@ -191,15 +191,24 @@ async function syncLatestRelease() {
       // Fall through to list query
     }
 
-    // 2. Fetch recent releases list (up to 20) and sort descending by SemVer
+    // 2. Fetch recent releases list (up to 30) and sort descending by SemVer
     let sortedLatest = null;
+    let totalDownloads = 0;
     try {
-      const listRes = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, {
+      const listRes = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, {
         headers: { Accept: "application/vnd.github+json" },
       });
       if (listRes.ok) {
         const releases = await listRes.json();
         if (Array.isArray(releases)) {
+          // Calculate real cumulative downloads across all historical and current releases
+          for (const r of releases) {
+            if (Array.isArray(r.assets)) {
+              for (const a of r.assets) {
+                totalDownloads += (Number(a.download_count) || 0);
+              }
+            }
+          }
           const valid = releases.filter((r) => !r.draft && Array.isArray(r.assets) && r.assets.length > 0);
           valid.sort((a, b) => compareSemVer(b.tag_name, a.tag_name));
           if (valid.length > 0) {
@@ -209,6 +218,12 @@ async function syncLatestRelease() {
       }
     } catch {
       // Ignore network errors
+    }
+
+    if (totalDownloads > 0) {
+      document.querySelectorAll("[data-total-downloads]").forEach((el) => {
+        el.textContent = `${totalDownloads.toLocaleString()}+`;
+      });
     }
 
     // Select the highest SemVer candidate between /releases/latest and sorted list
