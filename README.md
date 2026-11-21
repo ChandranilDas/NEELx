@@ -114,7 +114,7 @@ irm https://chandranildas.github.io/NEELx/install.ps1 | iex
 
 #### Method 2: Download All-in-One Standalone ZIP Directly
 Download from the [**Official Website**](https://chandranildas.github.io/NEELx/#download) or [**GitHub Releases**](https://github.com/ChandranilDas/NEELx/releases):
-- **`NEELx-v2.0.0-beta.10-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
+- **`NEELx-v2.0.0-beta.11-windows-x64-portable.zip`** (~85.7 MB — complete self-contained package; pre-bundles .NET 8 runtime, DirectML GPU/NPU 3D engine, ONNX models, and `Run-NEELx.bat`; zero extra runtime or model downloads)
 
 > **💡 First time opening on Windows 11?** Double-click `Run-NEELx.bat` inside the unzipped folder, or click **"More info" → "Run anyway"** if SmartScreen appears.
 
@@ -134,7 +134,7 @@ dotnet run --project src\NEELx.App\NEELx.App.csproj -c Release
 
 #### Verify Windows ZIP Integrity (Public SHA-256 Checksum)
 ```powershell
-Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.10-windows-x64-portable.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\NEELx-v2.0.0-beta.11-windows-x64-portable.zip" -Algorithm SHA256
 ```
 
 > Full Windows Credential Provider & DirectML guide: [`windows/README.md`](windows/README.md)
