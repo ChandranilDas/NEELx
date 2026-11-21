@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/ChandranilDas/NEELx/releases"><img src="https://img.shields.io/github/v/release/ChandranilDas/NEELx?style=flat-square&color=0A84FF&label=Latest%20Release" alt="Latest Release" /></a>
   <a href="https://github.com/ChandranilDas/NEELx/releases"><img src="https://img.shields.io/github/downloads/ChandranilDas/NEELx/total.svg?style=flat-square&color=30D158&label=Total%20Downloads" alt="Total Downloads" /></a>
-  <a href="https://hits.sh/github.com/ChandranilDas/NEELx/"><img src="https://hits.sh/github.com/ChandranilDas/NEELx.svg?style=flat-square&label=GitHub%20Visitors&color=64D2FF" alt="GitHub Visitors" /></a>
+  <img src="https://hits.sh/github.com/ChandranilDas/NEELx.svg?style=flat-square&label=GitHub%20Visitors&color=64D2FF" alt="GitHub Visitors" />
   <a href="https://chandranildas.github.io/NEELx/"><img src="https://hits.sh/chandranildas.github.io/NEELx.svg?style=flat-square&label=Site%20Visitors&color=BF5AF2" alt="Website Visitors" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-FFD60A.svg?style=flat-square" alt="License: MIT" /></a>
 </p>
