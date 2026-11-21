@@ -486,11 +486,11 @@ final class OnboardingController {
     }
 
     /// Checks if the user's current head orientation matches the target enrollment pose.
-    /// For center, allows a natural, comfortable frontal cone (±16° yaw and pitch) so laptop users looking at the screen/notch register effortlessly.
+    /// For center, allows a natural, comfortable frontal cone (±24° yaw/pitch) accommodating normal laptop screen tilt.
     private func isPoseMatchingTarget(detected: EnrollmentPose?, target: EnrollmentPose, yaw: Float, pitch: Float) -> Bool {
         if target == .center {
             let r = hypot(Double(yaw), Double(pitch))
-            return r < 0.28 || (abs(yaw) < 0.26 && abs(pitch) < 0.26)
+            return r < 0.45 || (abs(yaw) < 0.40 && abs(pitch) < 0.42)
         }
         guard let detected else { return false }
         return detected == target
@@ -955,8 +955,8 @@ final class OnboardingController {
         let y = Double(-pitch)
         let r = hypot(x, y)
 
-        // Generous natural frontal cone for center:
-        if r < 0.26 || (abs(yaw) < 0.24 && abs(pitch) < 0.24) {
+        // Generous natural frontal cone for center (accommodates natural laptop screen tilt & normal gaze):
+        if r < 0.42 || (abs(yaw) < 0.38 && abs(pitch) < 0.40) {
             return .center
         }
 
