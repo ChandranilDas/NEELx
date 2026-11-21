@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>NEELx.Windows</AssemblyName>
     <RootNamespace>NEELx.Windows</RootNamespace>
-    <Version>2.0.0-beta.11</Version>
+    <Version>2.0.0-beta.12</Version>
     <Authors>Chandranil Das</Authors>
     <Product>NEELx for Windows 11</Product>
     <Description>100% offline 3D biometric Face Unlock for Windows 11 using standard RGB webcams and DirectML neural depth.</Description>
@@ -18,10 +18,16 @@
   <ItemGroup>
     <Resource Include="Assets\neelx.ico" />
     <Resource Include="Assets\neelx-logo.png" />
+    <None Update="Assets\haarcascade_frontalface_default.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.19.2" />
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 

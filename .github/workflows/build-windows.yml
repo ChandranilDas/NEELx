@@ -68,6 +68,10 @@ jobs:
             -o "$outDir/standalone"
           Copy-Item windows/README.md "$outDir/standalone/README.md"
           Copy-Item windows/Run-NEELx.bat "$outDir/standalone/Run-NEELx.bat"
+          New-Item -ItemType Directory -Force -Path "$outDir/standalone/Assets" | Out-Null
+          if (Test-Path "windows/src/NEELx.App/Assets/haarcascade_frontalface_default.xml") {
+            Copy-Item "windows/src/NEELx.App/Assets/haarcascade_frontalface_default.xml" "$outDir/standalone/Assets/haarcascade_frontalface_default.xml" -Force
+          }
           Compress-Archive -Path "$outDir/standalone/*" -DestinationPath "$outDir/NEELx-$tag-windows-x64.zip" -Force
           Copy-Item "$outDir/NEELx-$tag-windows-x64.zip" "$outDir/NEELx-$tag-windows-x64-portable.zip" -Force
 

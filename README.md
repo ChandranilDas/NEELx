@@ -100,6 +100,8 @@ chmod +x build.sh
 
 ### 🪟 Windows 11 (Fluent Prism Edition)
 
+> 🚧 **Active Development Notice**: The Windows 11 edition is currently in active beta development. The WPF Fluent Prism Horizon UI, DPAPI vault architecture, and DirectML engine are scaffolded; live camera enrollment, model bundling, and WinLogon Credential Provider hooks are actively being completed. Check back frequently for updates.
+
 #### Requirements
 - **Windows 11 (22H2 or newer)** — x64 or ARM64
 - Any built-in or USB RGB webcam (720p+ recommended, **no Windows Hello IR camera required**)

@@ -187,6 +187,23 @@
 
                     <!-- TAB 2: RECOGNITION -->
                     <StackPanel x:Name="PageRecognition" Visibility="Collapsed">
+                        <!-- Group 0: Live Biometric Face Unlock Test -->
+                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource AccentCyanBrush}" BorderThickness="1.5" Padding="18,16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,8">
+                                    <TextBlock DockPanel.Dock="Left" Text="LIVE BIOMETRIC UNLOCK TEST" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}"/>
+                                    <TextBlock x:Name="LiveTestStatusBadge" DockPanel.Dock="Right" Text="READY" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentGreenBrush}"/>
+                                </DockPanel>
+                                <TextBlock Text="Tests the full end-to-end Windows biometric pipeline: camera capture → OpenCV face detection → 512-D spatial embedding → DPAPI vault comparison → Prism Horizon laser overlay → Welcome Banner." FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button x:Name="BtnRunLiveTest" Content="⚡ Test Face Unlock Now" Click="OnRunLiveBiometricTestClick" Style="{StaticResource MacPillButtonStyle}" Background="{StaticResource AccentCyanBrush}" Foreground="#FF000000" FontWeight="SemiBold" Padding="16,8" Margin="0,0,10,6"/>
+                                    <Button Content="Stop Test" Click="OnStopLiveBiometricTestClick" Style="{StaticResource MacPillButtonStyle}" Padding="14,8" Margin="0,0,0,6"/>
+                                </WrapPanel>
+
+                                <TextBlock x:Name="LiveTestResultText" Text="" FontFamily="Consolas" FontSize="11.5" Foreground="{StaticResource AccentGreenBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
                         <!-- Group 1: Match Confidence & Distance -->
                         <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16,14" Margin="0,0,0,12">
                             <StackPanel>
@@ -323,13 +340,26 @@
                                         <Image Source="Assets/neelx-logo.png" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality"/>
                                     </Grid>
                                 </Border>
-                                <TextBlock Text="Neel" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Active Biometric Profile · 9 Poses · 3D Facial Relief Stored" FontSize="12" Foreground="{StaticResource AccentGreenBrush}" HorizontalAlignment="Center" Margin="0,4,0,16"/>
+                                <TextBlock x:Name="EnrolledProfileNameText" Text="Neel" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="EnrolledProfileStatusText" Text="Active Biometric Profile · 512-D Spatial Topology Stored in DPAPI" FontSize="12" Foreground="{StaticResource AccentGreenBrush}" HorizontalAlignment="Center" Margin="0,4,0,16"/>
 
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="Re-enroll Face" Style="{StaticResource MacPillButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
-                                    <Button Content="Reset Biometrics" Style="{StaticResource MacPillButtonStyle}" Background="#FF331920" Foreground="{StaticResource AccentRedBrush}" Padding="16,8"/>
+                                    <Button x:Name="BtnEnrollFace" Content="Re-enroll Face" Click="OnStartEnrollmentClick" Style="{StaticResource MacPillButtonStyle}" Margin="0,0,10,0" Padding="16,8"/>
+                                    <Button x:Name="BtnResetBiometrics" Content="Reset Biometrics" Click="OnResetBiometricsClick" Style="{StaticResource MacPillButtonStyle}" Background="#FF331920" Foreground="{StaticResource AccentRedBrush}" Padding="16,8"/>
                                 </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Live Face Enrollment Card -->
+                        <Border x:Name="EnrollmentCard" Visibility="Collapsed" CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource AccentCyanBrush}" BorderThickness="1.5" Padding="18" Margin="0,0,0,14">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock x:Name="EnrollmentStatusPrompt" Text="Center your face inside the circle..." FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource AccentCyanBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                <Border Width="220" Height="220" CornerRadius="110" BorderBrush="{StaticResource AccentCyanBrush}" BorderThickness="2.5" ClipToBounds="True" HorizontalAlignment="Center" Background="#FF181920">
+                                    <Image x:Name="EnrollmentCameraFeed" Stretch="UniformToFill" Width="220" Height="220"/>
+                                </Border>
+                                <ProgressBar x:Name="EnrollmentProgressBar" Minimum="0" Maximum="5" Value="0" Height="6" Width="260" Margin="0,14,0,6" Foreground="{StaticResource AccentGreenBrush}"/>
+                                <TextBlock x:Name="EnrollmentStepText" Text="Step 0 of 5 · Keep steady facing camera" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                <Button Content="Cancel Enrollment" Click="OnCancelEnrollmentClick" Style="{StaticResource MacPillButtonStyle}" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="14,6"/>
                             </StackPanel>
                         </Border>
 
@@ -424,17 +454,22 @@
 
 
 
-                        <!-- Simulated Camera Viewfinder -->
-                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16" Height="220">
-                            <Grid>
-                                <Border Background="#FF181920" CornerRadius="10">
+                        <!-- Live Camera Viewfinder & Face Tracking -->
+                        <Border CornerRadius="14" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <TextBlock DockPanel.Dock="Left" Text="LIVE WEBCAM VIEW &amp; FACE TRACKING" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentCyanBrush}" VerticalAlignment="Center"/>
+                                    <Button x:Name="BtnToggleCamera" DockPanel.Dock="Right" Content="Start Live Camera Feed" Click="OnToggleCameraPreviewClick" Style="{StaticResource MacPillButtonStyle}" HorizontalAlignment="Right" Padding="14,6"/>
+                                </DockPanel>
+
+                                <Border Height="260" Background="#FF14151C" CornerRadius="10" ClipToBounds="True" BorderBrush="#25FFFFFF" BorderThickness="1">
                                     <Grid>
-                                        <!-- Face Oval Guide -->
-                                        <Ellipse Width="100" Height="130" Stroke="{StaticResource AccentCyanBrush}" StrokeThickness="1.5" StrokeDashArray="4,4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Camera Preview Ready · DirectShow RGB Stream" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16"/>
+                                        <Image x:Name="CameraPreviewImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="CameraPlaceholderText" Text="Camera Preview Inactive · Click 'Start Live Camera Feed' above" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="CameraFpsText" Text="" FontSize="11" FontFamily="Consolas" Foreground="{StaticResource AccentCyanBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,10"/>
                                     </Grid>
                                 </Border>
-                            </Grid>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
 
@@ -445,7 +480,7 @@
                                 <Image Source="Assets/neelx-logo.png" Width="64" Height="64" Margin="0,0,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 <TextBlock Text="NEELx" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Windows 11 Edition · Fluent Prism" FontSize="13" Foreground="{StaticResource AccentCyanBrush}" HorizontalAlignment="Center" Margin="0,2,0,4"/>
-                                <TextBlock Text="Version 2.0.0-beta.11 (x64 &amp; ARM64)" FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                                <TextBlock Text="Version 2.0.0-beta.12 (x64 &amp; ARM64)" FontSize="11.5" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
 
                                 <TextBlock Text="100% Offline 3D Biometric Face Unlock using standard webcams." FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
