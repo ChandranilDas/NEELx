@@ -16,6 +16,10 @@ final class SpaceKeyMonitor {
     /// Fires on key-down only, not release or auto-repeat.
     var onSpaceKeyDown: (() -> Void)?
 
+    /// Item #45: Fires when the user presses any standard alphanumeric or typing key while locked,
+    /// signalling manual password entry or Touch ID interaction to safely cancel in-flight face scans.
+    var onAnyKeyPressedWhileScanning: (() -> Void)?
+
     private var manager: IOHIDManager?
     private var pressedUsages = Set<UInt32>()
     static var selectedKey: String {
@@ -99,10 +103,16 @@ final class SpaceKeyMonitor {
             let element = IOHIDValueGetElement(value)
             guard IOHIDElementGetUsagePage(element) == UInt32(kHIDPage_KeyboardOrKeypad) else { return }
             let usage = IOHIDElementGetUsage(element)
-            guard [UInt32(224), 225, 226, 228, 229, 230].contains(usage) else { return }
             let isDown = IOHIDValueGetIntegerValue(value) != 0
             let monitor = Unmanaged<SpaceKeyMonitor>.fromOpaque(context).takeUnretainedValue()
-            Task { @MainActor in monitor.accept(usage: usage, isDown: isDown) }
+            Task { @MainActor in
+                if [UInt32(224), 225, 226, 228, 229, 230].contains(usage) {
+                    monitor.accept(usage: usage, isDown: isDown)
+                } else if isDown {
+                    // Item #45: Standard keypress (e.g. typing password) cancels in-flight scan
+                    monitor.onAnyKeyPressedWhileScanning?()
+                }
+            }
         }, context)
 
         IOHIDManagerScheduleWithRunLoop(mgr, CFRunLoopGetMain(), CFRunLoopMode.commonModes.rawValue)

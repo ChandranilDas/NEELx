@@ -321,6 +321,15 @@ struct RecognitionSettingsPage: View {
                                     Text(receipt.livenessCue)
                                         .font(.caption.weight(.medium))
                                 }
+
+                                GridRow {
+                                    Text("Depth Source:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(receipt.depthEvidenceType)
+                                        .font(.caption.weight(.medium))
+                                        .gridCellColumns(3)
+                                }
                             }
                         }
                         .padding(12)

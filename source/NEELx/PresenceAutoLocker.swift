@@ -42,6 +42,11 @@ final class PresenceAutoLocker {
             return
         }
 
+        // Items #32 & #53: Low Power Mode and Thermal Protection
+        if ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState == .critical {
+            return
+        }
+
         let now = Date()
         guard now.timeIntervalSince(lastCheckAt) >= recheckCooldown else { return }
 

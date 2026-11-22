@@ -117,6 +117,45 @@ final class CheckMySetupModel {
             action: cameraAction
         ))
 
+        // Clamshell Mode Check (Item #46)
+        let screens = NSScreen.screens
+        let hasExternalDisplay = screens.contains { screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return false }
+            return CGDisplayIsBuiltin(id) == 0
+        }
+        let hasBuiltinDisplay = screens.contains { screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return false }
+            return CGDisplayIsBuiltin(id) != 0
+        }
+        let isClamshell = hasExternalDisplay && !hasBuiltinDisplay
+        let isBuiltinCamera = activeDevice.lowercased().contains("facetime") || activeDevice.lowercased().contains("built-in")
+        if isClamshell && isBuiltinCamera {
+            results.append(DiagnosticRowData(
+                id: "clamshell",
+                title: "MacBook Lid Closed (Clamshell)",
+                iconName: "laptopcomputer.and.arrow.down",
+                status: .warning("Built-in Camera Occluded"),
+                detail: "Your MacBook lid is closed. To use Face Unlock at your desk, connect an external webcam or iPhone Continuity Camera.",
+                actionTitle: nil,
+                action: nil
+            ))
+        }
+
+        // Safe Mode Check (Item #64)
+        if environment.faceUnlockCoordinator.isSafeModeActive {
+            results.insert(DiagnosticRowData(
+                id: "safemode",
+                title: "Crash Recovery Safe Mode",
+                iconName: "exclamationmark.shield.fill",
+                status: .warning("Safe Mode Active"),
+                detail: "Face Unlock was temporarily paused after an unexpected lock-screen termination.",
+                actionTitle: "Reset Safe Mode",
+                action: {
+                    environment.faceUnlockCoordinator.clearSafeMode()
+                }
+            ), at: 0)
+        }
+
         // 2. Accessibility Permission
         let accessibilityGranted = AXIsProcessTrusted()
         let accessibilityStatus: DiagnosticStatus

@@ -9,9 +9,10 @@
 
 import Foundation
 import CoreGraphics
+import AppKit
 import Observation
 
-/// Item #33: Local "Last Unlock Receipt" — cryptographic/biometric telemetry of the most recent successful unlock.
+/// Items #33 & #12: Local "Last Unlock Receipt" — cryptographic/biometric telemetry of the most recent successful unlock.
 struct LastUnlockReceipt: Codable, Sendable, Equatable {
     let timestamp: Date
     let faceName: String
@@ -22,6 +23,7 @@ struct LastUnlockReceipt: Codable, Sendable, Equatable {
     let aneLatencyMs: Double?
     let livenessCue: String
     let isVisualOnly: Bool
+    var depthEvidenceType: String = "Estimated Neural 3D Depth (ANE)"
 }
 
 @Observable
@@ -59,6 +61,16 @@ final class FaceUnlockCoordinator {
     private(set) var statusMessage = "Idle"
     private(set) var lastOutcome: String?
 
+    /// Item #64: Safe Mode flag if previous lock-screen runs terminated abnormally
+    private(set) var isSafeModeActive: Bool = false
+
+    func clearSafeMode() {
+        isSafeModeActive = false
+        UserDefaults.standard.set(0, forKey: "NEELx.lockScanCrashCount")
+        UserDefaults.standard.set(false, forKey: "NEELx.scanInFlight")
+        statusMessage = "Safe Mode cleared. Face Unlock re-enabled."
+    }
+
     /// Reserved face name from visual-only match — shows welcome banner when macOS confirms sign-in (Item #38).
     private var pendingVisualOnlyWelcomeName: String?
 
@@ -88,6 +100,23 @@ final class FaceUnlockCoordinator {
         self.isEnabled = NEELxSettings.shared.isFaceUnlockEnabled
         self.matchThreshold = NEELxSettings.shared.matchThreshold
         spaceKeyMonitor.onSpaceKeyDown = { [weak self] in self?.handleSpaceKeyPress() }
+        // Item #45: Safe cancellation when user starts manual password typing
+        spaceKeyMonitor.onAnyKeyPressedWhileScanning = { [weak self] in self?.handleManualInputTakeover() }
+
+        // Item #64: Crash Recovery Safe Mode tracking
+        let wasInFlight = UserDefaults.standard.bool(forKey: "NEELx.scanInFlight")
+        UserDefaults.standard.set(false, forKey: "NEELx.scanInFlight")
+        var crashCount = UserDefaults.standard.integer(forKey: "NEELx.lockScanCrashCount")
+        if wasInFlight {
+            crashCount += 1
+            UserDefaults.standard.set(crashCount, forKey: "NEELx.lockScanCrashCount")
+        }
+        if crashCount >= 2 {
+            self.isSafeModeActive = true
+            self.isEnabled = false
+            statusMessage = "⚠️ Safe Mode: Auto-unlock paused after abnormal termination. Re-enable in Settings."
+        }
+
         observeLockAndWakeEvents()
         // Pre-warm Stage 3 Core ML Depth Anything V2 on ANE in background so lock-screen scans have zero cold-start lag.
         if NEELxSettings.shared.neuralDepthEnabled {
@@ -101,7 +130,34 @@ final class FaceUnlockCoordinator {
         }
     }
 
-    /// Item #33: Records cryptographic/biometric telemetry for the most recent unlock.
+    /// Item #45: Safe cancellation when user starts typing password manually on lock screen
+    private func handleManualInputTakeover() {
+        guard LockMonitor.isScreenActuallyLocked() else { return }
+        if showsUI && NotchOverlayController.shared.phase == .scanning {
+            statusMessage = "Manual password entry detected — scan paused"
+            disarmOverlay()
+        } else if !showsUI && camera.isRunning {
+            statusMessage = "Manual password entry detected — scan paused"
+            disarmOverlay()
+        }
+    }
+
+    /// Item #46: Returns true if the MacBook lid is closed while connected to an external display.
+    private static func isClamshellMode() -> Bool {
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else { return false }
+        let hasExternal = screens.contains { screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return false }
+            return CGDisplayIsBuiltin(id) == 0
+        }
+        let hasBuiltin = screens.contains { screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return false }
+            return CGDisplayIsBuiltin(id) != 0
+        }
+        return hasExternal && !hasBuiltin
+    }
+
+    /// Items #33 & #12: Records cryptographic/biometric telemetry for the most recent unlock.
     private func recordUnlockReceipt(
         name: String,
         similarity: Float,
@@ -111,6 +167,15 @@ final class FaceUnlockCoordinator {
         cue: LivenessCue?,
         isVisualOnly: Bool
     ) {
+        let depthKind: String
+        if depthReading != nil {
+            depthKind = "Estimated Neural 3D Depth (RGB-D via ANE)"
+        } else if cue == .neuralDepth3D {
+            depthKind = "Hardware TrueDepth (Measured Sensor)"
+        } else {
+            depthKind = "Reliable Depth Unavailable (2D Biometric)"
+        }
+
         let receipt = LastUnlockReceipt(
             timestamp: Date(),
             faceName: name,
@@ -120,7 +185,8 @@ final class FaceUnlockCoordinator {
             depthProfileMatchPercent: profileSimilarity.map { Int(($0 * 100).rounded()) },
             aneLatencyMs: depthReading?.inferenceMs,
             livenessCue: depthReading != nil ? "3D Neural Depth (ANE)" : (cue?.title ?? "Attention & Gaze"),
-            isVisualOnly: isVisualOnly
+            isVisualOnly: isVisualOnly,
+            depthEvidenceType: depthKind
         )
         self.latestReceipt = receipt
         if let data = try? JSONEncoder().encode(receipt) {
@@ -169,6 +235,26 @@ final class FaceUnlockCoordinator {
             hasArmedForCurrentLock = false
             disarmOverlay()
             return
+        }
+
+        // Item #64: Safe Mode check
+        if isSafeModeActive {
+            statusMessage = "Face Unlock disarmed in Safe Mode"
+            hasArmedForCurrentLock = false
+            disarmOverlay()
+            return
+        }
+
+        // Item #46: Clamshell Mode awareness — do not attempt scanning with built-in camera if lid is closed
+        if Self.isClamshellMode() {
+            let cameraName = camera.currentDeviceName.lowercased()
+            let isBuiltinCamera = cameraName.contains("facetime") || cameraName.contains("built-in")
+            if isBuiltinCamera {
+                statusMessage = "MacBook lid is closed (Clamshell mode) — external camera required."
+                hasArmedForCurrentLock = false
+                disarmOverlay()
+                return
+            }
         }
 
         // `.wake` (sleep, display sleep, or screensaver stopping) is an explicit "let me back in," so clear the one-shot guard.
@@ -325,7 +411,14 @@ final class FaceUnlockCoordinator {
     /// of itself. This was a real bug — a superseded `camera.stop()` queued behind the newer cycle's `startRunning()` made the
     /// camera visibly switch on then die mid-warm-up, leaving the surviving cycle polling a dead session and never unlocking.
     private func runScanCycle(generation: Int) async {
-        guard !lockMonitor.isSleeping, isEnabled, LockMonitor.isScreenActuallyLocked() else { return }
+        guard !lockMonitor.isSleeping, isEnabled, !isSafeModeActive, LockMonitor.isScreenActuallyLocked() else { return }
+
+        // Item #64: Mark scan in flight for crash recovery safe mode
+        UserDefaults.standard.set(true, forKey: "NEELx.scanInFlight")
+        defer {
+            UserDefaults.standard.set(false, forKey: "NEELx.scanInFlight")
+            UserDefaults.standard.set(0, forKey: "NEELx.lockScanCrashCount")
+        }
 
         // Item #38: Visual-only mode does not require stored password or unlocked credential session
         let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
