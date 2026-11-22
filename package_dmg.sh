@@ -165,6 +165,17 @@ hdiutil create \
 
 rm -rf "$STAGE_DIR"
 
+# Clean up local unbundled staging app so Spotlight never indexes it
+if [ -d "$SCRIPT_DIR/NEELx.app" ]; then
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$SCRIPT_DIR/NEELx.app" 2>/dev/null || true
+    rm -rf "$SCRIPT_DIR/NEELx.app"
+fi
+
+# Automatically clean up older release DMGs so only the latest build exists
+if [ -d "$SCRIPT_DIR/releases" ]; then
+    find "$SCRIPT_DIR/releases" -name "NEELx-v*.dmg" ! -name "$DMG_NAME" -delete 2>/dev/null || true
+fi
+
 # 4. Optional Apple Notarization (requires `xcrun notarytool store-credentials` profile)
 if [[ "$DO_NOTARIZE" == "true" ]]; then
     NOTARY_PROFILE="${NOTARY_PROFILE:-neelx-notary}"

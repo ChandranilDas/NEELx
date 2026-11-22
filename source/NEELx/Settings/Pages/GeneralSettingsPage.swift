@@ -146,8 +146,8 @@ struct GeneralSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
-                    title: "Edge Light Screen Halo (macOS Sequoia Style)",
-                    subtitle: "Illuminates your face with a soft, rounded glowing perimeter ring light in dark rooms, matching macOS Sequoia's native Video Effects."
+                    title: "Studio Light Screen Halo",
+                    subtitle: "Silky feathered rounded border light with soft atmospheric radial glow for low-light face illumination."
                 ) {
                     HStack(spacing: 10) {
                         SettingsActionButton(title: "Preview") {
@@ -159,7 +159,7 @@ struct GeneralSettingsPage: View {
                 if scanLightEnabled {
                     SettingsGroupDivider()
                     SettingsRowContent(
-                        title: "Edge Light Color Temperature",
+                        title: "Studio Light Color Temperature",
                         subtitle: settings.edgeLightWarmth < 0.3 ? "Warm Amber (3000K)" : (settings.edgeLightWarmth > 0.7 ? "Cool Studio White (6500K)" : "Neutral TrueTone (4800K)")
                     ) {
                         Slider(value: $settings.edgeLightWarmth, in: 0.0...1.0)
@@ -167,8 +167,8 @@ struct GeneralSettingsPage: View {
                     }
                     SettingsGroupDivider()
                     SettingsRowContent(
-                        title: "Edge Light Softbox Width",
-                        subtitle: "\(Int(settings.edgeLightThickness)) pt pillowy perimeter border"
+                        title: "Softbox Glow Spread",
+                        subtitle: "\(Int(settings.edgeLightThickness)) pt feathered softbox rim"
                     ) {
                         Slider(value: $settings.edgeLightThickness, in: 70.0...140.0, step: 5.0)
                             .frame(width: 130)

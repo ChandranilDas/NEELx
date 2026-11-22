@@ -368,10 +368,9 @@ private enum DisplayBrightnessBridge {
     }
 }
 
-/// macOS Sequoia Edge Light Perimeter Softbox & Siri-Grade Spectral Chromatic Rim:
-/// Draws a thick, luminous, pillowy rounded-display border ring light around the screen edges
-/// (leaving the entire screen center completely crystal-clear and transparent) matching macOS Sequoia's
-/// native Video Effects "Edge Light". Provides studio-grade low-light face illumination and reflective anti-spoofing.
+/// Luxury Apple Studio Light perimeter softbox & Siri-grade spectral chromatic rim:
+/// draws a silky feathered rounded-display border light (crystal-clear screen center, luminous
+/// multi-layered edge bloom + delicate hairline specular lip) with zero boxy edges or harsh neon slabs.
 @MainActor
 private final class ScanLightHaloView: NSView {
     var intensity: CGFloat = 0.4
@@ -384,72 +383,85 @@ private final class ScanLightHaloView: NSView {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         ctx.clear(bounds)
 
-        let settings = NEELxSettings.shared
-        let thickness: CGFloat = min(max(CGFloat(settings.edgeLightThickness), 65), 150)
-        let warmth: Double = min(max(settings.edgeLightWarmth, 0.0), 1.0)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
         let isChallenge = challengeColor != nil
+        let settings = NEELxSettings.shared
 
-        // Compute edge light color temperature:
-        // Warm Amber 3000K -> TrueTone Neutral 4800K -> Cool Studio 6500K
-        let lightColor: NSColor
+        // User warmth slider: 0.0 = Warm Amber 3000K, 0.5 = TrueTone Champagne Ivory 4800K, 1.0 = Cool Studio 6500K
+        let primaryColor: NSColor
+        let secondaryColor: NSColor
         if let challengeColor {
-            lightColor = challengeColor.blended(withFraction: 0.15, of: .white) ?? challengeColor
+            primaryColor = challengeColor.blended(withFraction: 0.12, of: .white) ?? challengeColor
+            secondaryColor = challengeColor.blended(withFraction: 0.28, of: .white) ?? challengeColor
         } else {
+            let warmth = CGFloat(min(max(settings.edgeLightWarmth, 0.0), 1.0))
             if warmth <= 0.5 {
-                let t = CGFloat(warmth / 0.5)
-                let r = CGFloat(1.0)
-                let g = CGFloat(0.88 + t * 0.08) // 0.88 -> 0.96
-                let b = CGFloat(0.70 + t * 0.20) // 0.70 -> 0.90
-                lightColor = NSColor(calibratedRed: r, green: g, blue: b, alpha: 1.0)
+                let t = warmth / 0.5
+                let r: CGFloat = 1.0
+                let g: CGFloat = 0.92 + t * 0.048 // 0.92 -> 0.968
+                let b: CGFloat = 0.82 + t * 0.095 // 0.82 -> 0.915
+                primaryColor = NSColor(calibratedRed: r, green: g, blue: b, alpha: 1.0)
+                secondaryColor = NSColor(calibratedRed: 1.0, green: min(1.0, g + 0.017), blue: min(1.0, b + 0.040), alpha: 1.0)
             } else {
-                let t = CGFloat((warmth - 0.5) / 0.5)
-                let r = CGFloat(1.0 - t * 0.06)  // 1.00 -> 0.94
-                let g = CGFloat(0.96 + t * 0.02) // 0.96 -> 0.98
-                let b = CGFloat(0.90 + t * 0.10) // 0.90 -> 1.00
-                lightColor = NSColor(calibratedRed: r, green: g, blue: b, alpha: 1.0)
+                let t = (warmth - 0.5) / 0.5
+                let r: CGFloat = 1.0 - t * 0.05   // 1.0 -> 0.95
+                let g: CGFloat = 0.968 + t * 0.012 // 0.968 -> 0.98
+                let b: CGFloat = 0.915 + t * 0.085 // 0.915 -> 1.00
+                primaryColor = NSColor(calibratedRed: r, green: g, blue: b, alpha: 1.0)
+                secondaryColor = NSColor(calibratedRed: min(1.0, r + 0.02), green: min(1.0, g + 0.01), blue: 1.0, alpha: 1.0)
             }
         }
 
-        // Inner clear aperture with generous rounded corners (corner radius 56pt)
-        let cornerRadius: CGFloat = 56
-        let innerRect = bounds.insetBy(dx: thickness, dy: thickness)
-        guard innerRect.width > 80, innerRect.height > 80 else { return }
+        // 1. Soft atmospheric radial falloff (keeps Studio Light center crystal clear;
+        //    gives the brief Chromatic Flash enough uniform spectral fill to register reliably)
+        let c0: CGFloat = isChallenge ? 0.22 : (forEnrollment ? 0.0 : intensity * 0.03)
+        let c1: CGFloat = isChallenge ? 0.36 : (forEnrollment ? intensity * 0.06 : intensity * 0.12)
+        let c2: CGFloat = isChallenge ? 0.62 : (forEnrollment ? intensity * 0.28 : intensity * 0.44)
+        let c3: CGFloat = isChallenge ? 0.90 : min(0.86, 0.34 + intensity * 0.48)
 
-        ctx.saveGState()
+        let colors = [
+            primaryColor.withAlphaComponent(c0).cgColor,
+            primaryColor.withAlphaComponent(c1).cgColor,
+            primaryColor.withAlphaComponent(c2).cgColor,
+            primaryColor.withAlphaComponent(c3).cgColor,
+        ] as CFArray
 
-        // 1. Clip out the inner clear aperture so the center of the screen remains 100% transparent
-        let outerPath = CGMutablePath()
-        outerPath.addRect(bounds)
-        let innerPath = CGPath(roundedRect: innerRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-        outerPath.addPath(innerPath)
-        ctx.addPath(outerPath)
-        ctx.clip(using: .evenOdd)
+        if let gradient = CGGradient(
+            colorsSpace: colorSpace,
+            colors: colors,
+            locations: [0.0, 0.48, 0.80, 1.0]
+        ) {
+            let center = CGPoint(x: bounds.midX, y: bounds.midY)
+            let outerRadius = hypot(bounds.width * 0.5, bounds.height * 0.5)
+            let innerRadius = min(bounds.width, bounds.height) * 0.28
 
-        // 2. Draw the luminous perimeter softbox glow band
-        let effectiveIntensity: CGFloat = isChallenge ? 0.95 : min(1.0, max(0.25, intensity * CGFloat(settings.edgeLightBrightness)))
-        let baseAlpha: CGFloat = isChallenge ? 0.90 : (forEnrollment ? 0.70 : 0.84) * effectiveIntensity
+            ctx.drawRadialGradient(
+                gradient,
+                startCenter: center,
+                startRadius: innerRadius,
+                endCenter: center,
+                endRadius: outerRadius,
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+        }
 
-        ctx.setFillColor(lightColor.withAlphaComponent(baseAlpha).cgColor)
-        ctx.fill(bounds)
+        // 2. Sculpted rounded-display Studio Light softbox rim (concentrates clean illumination around the bezel)
+        // User thickness scale (default ~100pt, adjustable from 70pt to 140pt)
+        let widthScale = CGFloat(settings.edgeLightThickness / 100.0)
+        let cornerRadius: CGFloat = 28
+        let rimLayers: [(inset: CGFloat, width: CGFloat, alpha: CGFloat)] = isChallenge
+            ? [(6, 18 * widthScale, 0.42), (16, 36 * widthScale, 0.24), (32, 68 * widthScale, 0.12)]
+            : [(6, 16 * widthScale, min(0.55, 0.20 + intensity * 0.35)),
+               (18, 38 * widthScale, min(0.32, 0.10 + intensity * 0.22)),
+               (38, 76 * widthScale, min(0.16, 0.05 + intensity * 0.11))]
 
-        ctx.restoreGState()
-
-        // 3. Feather the inner rim with smooth soft strokes so there is zero harsh edge
-        // Feathered layers transitioning from the glowing border into the clear center aperture
-        let featherLayers: [(insetDelta: CGFloat, width: CGFloat, alphaRatio: CGFloat)] = [
-            (0, 10, 0.45),
-            (6, 18, 0.32),
-            (14, 30, 0.20),
-            (26, 46, 0.10)
-        ]
-
-        for layer in featherLayers {
-            let featherRect = innerRect.insetBy(dx: -layer.insetDelta, dy: -layer.insetDelta)
-            let featherRadius = max(cornerRadius - layer.insetDelta, 20)
-            let path = CGPath(roundedRect: featherRect, cornerWidth: featherRadius, cornerHeight: featherRadius, transform: nil)
+        for layer in rimLayers {
+            let rect = bounds.insetBy(dx: layer.inset, dy: layer.inset)
+            guard rect.width > 40, rect.height > 40 else { continue }
+            let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
             ctx.saveGState()
             ctx.addPath(path)
-            ctx.setStrokeColor(lightColor.withAlphaComponent(baseAlpha * layer.alphaRatio).cgColor)
+            ctx.setStrokeColor(secondaryColor.withAlphaComponent(layer.alpha).cgColor)
             ctx.setLineWidth(layer.width)
             ctx.strokePath()
             ctx.restoreGState()

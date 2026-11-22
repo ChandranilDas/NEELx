@@ -196,6 +196,13 @@ if [[ "$DO_INSTALL" == "true" ]]; then
     xattr -cr /Applications/NEELx.app 2>/dev/null || true
     codesign --force --sign "$SIGN_IDENTITY" --options runtime --strip-disallowed-xattrs \
         --entitlements "$SRC_DIR/NEELx.entitlements" /Applications/NEELx.app
+
+    # Clean up local workspace copy so Spotlight and LaunchServices never see duplicate NEELx.app bundles
+    if [ -d "$APP_BUNDLE" ]; then
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP_BUNDLE" 2>/dev/null || true
+        rm -rf "$APP_BUNDLE"
+    fi
+
     /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R -trusted /Applications/NEELx.app 2>/dev/null || true
     mdimport /Applications/NEELx.app 2>/dev/null || true
     rm -rf "$STAGE_BUNDLE"
