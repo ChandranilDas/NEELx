@@ -41,12 +41,41 @@ final class CameraManager: NSObject {
     private let videoOutput = AVCaptureVideoDataOutput()
     private let sessionQueue = DispatchQueue(label: "local.neelx.camera.session")
 
+    /// Dual-path companion capture session for Mac's built-in webcam when phone/tablet is primary
+    private let companionSession = AVCaptureSession()
+    private let companionVideoOutput = AVCaptureVideoDataOutput()
+    private var companionInput: AVCaptureDeviceInput?
+    private let companionPublisher = FramePublisher()
+    private var isCompanionConfigured = false
+    private(set) var isDualPathActive = false
+
     /// Handed to the delegate outside the actor; only ever touched via `Task { @MainActor ... }`.
     private let framePublisher = FramePublisher()
+
+    /// Watchdog task for Continuity Camera latency fallback
+    private var continuityWatchdogTask: Task<Void, Never>?
+    private var receivedFirstFrame = false
 
     override init() {
         super.init()
         framePublisher.owner = self
+        companionPublisher.owner = self
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSessionInterruption(_:)),
+            name: AVCaptureSession.wasInterruptedNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleSessionInterruption(_ notification: Notification) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if self.currentInput?.device.deviceType == .continuityCamera {
+                self.fallbackToBuiltInCamera(reason: "Continuity Camera interrupted by device")
+            }
+        }
     }
 
     func start() async {
@@ -70,21 +99,45 @@ final class CameraManager: NSObject {
         }
 
         errorMessage = nil
+        receivedFirstFrame = false
         configureSessionIfNeeded()
         reconcileDeviceIfNeeded()
+        reconcileCompanionSessionIfNeeded()
 
-        sessionQueue.async { [session] in
+        let dualActive = isDualPathActive
+        sessionQueue.async { [session, companionSession] in
             if !session.isRunning {
                 session.startRunning()
             }
+            if dualActive && !companionSession.isRunning {
+                companionSession.startRunning()
+            }
         }
         isRunning = true
+
+        // Fast watchdog for Continuity Camera: if no frame arrives within 850ms,
+        // seamlessly fall back to the built-in webcam so user is never locked out
+        if currentInput?.device.deviceType == .continuityCamera {
+            continuityWatchdogTask?.cancel()
+            continuityWatchdogTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .milliseconds(850))
+                guard let self, self.isRunning, !self.receivedFirstFrame else { return }
+                if self.currentInput?.device.deviceType == .continuityCamera {
+                    self.fallbackToBuiltInCamera(reason: "Continuity Camera delayed (>850ms)")
+                }
+            }
+        }
     }
 
     func stop() {
-        sessionQueue.async { [session] in
+        continuityWatchdogTask?.cancel()
+        continuityWatchdogTask = nil
+        sessionQueue.async { [session, companionSession] in
             if session.isRunning {
                 session.stopRunning()
+            }
+            if companionSession.isRunning {
+                companionSession.stopRunning()
             }
         }
         isRunning = false
@@ -165,7 +218,75 @@ final class CameraManager: NSObject {
     }
 
     fileprivate func publish(frame: CameraFrame) {
+        receivedFirstFrame = true
+        continuityWatchdogTask?.cancel()
+        continuityWatchdogTask = nil
         currentFrame = frame
+    }
+
+    /// Sets up the secondary companion capture session on the built-in webcam when dual-path unlock is enabled.
+    private func reconcileCompanionSessionIfNeeded() {
+        guard NEELxSettings.shared.dualCameraConcurrentUnlock,
+              let current = currentInput?.device,
+              current.deviceType == .continuityCamera || current.deviceType == .external
+        else {
+            isDualPathActive = false
+            return
+        }
+
+        guard let builtIn = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
+            isDualPathActive = false
+            return
+        }
+
+        if !isCompanionConfigured {
+            isCompanionConfigured = true
+            companionSession.beginConfiguration()
+            companionSession.sessionPreset = .high
+            companionVideoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+            companionVideoOutput.alwaysDiscardsLateVideoFrames = true
+            companionVideoOutput.setSampleBufferDelegate(companionPublisher, queue: sessionQueue)
+            if companionSession.canAddOutput(companionVideoOutput) {
+                companionSession.addOutput(companionVideoOutput)
+            }
+            companionSession.commitConfiguration()
+        }
+
+        if companionInput?.device.uniqueID != builtIn.uniqueID {
+            companionSession.beginConfiguration()
+            if let companionInput {
+                companionSession.removeInput(companionInput)
+            }
+            if let input = try? AVCaptureDeviceInput(device: builtIn), companionSession.canAddInput(input) {
+                companionSession.addInput(input)
+                companionInput = input
+                selectHighestResolutionFormat(for: builtIn)
+                isDualPathActive = true
+            } else {
+                companionInput = nil
+                isDualPathActive = false
+            }
+            companionSession.commitConfiguration()
+        } else {
+            isDualPathActive = true
+        }
+    }
+
+    /// Seamless fallback to built-in webcam if Continuity Camera stalls or is interrupted
+    private func fallbackToBuiltInCamera(reason: String) {
+        guard let builtIn = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) ?? AVCaptureDevice.default(for: .video) else { return }
+        guard builtIn.uniqueID != currentInput?.device.uniqueID else { return }
+
+        session.beginConfiguration()
+        if let currentInput {
+            session.removeInput(currentInput)
+        }
+        if let input = try? AVCaptureDeviceInput(device: builtIn), session.canAddInput(input) {
+            session.addInput(input)
+            currentInput = input
+            selectHighestResolutionFormat(for: builtIn)
+        }
+        session.commitConfiguration()
     }
 
     /// Renders a native-resolution crop of `imageRect` from `frame.source`, for spoof-cue extraction which

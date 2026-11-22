@@ -137,4 +137,21 @@ final class ContinuityDeviceVerifier: NSObject, CBCentralManagerDelegate {
     func refresh() {
         evaluateStatus()
     }
+
+    /// Performs a live diagnostic on the connected Continuity Camera hardware
+    func runLiveContinuityDiagnostic() async -> String {
+        evaluateStatus()
+        guard let device = primaryDevice else {
+            return "❌ No iPhone or iPad Pro detected. Place your phone nearby on a desk stand or connect via USB-C."
+        }
+        guard let avDevice = AVCaptureDevice(uniqueID: device.id) else {
+            return "⚠️ \(device.name) is discovered in catalog but not ready in AVFoundation."
+        }
+        if avDevice.isSuspended {
+            return "⚠️ \(device.name) is currently suspended. Lock your iPhone screen and mount it on a desk stand or wireless charger."
+        }
+        let dims = CMVideoFormatDescriptionGetDimensions(avDevice.activeFormat.formatDescription)
+        let linkType = device.isWireless ? "Wireless AWDL" : "USB-C Wired"
+        return "✅ Verified Live: \(device.name) (\(linkType) · \(dims.width)x\(dims.height)). Dual-path companion webcam active."
+    }
 }

@@ -278,8 +278,8 @@ struct SettingsActionRowContent: View {
     }
 }
 
-/// The accent pill button both action-row flavors above render.
-private struct SettingsActionButton: View {
+/// The accent pill button both action-row flavors render, available throughout Settings.
+struct SettingsActionButton: View {
     let title: String
     var isDestructive: Bool = false
     var isEnabled: Bool = true

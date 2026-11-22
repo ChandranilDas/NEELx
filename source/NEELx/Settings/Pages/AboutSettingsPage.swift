@@ -108,12 +108,12 @@ struct AboutSettingsPage: View {
                         .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                     }
-                    Button(updater.canCheckForUpdates ? "Check" : "Checking…") {
+                    SettingsActionButton(
+                        title: updater.canCheckForUpdates ? "Check" : "Checking…",
+                        isEnabled: updater.canCheckForUpdates
+                    ) {
                         updater.checkForUpdates()
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(!updater.canCheckForUpdates)
                 }
             }
 

@@ -13,6 +13,7 @@ struct CameraSettingsPage: View {
     @State private var proximityGuard = DeviceProximityGuard.shared
     @State private var previewCamera = CameraManager()
     @State private var isPreviewShown = false
+    @State private var liveTestStatus: String? = nil
 
     @State private var isUnlocking = false
     @State private var sessionError: String?
@@ -143,6 +144,22 @@ struct CameraSettingsPage: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineSpacing(2)
+
+                    if verifier.isRequirementsMet {
+                        HStack(spacing: 8) {
+                            SettingsActionButton(title: "Test Live Link") {
+                                Task {
+                                    liveTestStatus = await verifier.runLiveContinuityDiagnostic()
+                                }
+                            }
+                            if let liveTestStatus {
+                                Text(liveTestStatus)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.green)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
                 }
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: SettingsMetrics.rowRadius).fill(SettingsMetrics.rowColor))

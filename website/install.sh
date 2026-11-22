@@ -11,7 +11,7 @@
 set -euo pipefail
 
 REPO="ChandranilDas/NEELx"
-FALLBACK_VERSION="v2.0.0-beta.16"
+FALLBACK_VERSION="v2.0.0-beta.17"
 APP_NAME="NEELx"
 TARGET_APP="/Applications/${APP_NAME}.app"
 

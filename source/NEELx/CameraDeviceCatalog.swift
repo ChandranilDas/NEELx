@@ -76,7 +76,7 @@ enum CameraDeviceCatalog {
                 mediaType: .video,
                 position: .unspecified
             )
-            if settings.allowContinuityCamera, let continuity = discovery.devices.first(where: { $0.deviceType == .continuityCamera }) {
+            if settings.allowContinuityCamera, let continuity = discovery.devices.first(where: { $0.deviceType == .continuityCamera && $0.isConnected && !$0.isSuspended }) {
                 return continuity
             } else if clamshell, let external = discovery.devices.first {
                 return external

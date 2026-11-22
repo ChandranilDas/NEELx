@@ -171,6 +171,9 @@ final class NEELxSettings {
         static let strictSecurityMode = "NEELxSettings.strictSecurityMode"
         static let experimentalEnsembleEnabled = "NEELxSettings.experimentalEnsembleEnabled"
         static let antiSpoofSensitivity = "NEELxSettings.antiSpoofSensitivity"
+        static let edgeLightWarmth = "NEELxSettings.edgeLightWarmth"
+        static let edgeLightThickness = "NEELxSettings.edgeLightThickness"
+        static let edgeLightBrightness = "NEELxSettings.edgeLightBrightness"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -221,6 +224,18 @@ final class NEELxSettings {
     /// Active Chromatic Flash Challenge to defeat 4K video replay attacks.
     var chromaticFlashEnabled: Bool {
         didSet { defaults.set(chromaticFlashEnabled, forKey: Key.chromaticFlashEnabled) }
+    }
+    /// Color warmth of the Edge Light perimeter halo (0.0 = Warm Amber 3000K, 0.5 = Neutral 4800K, 1.0 = Cool Studio 6500K).
+    var edgeLightWarmth: Double {
+        didSet { defaults.set(edgeLightWarmth, forKey: Key.edgeLightWarmth) }
+    }
+    /// Width/thickness of the perimeter softbox ribbon in points (65.0 ... 150.0 pt).
+    var edgeLightThickness: Double {
+        didSet { defaults.set(edgeLightThickness, forKey: Key.edgeLightThickness) }
+    }
+    /// Maximum luminance intensity multiplier for the Edge Light (0.4 ... 1.0).
+    var edgeLightBrightness: Double {
+        didSet { defaults.set(edgeLightBrightness, forKey: Key.edgeLightBrightness) }
     }
     /// Encrypted local audit log for unlock and blocked intruder/spoof events.
     var intruderLogEnabled: Bool {
@@ -499,6 +514,9 @@ final class NEELxSettings {
         allowContinuityCamera = defaults.bool(forKey: Key.allowContinuityCamera)
         dualCameraConcurrentUnlock = defaults.bool(forKey: Key.dualCameraConcurrentUnlock)
         deviceProximityGuardEnabled = defaults.bool(forKey: Key.deviceProximityGuardEnabled)
+        edgeLightWarmth = defaults.object(forKey: Key.edgeLightWarmth) as? Double ?? 0.35
+        edgeLightThickness = defaults.object(forKey: Key.edgeLightThickness) as? Double ?? 105.0
+        edgeLightBrightness = defaults.object(forKey: Key.edgeLightBrightness) as? Double ?? 0.88
         let storedPresenceDelay = defaults.object(forKey: Key.presenceAutoLockSeconds) as? Int ?? 60
         presenceAutoLockSeconds = [30, 60, 120, 300].contains(storedPresenceDelay) ? storedPresenceDelay : 60
         // Matches `DetectionDistanceLevel.standard` — see RecognitionSettingsPage.swift.
@@ -637,6 +655,9 @@ final class NEELxSettings {
         strictSecurityMode = false
         experimentalEnsembleEnabled = false
         antiSpoofSensitivity = "standard"
+        edgeLightWarmth = 0.35
+        edgeLightThickness = 105.0
+        edgeLightBrightness = 0.88
         FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
     }
 }

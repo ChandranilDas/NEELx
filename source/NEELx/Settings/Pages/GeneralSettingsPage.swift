@@ -146,16 +146,32 @@ struct GeneralSettingsPage: View {
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(
-                    title: "Adaptive Studio Light illumination",
-                    subtitle: "Smoothly raises screen brightness and a warm perimeter Studio Light rim in dark or backlit rooms, then restores your original brightness."
+                    title: "Edge Light Screen Halo (macOS Sequoia Style)",
+                    subtitle: "Illuminates your face with a soft, rounded glowing perimeter ring light in dark rooms, matching macOS Sequoia's native Video Effects."
                 ) {
                     HStack(spacing: 10) {
-                        Button("Preview") {
+                        SettingsActionButton(title: "Preview") {
                             ScanLightingController.previewStudioLight()
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
                         NEELxToggle(isOn: $scanLightEnabled)
+                    }
+                }
+                if scanLightEnabled {
+                    SettingsGroupDivider()
+                    SettingsRowContent(
+                        title: "Edge Light Color Temperature",
+                        subtitle: settings.edgeLightWarmth < 0.3 ? "Warm Amber (3000K)" : (settings.edgeLightWarmth > 0.7 ? "Cool Studio White (6500K)" : "Neutral TrueTone (4800K)")
+                    ) {
+                        Slider(value: $settings.edgeLightWarmth, in: 0.0...1.0)
+                            .frame(width: 130)
+                    }
+                    SettingsGroupDivider()
+                    SettingsRowContent(
+                        title: "Edge Light Softbox Width",
+                        subtitle: "\(Int(settings.edgeLightThickness)) pt pillowy perimeter border"
+                    ) {
+                        Slider(value: $settings.edgeLightThickness, in: 70.0...140.0, step: 5.0)
+                            .frame(width: 130)
                     }
                 }
                 SettingsGroupDivider()
