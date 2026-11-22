@@ -57,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var sessionMenuItem: NSMenuItem?
     /// Item #31: Travel Mode pause / resume menu item.
     private var travelModeMenuItem: NSMenuItem?
+    /// Item #40: Camera activity reason menu item.
+    private var cameraStatusMenuItem: NSMenuItem?
     /// Bridges SwiftUI's `openWindow(\.settings)` action in from `NEELxApp.body`, since this plain `NSObject` has no
     /// `@Environment` of its own. Bound from the scene body (not `onAppear`) so it's ready before Settings has ever shown —
     /// `NSApp.windows` stops containing the window once fully closed, so only `openWindow(id:)` can reliably re-create it.
@@ -102,6 +104,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let travelItem = NSMenuItem(title: "Travel Mode", action: nil, keyEquivalent: "")
         menu.addItem(travelItem)
         travelModeMenuItem = travelItem
+
+        let cameraItem = NSMenuItem(title: "Camera: Standby (Idle)", action: nil, keyEquivalent: "")
+        menu.addItem(cameraItem)
+        cameraStatusMenuItem = cameraItem
 
         let settingsItem = NSMenuItem(title: "Settings", action: #selector(openSettingsWindow), keyEquivalent: ",")
         settingsItem.target = self
@@ -268,6 +274,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         updateSessionMenuItem()
         updateTravelModeMenuItem()
+        updateCameraStatusMenuItem()
+    }
+
+    /// Item #40: Shows transparently why the camera is being accessed (or confirms standby).
+    private func updateCameraStatusMenuItem() {
+        guard let cameraStatusMenuItem else { return }
+        let state = CameraActivityMonitor.shared.state
+        cameraStatusMenuItem.title = "Camera: \(state.title)"
+        cameraStatusMenuItem.image = NSImage(
+            systemSymbolName: state.isActive ? "video.fill" : "video.slash",
+            accessibilityDescription: nil
+        )
     }
 
     private func updateTravelModeMenuItem() {

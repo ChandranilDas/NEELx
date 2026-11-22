@@ -55,6 +55,13 @@ final class POCController {
         isSessionUnlocked = false
     }
 
+    /// Item #42: Deletes only the stored password, revoking automatic password injection
+    /// while leaving enrolled face biometric profiles and session authorization intact.
+    func forgetPasswordOnly() throws {
+        try SecureCredentialManager.deleteOnlyPassword()
+        refreshCredentialStatus()
+    }
+
     // MARK: - Setup flow
 
     /// Encrypts and stores `passwordInput`. Requires the session to already

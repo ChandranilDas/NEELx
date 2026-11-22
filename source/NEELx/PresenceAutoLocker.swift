@@ -55,7 +55,11 @@ final class PresenceAutoLocker {
 
         isChecking = true
         lastCheckAt = now
-        defer { isChecking = false }
+        CameraActivityMonitor.shared.update(to: .presenceCheck)
+        defer {
+            isChecking = false
+            CameraActivityMonitor.shared.update(to: .standby)
+        }
 
         let camera = CameraManager()
         await camera.start()

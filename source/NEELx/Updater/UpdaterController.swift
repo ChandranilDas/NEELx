@@ -248,6 +248,21 @@ final class UpdaterController {
                 let newApp = mountDir.appendingPathComponent("NEELx.app")
                 guard FileManager.default.fileExists(atPath: newApp.path) else { return false }
 
+                // Item #1: Verify app identity and cryptographic code signature before replacement
+                let infoPlistPath = newApp.appendingPathComponent("Contents/Info.plist").path
+                guard let infoDict = NSDictionary(contentsOfFile: infoPlistPath),
+                      let bundleID = infoDict["CFBundleIdentifier"] as? String,
+                      bundleID == "local.neelx" else {
+                    return false
+                }
+
+                let verify = Process()
+                verify.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+                verify.arguments = ["--verify", "--deep", "--strict", newApp.path]
+                try? verify.run()
+                verify.waitUntilExit()
+                guard verify.terminationStatus == 0 else { return false }
+
                 // Replace currently running bundle (defaulting to /Applications/NEELx.app)
                 let currentApp = Bundle.main.bundleURL.path.hasSuffix(".app")
                     ? Bundle.main.bundleURL
@@ -276,6 +291,10 @@ final class UpdaterController {
                 do {
                     if FileManager.default.fileExists(atPath: currentApp.path) {
                         try FileManager.default.moveItem(at: currentApp, to: backupApp)
+                        // Retain rollback copy until the replacement launches successfully (Item #1)
+                        let rollbackURL = URL(fileURLWithPath: "/tmp/NEELx_rollback.app")
+                        try? FileManager.default.removeItem(at: rollbackURL)
+                        try? FileManager.default.copyItem(at: backupApp, to: rollbackURL)
                     }
                     try FileManager.default.moveItem(at: stagingApp, to: currentApp)
                     try? FileManager.default.removeItem(at: backupApp)

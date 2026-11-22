@@ -352,13 +352,22 @@ final class FaceUnlockCoordinator {
             return
         }
 
+        CameraActivityMonitor.shared.update(to: .scanningToUnlock)
         await camera.start()
-        guard generation == scanGeneration else { return }
-        guard !lockMonitor.isSleeping, LockMonitor.isScreenActuallyLocked() else { camera.stop(); return }
+        guard generation == scanGeneration else {
+            CameraActivityMonitor.shared.update(to: .standby)
+            return
+        }
+        guard !lockMonitor.isSleeping, LockMonitor.isScreenActuallyLocked() else {
+            camera.stop()
+            CameraActivityMonitor.shared.update(to: .standby)
+            return
+        }
 
         if let error = camera.errorMessage {
             statusMessage = error
             camera.stop()
+            CameraActivityMonitor.shared.update(to: .standby)
             return
         }
 
@@ -379,6 +388,7 @@ final class FaceUnlockCoordinator {
 
         camera.stop()
         scanLighting.hide()
+        CameraActivityMonitor.shared.update(to: .standby)
 
         // Only count actual mismatched faces or spoof attempts toward the 5-attempt lockout —
         // dark-room "no face detected" timeouts or missing permissions never permanently lock out hover retries.

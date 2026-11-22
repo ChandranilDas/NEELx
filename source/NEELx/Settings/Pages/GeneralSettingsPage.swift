@@ -217,7 +217,18 @@ struct GeneralSettingsPage: View {
         }
 
         VStack(alignment: .leading, spacing: 8) {
-            SettingsSectionTitle(text: "Animation")
+            HStack {
+                SettingsSectionTitle(text: "Animation")
+                Spacer()
+                if settings.showUnlockAnimation {
+                    Button("Preview in Notch") {
+                        NotchOverlayController.shared.previewUnlockAnimation(style: settings.effectiveUnlockAnimationStyle)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(Color.accentColor)
+                }
+            }
             SettingsGroup {
                 SettingsRowContent(title: "Show animation") {
                     NEELxToggle(isOn: $settings.showUnlockAnimation)

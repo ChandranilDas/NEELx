@@ -203,6 +203,12 @@ enum SecureCredentialManager {
         setCachedKey(nil)
     }
 
+    /// Item #42: Deletes ONLY the stored password payload, revoking auto-password injection
+    /// while preserving the session key and enrolled biometric face templates.
+    nonisolated static func deleteOnlyPassword() throws {
+        try KeychainManager.delete(account: passwordBlobAccount)
+    }
+
     /// Purges all stored credentials, encrypted passwords, face identities, and cached keys.
     /// Used to resolve broken/orphaned sessions or during a full reset.
     nonisolated static func resetAllState() {

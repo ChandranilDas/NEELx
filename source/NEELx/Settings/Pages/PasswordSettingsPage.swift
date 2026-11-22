@@ -121,8 +121,17 @@ struct PasswordSettingsPage: View {
 
                 SettingsGroupDivider()
 
-                SettingsRowContent(title: "Remove password") {
-                    HoldToConfirmButton(title: "Remove", action: removePassword)
+                SettingsRowContent(
+                    title: "Forget saved password",
+                    subtitle: "Removes your stored password while keeping your enrolled face profile and settings intact. You can continue using Visual Verification mode."
+                ) {
+                    HoldToConfirmButton(title: "Forget", action: forgetPasswordOnly)
+                }
+
+                SettingsGroupDivider()
+
+                SettingsRowContent(title: "Remove password & face profile") {
+                    HoldToConfirmButton(title: "Remove All", action: removePassword)
                 }
             }
 
@@ -144,6 +153,16 @@ struct PasswordSettingsPage: View {
             // it now rather than leaving Your Face stuck showing "locked".
             FaceEnrollmentStore.shared.reloadIfUnlocked()
             isUnlocking = false
+        }
+    }
+
+    /// Item #42: Deletes ONLY the stored password payload, leaving enrolled face templates intact.
+    private func forgetPasswordOnly() {
+        do {
+            try pocController.forgetPasswordOnly()
+            statusMessage = "Password forgotten. Your enrolled face profile is preserved."
+        } catch {
+            statusMessage = "Couldn't remove password: \(error.localizedDescription)"
         }
     }
 

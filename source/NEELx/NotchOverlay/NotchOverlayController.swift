@@ -349,6 +349,41 @@ final class NotchOverlayController {
         }
     }
 
+    /// Item #18: Plays a live preview of the selected unlock animation style in the notch/pill directly from Settings.
+    func previewUnlockAnimation(style: UnlockAnimationStyle) {
+        resolveTask?.cancel()
+        scanTimeoutTask?.cancel()
+
+        activeUnlockStyle = style
+        isArmed = false
+        isVisualOnlyRecognition = false
+        geometry = NotchGeometry.forMainScreen()
+        windowController.show()
+
+        // 1. Brief scanning expansion (~0.45s)
+        phase = .scanning
+        content = .scan(.idle)
+        updateInteractivity()
+
+        resolveTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+
+            // 2. Play unlock checkmark + feedback
+            NEELxSettings.shared.playUnlockFeedback()
+            self.content = .scan(.success)
+            self.phase = .success
+            self.updateInteractivity()
+
+            try? await Task.sleep(for: self.successHoldDuration)
+            guard !Task.isCancelled else { return }
+
+            // 3. Gracefully collapse
+            await self.collapse()
+        }
+    }
+
     /// Tears the overlay down without any resolve animation. Deliberately a no-op while
     /// success/collapsing is in flight — interrupting that made the window vanish abruptly.
     func dismissImmediately() {
