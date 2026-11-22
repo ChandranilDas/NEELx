@@ -64,12 +64,26 @@ struct SecurityAuditEntry: Codable, Identifiable, Equatable {
     }
 }
 
+final class NEELxNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NEELxNotificationDelegate()
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        // Ensures notifications display banner, list, and sound even when the app is active
+        completionHandler([.banner, .sound, .list])
+    }
+}
+
 @Observable
 @MainActor
-final class SecurityAuditLog {
+final class SecurityAuditLog: NSObject {
     static let shared = SecurityAuditLog()
 
     private(set) var entries: [SecurityAuditEntry] = []
+    private var pendingEntries: [SecurityAuditEntry] = []
     private let maxEntries = 50
 
     /// Whether any audit entries currently retain an encrypted photo thumbnail (Item #4).
@@ -90,7 +104,17 @@ final class SecurityAuditLog {
         guard count > 0 else { return }
         unnotifiedBlockedCount = 0
 
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+        deliverNotificationBanner(count: count)
+    }
+
+    /// Direct test function for user to verify the alert works from Settings
+    func testIntruderAlertNotification() {
+        deliverNotificationBanner(count: max(unnotifiedBlockedCount, 1))
+    }
+
+    private func deliverNotificationBanner(count: Int) {
+        UNUserNotificationCenter.current().delegate = NEELxNotificationDelegate.shared
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
             content.title = "NEELx Security Alert"
@@ -109,7 +133,11 @@ final class SecurityAuditLog {
             .appendingPathComponent("security-audit.enc")
     }
 
-    private init() {
+    private override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = NEELxNotificationDelegate.shared
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+
         NotificationCenter.default.addObserver(
             forName: .secureCredentialSessionDidChange,
             object: nil,
@@ -127,18 +155,29 @@ final class SecurityAuditLog {
             entries = []
             return
         }
-        guard let ciphertext = try? Data(contentsOf: Self.storageURL),
-              let plaintext = try? SecureCredentialManager.decrypt(ciphertext),
-              let decoded = try? JSONDecoder().decode([SecurityAuditEntry].self, from: plaintext) else {
+        if let ciphertext = try? Data(contentsOf: Self.storageURL),
+           let plaintext = try? SecureCredentialManager.decrypt(ciphertext),
+           let decoded = try? JSONDecoder().decode([SecurityAuditEntry].self, from: plaintext) {
+            entries = decoded
+        } else {
             entries = []
-            return
         }
-        entries = decoded
+
+        // Flush any pending entries recorded while the session was locked
+        if !pendingEntries.isEmpty {
+            for pending in pendingEntries.reversed() {
+                entries.insert(pending, at: 0)
+            }
+            if entries.count > maxEntries {
+                entries.removeLast(entries.count - maxEntries)
+            }
+            pendingEntries.removeAll()
+            persist()
+        }
     }
 
     func record(kind: SecurityAuditKind, detail: String, snapshotImage: CGImage? = nil) {
         guard NEELxSettings.shared.intruderLogEnabled else { return }
-        guard SecureCredentialManager.isSessionUnlocked else { return }
 
         // Item #4: Photo thumbnails for blocked intruders/spoofs are gated behind the explicit
         // saveIntruderSnapshots privacy toggle. If disabled, timestamp and reason are recorded without photos.
@@ -151,11 +190,19 @@ final class SecurityAuditLog {
             unnotifiedBlockedCount += 1
         }
 
-        entries.insert(entry, at: 0)
-        if entries.count > maxEntries {
-            entries.removeLast(entries.count - maxEntries)
+        if SecureCredentialManager.isSessionUnlocked {
+            entries.insert(entry, at: 0)
+            if entries.count > maxEntries {
+                entries.removeLast(entries.count - maxEntries)
+            }
+            persist()
+        } else {
+            // Buffer in memory so events occurring while session key is locked are never lost!
+            pendingEntries.insert(entry, at: 0)
+            if pendingEntries.count > maxEntries {
+                pendingEntries.removeLast(pendingEntries.count - maxEntries)
+            }
         }
-        persist()
     }
 
     /// Item #4: Wipes all saved photo thumbnails from existing audit entries while keeping the event history intact.

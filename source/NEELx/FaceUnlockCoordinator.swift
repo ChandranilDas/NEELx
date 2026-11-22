@@ -51,10 +51,10 @@ final class FaceUnlockCoordinator {
         didSet { NEELxSettings.shared.matchThreshold = matchThreshold }
     }
 
-    /// Item #16: In Strict Security Mode, elevates threshold to 0.76+ to prevent loose matches
+    /// Item #16: In Strict Security Mode, elevates threshold to 0.78+ to prevent loose matches
     var effectiveMatchThreshold: Float {
         if NEELxSettings.shared.strictSecurityMode {
-            return max(matchThreshold, 0.76)
+            return max(matchThreshold, 0.78)
         }
         return matchThreshold
     }
@@ -74,12 +74,17 @@ final class FaceUnlockCoordinator {
     private var scanWindowDuration: TimeInterval {
         TimeInterval(NEELxSettings.shared.faceDetectionSeconds)
     }
-    /// Requires sustained below-threshold frames (after camera exposure & adaptive lighting settle)
-    /// so dark-room ramp-up frames never prematurely abort a real unlock.
-    private let wrongFaceStreakThreshold = 18
+    /// Requires sustained below-threshold frames (after camera exposure settles) to log unrecognized face
+    private let wrongFaceStreakThreshold = 5
 
     private(set) var statusMessage = "Idle"
     private(set) var lastOutcome: String?
+
+    /// Active scan tracking across disarm & timeout to ensure failed intruder attempts are never dropped
+    private var activeSeenFaceFrame: CameraFrame?
+    private var activePendingKind: SecurityAuditKind = .wrongFace
+    private var activePendingReason: String?
+    private var hasLoggedCurrentAttempt = false
 
     /// Item #64: Safe Mode flag if previous lock-screen runs terminated abnormally
     private(set) var isSafeModeActive: Bool = false
@@ -348,6 +353,17 @@ final class FaceUnlockCoordinator {
 
     private func disarmOverlay() {
         scanLighting.hide()
+        // Record any failed attempt if an unrecognized face was present and no unlock happened
+        if !hasLoggedCurrentAttempt,
+           let faceFrame = activeSeenFaceFrame,
+           let reason = activePendingReason {
+            hasLoggedCurrentAttempt = true
+            SecurityAuditLog.shared.record(kind: activePendingKind, detail: reason, snapshotImage: faceFrame.image)
+        }
+        activeSeenFaceFrame = nil
+        activePendingReason = nil
+        hasLoggedCurrentAttempt = false
+
         scanTask?.cancel()
         scanTask = nil
         // Bumping makes any cycle still suspended at `await camera.start()` inert, rather than resuming and re-showing the overlay.
@@ -609,9 +625,13 @@ final class FaceUnlockCoordinator {
         scanLiveness.modeProvider = { NEELxSettings.shared.livenessMode }
         let scanStartedAt = Date()
         var consecutiveWrongFaceFrames = 0
+        var consecutiveSpoofFrames = 0
         var matchedNonSpoofFrames = 0
+        var noFaceStreak = 0
         /// Rolling buffer for Multi-Frame Temporal Depth Consistency (prevents single-frame depth flicker/curved-print bypasses).
         var recentDepthReadings: [NeuralDepthReading] = []
+        /// Rolling buffer for Multi-Model Ensemble Verification.
+        var recentFaceEmbeddings: [[Float]] = []
 
         /// Cleared the moment a detected face fails to match, so a latched match can't be handed to whoever steps in next.
         var readyMatch: ScoredIdentity?
@@ -626,6 +646,11 @@ final class FaceUnlockCoordinator {
         var lastSeenFaceFrame: CameraFrame?
         var lastPendingKind: SecurityAuditKind = .wrongFace
         var lastPendingReason: String?
+
+        hasLoggedCurrentAttempt = false
+        activeSeenFaceFrame = nil
+        activePendingReason = nil
+        activePendingKind = .wrongFace
 
         while Date() < deadline, !Task.isCancelled,
               !requireOverlayScanning || NotchOverlayController.shared.phase == .scanning {
@@ -655,15 +680,21 @@ final class FaceUnlockCoordinator {
                 livenessConfirmed = false
                 matchedNonSpoofFrames = 0
                 liveness.reset()
-                consecutiveWrongFaceFrames = 0
                 lastFaceBoundingBox = nil
+                noFaceStreak += 1
+                if noFaceStreak >= 4 {
+                    consecutiveWrongFaceFrames = 0
+                    consecutiveSpoofFrames = 0
+                }
                 try? await Task.sleep(nanoseconds: 20_000_000)
                 continue
             }
+            noFaceStreak = 0
             // Face is visible — measure face-region brightness and hold once well-illuminated
             scanLighting.consider(frame.image, faceVisible: true, faceBox: result.face.normalizedBoundingBox)
             lastFaceBoundingBox = result.face.normalizedBoundingBox
             lastSeenFaceFrame = frame
+            activeSeenFaceFrame = frame
 
             let neuralDepthEnabled = NEELxSettings.shared.neuralDepthEnabled
             if !neuralDepthEnabled {
@@ -719,16 +750,21 @@ final class FaceUnlockCoordinator {
                 livenessConfirmed = false
                 matchedNonSpoofFrames = 0
                 liveness.reset()
+                recentFaceEmbeddings.removeAll()
                 let topDetail = scored.first.map {
-                    String(format: "max=%.3f centroid=%.3f (threshold %.2f)", $0.maxSampleSimilarity, $0.centroidSimilarity, matchThreshold)
+                    String(format: "max=%.3f centroid=%.3f (threshold %.2f)", $0.maxSampleSimilarity, $0.centroidSimilarity, currentThreshold)
                 } ?? "no enrolled active face"
                 lastPendingKind = .wrongFace
                 lastPendingReason = "Unrecognized face (\(topDetail))"
-                // Allow 0.65s for camera auto-exposure & adaptive dark-room lighting to settle before counting wrong-face streaks
-                if Date().timeIntervalSince(scanStartedAt) >= 0.65 {
+                activePendingKind = .wrongFace
+                activePendingReason = lastPendingReason
+
+                // Allow 0.45s for camera auto-exposure to settle before counting wrong-face streaks
+                if Date().timeIntervalSince(scanStartedAt) >= 0.45 {
                     consecutiveWrongFaceFrames += 1
                 }
-                if consecutiveWrongFaceFrames >= wrongFaceStreakThreshold {
+                if consecutiveWrongFaceFrames >= wrongFaceStreakThreshold && !hasLoggedCurrentAttempt {
+                    hasLoggedCurrentAttempt = true
                     lastOutcome = "Unrecognized face (\(topDetail))"
                     SecurityAuditLog.shared.record(kind: .wrongFace, detail: "Unrecognized face (\(topDetail))", snapshotImage: frame.image)
                     return .consistentlyWrongFace
@@ -780,33 +816,92 @@ final class FaceUnlockCoordinator {
                 effectiveFrame = livenessFrame
             }
 
+            let sensitivity = NEELxSettings.shared.antiSpoofSensitivity
+            let isStrict = NEELxSettings.shared.strictSecurityMode
+            let isMaxSensitivity = (sensitivity == "maximum") || isStrict
+
             // Attention & Gaze Check ("Require Attention for Face ID")
-            // 1. User must be facing the screen naturally (~26 deg tolerance for normal MacBook posture)
-            let isFacingScreen = (result.face.yaw.map { abs($0) <= 0.45 } ?? true) &&
-                                 (result.face.pitch.map { abs($0) <= 0.45 } ?? true)
-            // 2. Eyes must be open (EAR >= 0.11 accommodates slight squinting in bright/dark light)
-            let eyesOpen = (effectiveFrame.leftEyeAspectRatio ?? 0.25 >= 0.11) &&
-                           (effectiveFrame.rightEyeAspectRatio ?? 0.25 >= 0.11)
+            let requiredEAR: Float = isMaxSensitivity ? 0.14 : 0.11
+            let maxYaw: Float = isMaxSensitivity ? 0.32 : 0.45
+            let maxPitch: Float = isMaxSensitivity ? 0.32 : 0.45
+            let isFacingScreen = (result.face.yaw.map { abs($0) <= maxYaw } ?? true) &&
+                                 (result.face.pitch.map { abs($0) <= maxPitch } ?? true)
+            let leftEAR = effectiveFrame.leftEyeAspectRatio.map { Float($0) } ?? 0.25
+            let rightEAR = effectiveFrame.rightEyeAspectRatio.map { Float($0) } ?? 0.25
+            let eyesOpen = (leftEAR >= requiredEAR) && (rightEAR >= requiredEAR)
             let attentionVerified = isFacingScreen && eyesOpen
 
             let snapshot = liveness.observe(effectiveFrame)
             var confirmingCue: LivenessCue?
 
-            // Compare live 3D depth reading against the user's personal calibrated depth baseline (if enrolled)
+            // Compare live 3D depth reading against the user's personal calibrated depth baseline
             let enrolledBaseline = matched.identity.depthBaseline
             let personalFlatSpoof: Bool = {
                 guard let reading = depthReading,
                       let baseline = enrolledBaseline,
                       baseline.medianNoseProtrusion >= 0.025 else { return false }
-                return reading.noseProtrusion < baseline.medianNoseProtrusion * 0.22
-                    && reading.planarityResidual < 0.024
+                let protrusionRatio: Float = isMaxSensitivity ? 0.35 : 0.22
+                let planarityLimit: Float = isMaxSensitivity ? 0.018 : 0.024
+                return reading.noseProtrusion < baseline.medianNoseProtrusion * protrusionRatio
+                    && reading.planarityResidual < planarityLimit
             }()
-            let flatSpoofSuspected = (depthReading?.flatSpoofScore ?? 0) >= LivenessTuning.default.flatDepthSpoofLevel
+            let flatSpoofCutoff: Float = isStrict ? 0.35 : (isMaxSensitivity ? 0.38 : 0.55)
+            let flatSpoofSuspected = (depthReading?.flatSpoofScore ?? 0) >= flatSpoofCutoff
                 || personalFlatSpoof
-            if !flatSpoofSuspected {
-                matchedNonSpoofFrames += 1
-            } else {
+
+            if flatSpoofSuspected {
+                consecutiveSpoofFrames += 1
                 matchedNonSpoofFrames = 0
+                let reliefPercent = Int((depthReading?.depth3DScore ?? 0) * 100)
+                let reason = "2D flat photo/screen spoof detected (depth relief: \(reliefPercent)%)"
+                activePendingKind = .spoofBlocked
+                activePendingReason = reason
+                lastPendingReason = reason
+
+                if consecutiveSpoofFrames >= 3 && !hasLoggedCurrentAttempt {
+                    hasLoggedCurrentAttempt = true
+                    lastOutcome = reason
+                    SecurityAuditLog.shared.record(kind: .spoofBlocked, detail: reason, snapshotImage: frame.image)
+                    return .spoofSuspected
+                }
+            } else {
+                consecutiveSpoofFrames = 0
+                matchedNonSpoofFrames += 1
+            }
+
+            // Multi-Model Ensemble Verification (when enabled in Settings)
+            if NEELxSettings.shared.experimentalEnsembleEnabled {
+                recentFaceEmbeddings.append(result.embedding)
+                if recentFaceEmbeddings.count > 4 { recentFaceEmbeddings.removeFirst() }
+
+                guard recentFaceEmbeddings.count >= 2 else {
+                    continue
+                }
+
+                let prev = recentFaceEmbeddings[recentFaceEmbeddings.count - 2]
+                let temporalSim = FaceEmbedding.cosineSimilarity(result.embedding, prev)
+                guard temporalSim >= 0.82 else {
+                    continue
+                }
+
+                let dim = result.embedding.count
+                var centroid = [Float](repeating: 0, count: dim)
+                for emb in recentFaceEmbeddings {
+                    for i in 0..<dim { centroid[i] += emb[i] }
+                }
+                let n = Float(recentFaceEmbeddings.count)
+                var norm: Float = 0
+                for i in 0..<dim {
+                    centroid[i] /= n
+                    norm += centroid[i] * centroid[i]
+                }
+                norm = sqrt(max(norm, 1e-12))
+                for i in 0..<dim { centroid[i] /= norm }
+
+                let ensembleScore = pipeline.score(centroid, against: [matched.identity]).first?.maxSampleSimilarity ?? 0
+                guard ensembleScore >= currentThreshold else {
+                    continue
+                }
             }
 
             // Compare live 9-zone 3D facial depth relief against user's enrolled 3D depth profile (if captured)
@@ -820,7 +915,10 @@ final class FaceUnlockCoordinator {
             case .denied:
                 let reason = snapshot.decision.denialReason ?? "Liveness spoof detected."
                 lastOutcome = reason
+                activePendingKind = .spoofBlocked
+                activePendingReason = reason
                 SecurityAuditLog.shared.record(kind: .spoofBlocked, detail: reason, snapshotImage: frame.image)
+                hasLoggedCurrentAttempt = true
                 return .spoofSuspected
             case .confirmed(let cue):
                 livenessConfirmed = true
@@ -835,25 +933,32 @@ final class FaceUnlockCoordinator {
                     let baselineMatches = enrolledBaseline.map {
                         $0.medianNoseProtrusion >= 0.020 && depthReading.noseProtrusion >= $0.medianNoseProtrusion * 0.55
                     } ?? false
-                    let reliefConfirmed = depthReading.depth3DScore >= LivenessTuning.default.neuralDepth3DLevel
+
+                    let required3DRelief: Float = isStrict ? 0.68 : (isMaxSensitivity ? 0.68 : 0.58)
+                    let requiredNoseProtrusion: Float = isMaxSensitivity ? 0.016 : 0.008
+                    let reliefConfirmed = (depthReading.depth3DScore >= required3DRelief && depthReading.noseProtrusion >= requiredNoseProtrusion)
                         || baselineMatches
 
-                    // Multi-Frame Temporal Depth Consistency: require 2 consecutive physically consistent 3D readings
-                    // (stable nose protrusion & non-flickering depth cliff) OR an ultra-strong personal 9-zone profile match.
+                    let requiredConsistentFrames = isMaxSensitivity ? 3 : 2
                     let temporallyConsistent: Bool = {
-                        guard recentDepthReadings.count >= 2 else { return false }
+                        guard recentDepthReadings.count >= requiredConsistentFrames else { return false }
                         let prev = recentDepthReadings[recentDepthReadings.count - 2]
-                        let noseStable = abs(depthReading.noseProtrusion - prev.noseProtrusion) < 0.065
-                        let bothPositiveNose = depthReading.noseProtrusion > 0.012 && prev.noseProtrusion > 0.012
-                        let cliffConsistent = abs(depthReading.backgroundCliff - prev.backgroundCliff) < 0.25
+                        let noseStable = abs(depthReading.noseProtrusion - prev.noseProtrusion) < (isMaxSensitivity ? 0.045 : 0.065)
+                        let bothPositiveNose = depthReading.noseProtrusion > requiredNoseProtrusion && prev.noseProtrusion > requiredNoseProtrusion
+                        let cliffConsistent = abs(depthReading.backgroundCliff - prev.backgroundCliff) < (isMaxSensitivity ? 0.18 : 0.25)
                         return noseStable && bothPositiveNose && cliffConsistent
                     }()
 
-                    if attentionVerified && !flatSpoofSuspected && (
-                        (reliefConfirmed && (temporallyConsistent || strongProfileMatches))
-                        || (profileMatches && temporallyConsistent)
-                        || matchedNonSpoofFrames >= 3
-                    ) {
+                    let livenessPassed: Bool
+                    if isStrict {
+                        livenessPassed = reliefConfirmed && (temporallyConsistent || strongProfileMatches)
+                    } else {
+                        livenessPassed = (reliefConfirmed && (temporallyConsistent || strongProfileMatches))
+                            || (profileMatches && temporallyConsistent)
+                            || matchedNonSpoofFrames >= 3
+                    }
+
+                    if attentionVerified && !flatSpoofSuspected && livenessPassed {
                         livenessConfirmed = true
                         confirmingCue = .neuralDepth3D
                     }
@@ -914,6 +1019,10 @@ final class FaceUnlockCoordinator {
                     scanLighting.hide()
                     NEELxSettings.shared.playUnlockFeedback()
 
+                    hasLoggedCurrentAttempt = true
+                    activeSeenFaceFrame = nil
+                    activePendingReason = nil
+
                     // Visual-only mode says "Face recognized", welcome banner reserved for when macOS confirms sign-in
                     pendingVisualOnlyWelcomeName = faceName
                     return .matched
@@ -946,6 +1055,10 @@ final class FaceUnlockCoordinator {
                 // Begin smooth backlight & halo dissolve + crisp haptic & optional muted glass chime
                 scanLighting.hide()
                 NEELxSettings.shared.playUnlockFeedback()
+
+                hasLoggedCurrentAttempt = true
+                activeSeenFaceFrame = nil
+                activePendingReason = nil
 
                 // Floating "Welcome Back (Name)!" popup message right after unlocking screen
                 WelcomeBannerWindowController.shared.show(name: faceName)
@@ -986,23 +1099,29 @@ final class FaceUnlockCoordinator {
             }
 
             if flatSpoofSuspected {
-                lastPendingKind = .spoofBlocked
-                lastPendingReason = String(
+                activePendingKind = .spoofBlocked
+                let reason = String(
                     format: "Flat 2D surface blocked (3D Depth %.0f%%, flatSpoof %.0f%%).",
                     (depthReading?.depth3DScore ?? 0) * 100,
                     (depthReading?.flatSpoofScore ?? 0) * 100
                 )
+                lastPendingReason = reason
+                activePendingReason = reason
             } else if !attentionVerified {
-                lastPendingKind = .spoofBlocked
-                lastPendingReason = !eyesOpen
+                activePendingKind = .spoofBlocked
+                let reason = !eyesOpen
                     ? "Attention check failed — eyes closed or obscured."
                     : "Attention check failed — not facing the screen."
+                lastPendingReason = reason
+                activePendingReason = reason
             } else if !livenessConfirmed {
-                lastPendingKind = .spoofBlocked
-                lastPendingReason = String(
+                activePendingKind = .spoofBlocked
+                let reason = String(
                     format: "Could not verify live 3D face before timeout (3D Depth %.0f%%).",
                     (depthReading?.depth3DScore ?? 0) * 100
                 )
+                lastPendingReason = reason
+                activePendingReason = reason
             }
 
             try? await Task.sleep(nanoseconds: 20_000_000)
@@ -1010,13 +1129,17 @@ final class FaceUnlockCoordinator {
 
         // If a face was actually in front of the camera when the scan window timed out without unlocking,
         // record the failure + encrypted snapshot in the Audit Log (empty-room timeouts stay silent).
-        if !Task.isCancelled,
+        if !hasLoggedCurrentAttempt,
            LockMonitor.isScreenActuallyLocked(),
-           let faceFrame = lastSeenFaceFrame,
-           let reason = lastPendingReason {
+           let faceFrame = activeSeenFaceFrame ?? lastSeenFaceFrame,
+           let reason = activePendingReason ?? lastPendingReason,
+           readyMatch == nil {
+            hasLoggedCurrentAttempt = true
             lastOutcome = reason
-            SecurityAuditLog.shared.record(kind: lastPendingKind, detail: reason, snapshotImage: faceFrame.image)
+            SecurityAuditLog.shared.record(kind: activePendingKind, detail: reason, snapshotImage: faceFrame.image)
         }
+        activeSeenFaceFrame = nil
+        activePendingReason = nil
         return .noResolution
     }
 

@@ -176,9 +176,18 @@ struct RecognitionSettingsPage: View {
                         subtitle: "Delivers a native macOS Notification Center alert upon unlock if an unrecognized face or photo spoof attempted to unlock your Mac while away.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
-                        NEELxToggle(isOn: $settings.notifyOnBlockedIntruder)
-                            .accessibilityLabel("Alert on Blocked Intruder Attempts")
-                            .accessibilityHint("Notifies you upon login if an unauthorized person attempted to unlock your Mac.")
+                        HStack(spacing: 8) {
+                            Button("Test Alert") {
+                                SecurityAuditLog.shared.testIntruderAlertNotification()
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+
+                            NEELxToggle(isOn: $settings.notifyOnBlockedIntruder)
+                                .accessibilityLabel("Alert on Blocked Intruder Attempts")
+                                .accessibilityHint("Notifies you upon login if an unauthorized person attempted to unlock your Mac.")
+                        }
                     }
 
                     SettingsGroupDivider()
