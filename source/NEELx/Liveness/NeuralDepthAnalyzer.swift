@@ -63,6 +63,26 @@ nonisolated final class NeuralDepthAnalyzer: @unchecked Sendable {
         Self.locateModel() != nil
     }
 
+    /// Fast bundle check without requiring an instance
+    nonisolated static var isDepthModelBundled: Bool {
+        locateModel() != nil
+    }
+
+    /// Tests whether the neural depth model compiles and loads cleanly on Core ML/ANE.
+    nonisolated static func testModelLoad() -> (isBundled: Bool, isFunctional: Bool, error: String?) {
+        guard let url = locateModel() else {
+            return (false, false, "DepthAnythingV2SmallF16.mlmodelc not found in bundle or Application Support")
+        }
+        let config = MLModelConfiguration()
+        config.computeUnits = .all
+        do {
+            _ = try MLModel(contentsOf: url, configuration: config)
+            return (true, true, nil)
+        } catch {
+            return (true, false, error.localizedDescription)
+        }
+    }
+
     private init() {}
 
     /// Lazily loads and compiles/warms the Core ML model on ANE. Safe to call from a background task.

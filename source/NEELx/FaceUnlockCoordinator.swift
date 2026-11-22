@@ -43,6 +43,9 @@ final class FaceUnlockCoordinator {
     private(set) var statusMessage = "Idle"
     private(set) var lastOutcome: String?
 
+    /// Reserved face name from visual-only match — shows welcome banner when macOS confirms sign-in (Item #38).
+    private var pendingVisualOnlyWelcomeName: String?
+
     private var hasArmedForCurrentLock = false
     /// One-shot per lock session — an auto-retry that could itself auto-retry would loop the camera for the whole lock session.
     private var hasAutoRetriedForCurrentLock = false
@@ -98,12 +101,24 @@ final class FaceUnlockCoordinator {
 
     private func evaluateTrigger() {
         guard LockMonitor.isScreenActuallyLocked() else {
+            if let name = pendingVisualOnlyWelcomeName {
+                pendingVisualOnlyWelcomeName = nil
+                WelcomeBannerWindowController.shared.show(name: name)
+            }
             hasArmedForCurrentLock = false
             hasAutoRetriedForCurrentLock = false
             disarmOverlay()
             return
         }
         guard !lockMonitor.isSleeping else {
+            hasArmedForCurrentLock = false
+            disarmOverlay()
+            return
+        }
+
+        // Travel Mode (Item #31): Menu bar toggle to pause Face Unlock
+        if NEELxSettings.shared.isTravelModeActive {
+            statusMessage = "Face Unlock paused (Travel Mode)"
             hasArmedForCurrentLock = false
             disarmOverlay()
             return
@@ -123,17 +138,27 @@ final class FaceUnlockCoordinator {
         // A pinned display that isn't connected bails entirely rather than showing up elsewhere; "Main display" (nil) always resolves.
         guard NotchGeometry.preferredScreen() != nil else { return }
 
-        guard SecureCredentialManager.isSessionUnlocked else {
-            statusMessage = "Face unlock is on, but the session is locked — authenticate once from Password settings first."
-            return
-        }
-        guard SecureCredentialManager.hasStoredPassword() else {
-            statusMessage = "Face unlock is on, but no password is stored yet."
-            return
+        // Item #38: Visual-only mode does not require stored password or unlocked credential session
+        let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
+        if !isVisualOnly {
+            guard SecureCredentialManager.isSessionUnlocked else {
+                statusMessage = "Face unlock is on, but the session is locked — authenticate once from Password settings first."
+                return
+            }
+            guard SecureCredentialManager.hasStoredPassword() else {
+                statusMessage = "Face unlock is on, but no password is stored yet."
+                return
+            }
         }
 
         // A deselected trigger means "don't auto-scan for this signal," not "do nothing" — the user can still opt in by hand.
-        let shouldAutoScan = NEELxSettings.shared.unlockTriggers.contains(signal)
+        var shouldAutoScan = NEELxSettings.shared.unlockTriggers.contains(signal)
+
+        // Item #39: Lock and Pause — Intentionally locking the Mac (Cmd+Ctrl+Q or Apple Menu)
+        // does not immediately auto-unlock while the user sits in front of the screen. Wait for a keypress/interaction.
+        if signal == .onLock && NEELxSettings.shared.lockAndPauseEnabled {
+            shouldAutoScan = false
+        }
 
         // Headless has nothing to arm/hover, so if this signal isn't selected there's nothing to do — and hasArmedForCurrentLock
         // must stay false, or a later selected signal could never fire (nothing else calls arm() to reset it).
@@ -193,12 +218,18 @@ final class FaceUnlockCoordinator {
     /// Runs the same gate chain as `evaluateTrigger`, then starts a scan. Independent of `LockMonitor` events, so doesn't touch `hasArmedForCurrentLock`.
     private func handleSpaceKeyPress() {
         guard isEnabled,
+              !NEELxSettings.shared.isTravelModeActive,
               NEELxSettings.shared.unlockTriggers.contains(.onSpace),
               LockMonitor.isScreenActuallyLocked(),
-              NotchGeometry.preferredScreen() != nil,
-              SecureCredentialManager.isSessionUnlocked,
-              SecureCredentialManager.hasStoredPassword()
+              NotchGeometry.preferredScreen() != nil
         else { return }
+
+        let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
+        if !isVisualOnly {
+            guard SecureCredentialManager.isSessionUnlocked,
+                  SecureCredentialManager.hasStoredPassword()
+            else { return }
+        }
 
         // Already looking — swallows auto-repeat/double-presses and lets "On wake"/"On lock" override "On space" with no special-casing.
         guard NotchOverlayController.shared.phase != .scanning else { return }
@@ -249,15 +280,19 @@ final class FaceUnlockCoordinator {
     private func runScanCycle(generation: Int) async {
         guard !lockMonitor.isSleeping, isEnabled, LockMonitor.isScreenActuallyLocked() else { return }
 
-        // If the session is locked (e.g. after app restart or 5 wrong-face attempts), still give
-        // immediate visual feedback on hover rather than silently ignoring the user's cursor.
-        guard SecureCredentialManager.isSessionUnlocked else {
-            statusMessage = "Session locked — unlock your Mac and authorize NEELx with Touch ID."
-            if showsUI {
-                NotchOverlayController.shared.beginScanning()
-                NotchOverlayController.shared.finish(success: false)
+        // Item #38: Visual-only mode does not require stored password or unlocked credential session
+        let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
+        if !isVisualOnly {
+            // If the session is locked (e.g. after app restart or 5 wrong-face attempts), still give
+            // immediate visual feedback on hover rather than silently ignoring the user's cursor.
+            guard SecureCredentialManager.isSessionUnlocked else {
+                statusMessage = "Session locked — unlock your Mac and authorize NEELx with Touch ID."
+                if showsUI {
+                    NotchOverlayController.shared.beginScanning()
+                    NotchOverlayController.shared.finish(success: false)
+                }
+                return
             }
-            return
         }
 
         // Device Proximity Guard: If enabled, requires paired phone/tablet in Bluetooth range (< 1.5m)
@@ -322,7 +357,8 @@ final class FaceUnlockCoordinator {
         case .matched:
             // The unlock already happened inside observeScanWindow — this only decides whether anything is shown about it.
             if showsUI {
-                NotchOverlayController.shared.finish(success: true)
+                let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
+                NotchOverlayController.shared.finish(success: true, isVisualOnly: isVisualOnly)
             }
         case .injectionBlocked(let reason):
             statusMessage = reason
@@ -675,6 +711,27 @@ final class FaceUnlockCoordinator {
                 let livenessNote = depthNote ?? confirmingCue.map { "live via \($0.title)" } ?? "Attention & Biometrics Verified"
                 let summary = "Matched \(readyMatch.identity.name) at \(String(format: "%.3f", readyMatch.centroidSimilarity)), \(livenessNote)."
                 lastOutcome = summary
+
+                let rawName = readyMatch.identity.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let faceName = (!rawName.isEmpty && rawName.lowercased() != "default") ? rawName : (NSFullUserName().isEmpty ? "User" : NSFullUserName())
+
+                // Item #38: Zero-Password Visual-Only Mode
+                let isVisualOnly = NEELxSettings.shared.visualOnlyModeEnabled || !SecureCredentialManager.hasStoredPassword()
+                if isVisualOnly {
+                    statusMessage = "Face recognized"
+                    let visualSummary = "\(summary) Face recognized (visual-only mode)."
+                    lastOutcome = visualSummary
+                    SecurityAuditLog.shared.record(kind: .faceRecognized, detail: "\(visualSummary) Touch ID or password required to sign in.")
+
+                    scanLighting.hide()
+                    NEELxSettings.shared.playUnlockFeedback()
+
+                    // Visual-only mode says "Face recognized", welcome banner reserved for when macOS confirms sign-in
+                    pendingVisualOnlyWelcomeName = faceName
+                    return .matched
+                }
+
+                statusMessage = "Recognized — unlocking…"
                 let submitted = await pocController.injectStoredPassword(requireAuthoritativeLock: true)
                 guard submitted else {
                     let blockDetail = "Recognized \(readyMatch.identity.name), but \(pocController.statusMessage)"
@@ -684,28 +741,41 @@ final class FaceUnlockCoordinator {
                     return .injectionBlocked(blockDetail)
                 }
 
+                // Submission only means keystrokes were sent. Verify the console session separately.
+                let clock = ContinuousClock()
+                let confirmationDeadline = clock.now + .seconds(2)
+                while !Task.isCancelled && !lockMonitor.isSleeping
+                    && !LockMonitor.isCurrentUserSessionUnlocked() && clock.now < confirmationDeadline {
+                    try? await Task.sleep(for: .milliseconds(25))
+                }
+                guard !Task.isCancelled, !lockMonitor.isSleeping else { return .noResolution }
+                guard LockMonitor.isCurrentUserSessionUnlocked() else {
+                    let detail = "macOS did not confirm the unlock. Sign in normally and check your NEELx setup."
+                    SecurityAuditLog.shared.record(kind: .systemError, detail: detail)
+                    return .injectionBlocked(detail)
+                }
+
                 // Begin smooth backlight & halo dissolve + crisp haptic & optional muted glass chime
                 scanLighting.hide()
                 NEELxSettings.shared.playUnlockFeedback()
 
                 // Floating "Welcome Back (Name)!" popup message right after unlocking screen
-                let rawName = readyMatch.identity.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                let faceName = (!rawName.isEmpty && rawName.lowercased() != "default") ? rawName : (NSFullUserName().isEmpty ? "User" : NSFullUserName())
                 WelcomeBannerWindowController.shared.show(name: faceName)
 
                 // Log verified unlock & silently learn high-confidence 3D-verified appearance/lighting drift
-                SecurityAuditLog.shared.record(kind: .unlocked, detail: summary)
-                let strong3DVerified = ((depthReading?.depth3DScore ?? 0) >= 0.50 || (depthProfileSimilarity ?? 0) >= 0.75)
-                    && (depthReading?.flatSpoofScore ?? 0) < 0.18
-                if (readyMatch.centroidSimilarity >= 0.74 && (depthReading?.flatSpoofScore ?? 0) < 0.20)
-                    || (readyMatch.centroidSimilarity >= 0.70 && strong3DVerified) {
+                SecurityAuditLog.shared.record(kind: .unlocked, detail: "macOS session unlocked after submission; sign-in method unavailable. \(summary)")
+                // A missing depth reading is an abstention, never a clean spoof score.
+                if let depthReading,
+                   depthReading.flatSpoofScore < 0.18,
+                   depthReading.depth3DScore >= 0.50,
+                   readyMatch.centroidSimilarity >= 0.70 {
                     FaceEnrollmentStore.shared.recordAdaptiveSample(
                         for: readyMatch.identity.id,
                         embedding: result.embedding,
                         quality: result.quality,
-                        depthSignature: depthReading?.depthSignature,
-                        noseProtrusion: depthReading?.noseProtrusion,
-                        backgroundCliff: depthReading?.backgroundCliff
+                        depthSignature: depthReading.depthSignature,
+                        noseProtrusion: depthReading.noseProtrusion,
+                        backgroundCliff: depthReading.backgroundCliff
                     )
                 }
                 return .matched

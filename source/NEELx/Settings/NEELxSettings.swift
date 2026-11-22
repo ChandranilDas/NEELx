@@ -85,6 +85,40 @@ enum UnlockTrigger: String, CaseIterable, Identifiable {
     }
 }
 
+/// How long Face Unlock is paused during Travel Mode (Item #31).
+enum TravelModeDuration: String, CaseIterable, Identifiable {
+    case oneHour
+    case untilTomorrow
+    case untilResumed
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .oneHour: return "Pause for 1 Hour"
+        case .untilTomorrow: return "Pause Until Tomorrow"
+        case .untilResumed: return "Pause Until Manually Resumed"
+        }
+    }
+
+    var expiryDate: Date {
+        let calendar = Calendar.current
+        let now = Date()
+        switch self {
+        case .oneHour:
+            return now.addingTimeInterval(3600)
+        case .untilTomorrow:
+            if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now),
+               let morning = calendar.date(bySettingHour: 6, minute: 0, second: 0, of: tomorrow) {
+                return morning
+            }
+            return now.addingTimeInterval(86400)
+        case .untilResumed:
+            return Date.distantFuture
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class NEELxSettings {
@@ -127,6 +161,9 @@ final class NEELxSettings {
         static let hasAcknowledgedSecurityNotice = "NEELxSettings.hasAcknowledgedSecurityNotice"
         static let welcomeBannerEnabled = "NEELxSettings.welcomeBannerEnabled"
         static let enrolledBiometricSchemaVersion = "NEELxSettings.enrolledBiometricSchemaVersion"
+        static let travelModePauseUntil = "NEELxSettings.travelModePauseUntil"
+        static let lockAndPauseEnabled = "NEELxSettings.lockAndPauseEnabled"
+        static let visualOnlyModeEnabled = "NEELxSettings.visualOnlyModeEnabled"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -326,7 +363,71 @@ final class NEELxSettings {
         didSet { defaults.set(hasAcknowledgedSecurityNotice, forKey: Key.hasAcknowledgedSecurityNotice) }
     }
 
+    /// Travel Mode (Item #31): timestamp until which Face Unlock is paused.
+    var travelModePauseUntil: Date? {
+        get {
+            let timestamp = defaults.double(forKey: Key.travelModePauseUntil)
+            guard timestamp > 0 else { return nil }
+            let date = Date(timeIntervalSince1970: timestamp)
+            if date <= Date() {
+                defaults.removeObject(forKey: Key.travelModePauseUntil)
+                return nil
+            }
+            return date
+        }
+        set {
+            if let newValue {
+                defaults.set(newValue.timeIntervalSince1970, forKey: Key.travelModePauseUntil)
+            } else {
+                defaults.removeObject(forKey: Key.travelModePauseUntil)
+            }
+        }
+    }
+
+    var isTravelModeActive: Bool {
+        travelModePauseUntil != nil
+    }
+
+    var travelModeStatusText: String? {
+        guard let until = travelModePauseUntil else { return nil }
+        if until == Date.distantFuture {
+            return "Paused until manually resumed"
+        }
+        let remaining = until.timeIntervalSinceNow
+        if remaining <= 0 { return nil }
+        let minutes = Int(ceil(remaining / 60))
+        if minutes < 60 {
+            return "Paused (\(minutes)m remaining)"
+        } else {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            return "Paused (until \(formatter.string(from: until)))"
+        }
+    }
+
+    func enableTravelMode(_ duration: TravelModeDuration) {
+        travelModePauseUntil = duration.expiryDate
+    }
+
+    func resumeFromTravelMode() {
+        travelModePauseUntil = nil
+    }
+
+    /// Item #39: Lock and Pause — Intentionally locking the Mac (Cmd+Ctrl+Q or Apple Menu)
+    /// does not immediately auto-unlock while sitting at the desk. Waits for keypress or interaction.
+    var lockAndPauseEnabled: Bool {
+        didSet { defaults.set(lockAndPauseEnabled, forKey: Key.lockAndPauseEnabled) }
+    }
+
+    /// Item #38: Zero-Password Visual-Only Mode — Confirms face match with notch animation
+    /// without requiring or storing a login password; user completes sign-in via Touch ID or manual entry.
+    var visualOnlyModeEnabled: Bool {
+        didSet { defaults.set(visualOnlyModeEnabled, forKey: Key.visualOnlyModeEnabled) }
+    }
+
     private init() {
+        lockAndPauseEnabled = defaults.object(forKey: Key.lockAndPauseEnabled) as? Bool ?? true
+        visualOnlyModeEnabled = defaults.bool(forKey: Key.visualOnlyModeEnabled)
         // Enabled by default — onboarding already enrolled a face and set a
         // password specifically to use Face Unlock.
         isFaceUnlockEnabled = defaults.object(forKey: Key.isFaceUnlockEnabled) as? Bool ?? true
@@ -476,6 +577,9 @@ final class NEELxSettings {
         onboardingResumeStep = nil
         hasAcknowledgedSecurityNotice = false
         enrolledBiometricSchemaVersion = 0
+        travelModePauseUntil = nil
+        lockAndPauseEnabled = true
+        visualOnlyModeEnabled = false
         FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
     }
 }

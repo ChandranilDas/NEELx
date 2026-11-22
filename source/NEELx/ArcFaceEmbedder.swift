@@ -67,6 +67,25 @@ nonisolated final class ArcFaceEmbedder: FaceEmbedder, @unchecked Sendable {
         pixelBufferPool = pool
     }
 
+    /// True when the ArcFace `.mlmodelc` is present in the app bundle — a fast,
+    /// allocation-free probe used by the Setup diagnostics screen.
+    nonisolated static var isFaceModelBundled: Bool { locateModel() != nil }
+
+    /// Tests whether the bundled ArcFace model compiles and loads successfully on Core ML.
+    nonisolated static func testModelLoad() -> (isBundled: Bool, isFunctional: Bool, error: String?) {
+        guard let url = locateModel() else {
+            return (false, false, "ArcFace.mlmodelc not found in bundle")
+        }
+        let config = MLModelConfiguration()
+        config.computeUnits = .all
+        do {
+            _ = try MLModel(contentsOf: url, configuration: config)
+            return (true, true, nil)
+        } catch {
+            return (true, false, error.localizedDescription)
+        }
+    }
+
     /// Both names are checked in case the file was added under a different name.
     private static func locateModel() -> URL? {
         for name in ["ArcFace", "w600k_mbf"] {

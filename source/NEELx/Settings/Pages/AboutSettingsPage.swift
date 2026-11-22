@@ -17,6 +17,7 @@ struct AboutSettingsPage: View {
     @State private var lastTapDate: Date?
     @State private var didCopyDiagnostics = false
     @State private var showFeedbackSheet = false
+    @State private var showCheckMySetupSheet = false
     @State private var showResetConfirmation = false
     private let requiredTapCount = 5
     private let tapResetInterval: TimeInterval = 1.0
@@ -47,6 +48,16 @@ struct AboutSettingsPage: View {
         .padding(.bottom, 16)
 
         SettingsGroup {
+            SettingsActionRowContent(
+                title: "Check My Setup",
+                subtitle: "Inspect camera, permissions, neural models, login item, and system readiness.",
+                buttonTitle: "Check…"
+            ) {
+                showCheckMySetupSheet = true
+            }
+
+            SettingsGroupDivider()
+
             SettingsActionRowContent(
                 title: "Official NEELx Website",
                 buttonTitle: "Visit"
@@ -129,6 +140,9 @@ struct AboutSettingsPage: View {
             FeedbackSheetView {
                 showFeedbackSheet = false
             }
+        }
+        .sheet(isPresented: $showCheckMySetupSheet) {
+            CheckMySetupSheetView(environment: environment)
         }
         .alert("Reset NEELx to Factory Defaults?", isPresented: $showResetConfirmation) {
             Button("Reset and Start Setup", role: .destructive) {

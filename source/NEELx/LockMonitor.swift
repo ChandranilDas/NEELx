@@ -129,6 +129,15 @@ final class LockMonitor {
         eventCount += 1
     }
 
+    /// Called only after a lock was observed. Missing session data is not confirmation.
+    nonisolated static func isCurrentUserSessionUnlocked() -> Bool {
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any],
+              (session["kCGSessionUserIDKey"] as? NSNumber)?.uint32Value == getuid(),
+              (session["kCGSessionOnConsoleKey"] as? Bool) == true,
+              (session["kCGSessionLoginDoneKey"] as? Bool) == true else { return false }
+        return (session["CGSSessionScreenIsLocked"] as? Bool) != true
+    }
+
     /// Authoritative lock state from the CoreGraphics session server, not a spoofable notification. Fails closed if unavailable.
     nonisolated static func isScreenActuallyLocked() -> Bool {
         guard let dict = CGSessionCopyCurrentDictionary() as? [String: Any] else {

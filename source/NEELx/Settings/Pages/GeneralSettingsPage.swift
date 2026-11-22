@@ -55,6 +55,13 @@ struct GeneralSettingsPage: View {
             }
             SettingsGroupDivider()
             SettingsRowContent(
+                title: "Visual verification only (zero-password mode)",
+                subtitle: "Confirms your face with notch animation without storing a macOS password. Sign in using Touch ID or manual entry."
+            ) {
+                NEELxToggle(isOn: $settings.visualOnlyModeEnabled)
+            }
+            SettingsGroupDivider()
+            SettingsRowContent(
                 title: "Face ID for System Touch ID & Password Prompts",
                 subtitle: "Automatically approves macOS Touch ID & password popups everywhere (System Settings, installs, Saved Passwords, Finder, Keychain) — excludes Apple Pay & payments."
             ) {
@@ -129,6 +136,13 @@ struct GeneralSettingsPage: View {
                 SettingsGroupDivider()
                 SettingsRowContent(title: "Auto retry once after failure") {
                     NEELxToggle(isOn: $settings.autoRetryOnce)
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Lock and pause auto-unlock",
+                    subtitle: "Intentionally locking your Mac (Cmd+Ctrl+Q or Apple menu) pauses auto-unlock until you press a key, preventing an immediate unlock loop while at your desk."
+                ) {
+                    NEELxToggle(isOn: $settings.lockAndPauseEnabled)
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(

@@ -49,6 +49,7 @@ enum NEELxConfig {
         let hwModel = sysctlString("hw.model") ?? "Unknown Mac"
         let cpuBrand = sysctlString("machdep.cpu.brand_string") ?? sysctlString("hw.machine") ?? "Unknown CPU"
         let activeCamera = CameraDeviceCatalog.resolvedDevice()?.localizedName ?? "None"
+        let arcfaceBundled = ArcFaceEmbedder.isFaceModelBundled
         let depthReady = NeuralDepthAnalyzer.shared.isModelAvailable
         return """
         ### NEELx Diagnostics
@@ -56,8 +57,12 @@ enum NEELxConfig {
         - **Mac Model**: \(hwModel) (\(cpuBrand))
         - **macOS**: \(osVersion)
         - **Active Camera**: \(activeCamera) (Clamshell: \(CameraDeviceCatalog.isClamshellMode()))
+        - **ArcFace Model**: \(arcfaceBundled ? "Bundled & Ready" : "Missing")
         - **3D Neural Depth (ANE)**: \(depthReady ? (settings.neuralDepthEnabled ? "Enabled (Model Ready)" : "Disabled in Settings") : "Not Installed")
         - **Match Threshold**: \(String(format: "%.2f", settings.matchThreshold))
+        - **Travel Mode**: \(settings.isTravelModeActive ? (settings.travelModeStatusText ?? "Active") : "Off")
+        - **Lock and Pause**: \(settings.lockAndPauseEnabled ? "On" : "Off")
+        - **Visual-Only Mode**: \(settings.visualOnlyModeEnabled ? "On" : "Off")
         - **Active Chromatic Flash**: \(settings.chromaticFlashEnabled ? "On" : "Off")
         - **Adaptive Learning**: \(settings.adaptiveLearningEnabled ? "On" : "Off")
         - **Face ID for System Prompts**: \(settings.systemAuthPromptsEnabled ? "On" : "Off")

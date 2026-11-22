@@ -55,6 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     /// Held so `menuNeedsUpdate` can refresh this row in place rather than rebuilding the whole menu.
     private var sessionMenuItem: NSMenuItem?
+    /// Item #31: Travel Mode pause / resume menu item.
+    private var travelModeMenuItem: NSMenuItem?
     /// Bridges SwiftUI's `openWindow(\.settings)` action in from `NEELxApp.body`, since this plain `NSObject` has no
     /// `@Environment` of its own. Bound from the scene body (not `onAppear`) so it's ready before Settings has ever shown —
     /// `NSApp.windows` stops containing the window once fully closed, so only `openWindow(id:)` can reliably re-create it.
@@ -96,6 +98,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sessionItem.target = self
         menu.addItem(sessionItem)
         sessionMenuItem = sessionItem
+
+        let travelItem = NSMenuItem(title: "Travel Mode", action: nil, keyEquivalent: "")
+        menu.addItem(travelItem)
+        travelModeMenuItem = travelItem
 
         let settingsItem = NSMenuItem(title: "Settings", action: #selector(openSettingsWindow), keyEquivalent: ",")
         settingsItem.target = self
@@ -261,6 +267,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Fires right before the menu opens — simpler than keeping an `NSMenuItem` reactively bound to `isSessionUnlocked`.
     func menuNeedsUpdate(_ menu: NSMenu) {
         updateSessionMenuItem()
+        updateTravelModeMenuItem()
+    }
+
+    private func updateTravelModeMenuItem() {
+        guard let travelModeMenuItem else { return }
+        let settings = NEELxSettings.shared
+
+        if settings.isTravelModeActive {
+            let status = settings.travelModeStatusText ?? "Paused"
+            travelModeMenuItem.title = "Travel Mode: \(status)"
+            travelModeMenuItem.image = NSImage(systemSymbolName: "airplane.circle.fill", accessibilityDescription: nil)
+
+            let sub = NSMenu()
+            let resumeItem = NSMenuItem(title: "Resume Face Unlock Now", action: #selector(resumeFaceUnlockNow), keyEquivalent: "")
+            resumeItem.target = self
+            resumeItem.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: nil)
+            sub.addItem(resumeItem)
+
+            sub.addItem(NSMenuItem.separator())
+            let extendTomorrow = NSMenuItem(title: "Extend: Until Tomorrow", action: #selector(pauseUntilTomorrow), keyEquivalent: "")
+            extendTomorrow.target = self
+            sub.addItem(extendTomorrow)
+
+            let extendResumed = NSMenuItem(title: "Extend: Until Manually Resumed", action: #selector(pauseUntilResumed), keyEquivalent: "")
+            extendResumed.target = self
+            sub.addItem(extendResumed)
+
+            travelModeMenuItem.submenu = sub
+        } else {
+            travelModeMenuItem.title = "Travel Mode (Pause Face Unlock)"
+            travelModeMenuItem.image = NSImage(systemSymbolName: "airplane", accessibilityDescription: nil)
+
+            let sub = NSMenu()
+            let oneHour = NSMenuItem(title: "Pause for 1 Hour", action: #selector(pauseForOneHour), keyEquivalent: "")
+            oneHour.target = self
+            sub.addItem(oneHour)
+
+            let untilTomorrow = NSMenuItem(title: "Pause Until Tomorrow", action: #selector(pauseUntilTomorrow), keyEquivalent: "")
+            untilTomorrow.target = self
+            sub.addItem(untilTomorrow)
+
+            let untilResumed = NSMenuItem(title: "Pause Until Manually Resumed", action: #selector(pauseUntilResumed), keyEquivalent: "")
+            untilResumed.target = self
+            sub.addItem(untilResumed)
+
+            travelModeMenuItem.submenu = sub
+        }
+    }
+
+    @objc private func pauseForOneHour() {
+        NEELxSettings.shared.enableTravelMode(.oneHour)
+        updateTravelModeMenuItem()
+    }
+
+    @objc private func pauseUntilTomorrow() {
+        NEELxSettings.shared.enableTravelMode(.untilTomorrow)
+        updateTravelModeMenuItem()
+    }
+
+    @objc private func pauseUntilResumed() {
+        NEELxSettings.shared.enableTravelMode(.untilResumed)
+        updateTravelModeMenuItem()
+    }
+
+    @objc private func resumeFaceUnlockNow() {
+        NEELxSettings.shared.resumeFromTravelMode()
+        updateTravelModeMenuItem()
     }
 
     private func updateSessionMenuItem() {

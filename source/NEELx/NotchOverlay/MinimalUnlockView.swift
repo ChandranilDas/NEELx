@@ -14,6 +14,7 @@ struct MinimalUnlockView: View {
     /// Inset from the silhouette's left/right edges. The caller adds the
     /// notch's flare allowance into this where it applies.
     let edgeInset: CGFloat
+    var isVisualOnly: Bool = false
     var lockIconSize: CGFloat = NotchGeometry.minimalLockIconSize
     var mediaWidth: CGFloat = NotchGeometry.minimalMediaWidth
     var mediaVerticalInset: CGFloat = NotchGeometry.minimalMediaVerticalInset
@@ -21,11 +22,25 @@ struct MinimalUnlockView: View {
     var pulseScale: CGFloat = 1
     var pulseOpacity: Double = 1
 
+    private var iconName: String {
+        if isUnlocked {
+            return isVisualOnly ? "checkmark.circle.fill" : "lock.open.fill"
+        }
+        return "lock.fill"
+    }
+
+    private var iconColor: Color {
+        if isUnlocked && isVisualOnly {
+            return Color(red: 0.19, green: 0.82, blue: 0.35)
+        }
+        return NEELxTheme.textPrimary
+    }
+
     var body: some View {
         HStack(spacing: 0) {
-            Image(systemName: isUnlocked ? "lock.open.fill" : "lock.fill")
+            Image(systemName: iconName)
                 .font(.system(size: lockIconSize, weight: .semibold))
-                .foregroundStyle(NEELxTheme.textPrimary)
+                .foregroundStyle(iconColor)
                 // The explicit `.animation` below is required: the phase change that flips
                 // `isUnlocked` isn't itself wrapped in an animation transaction.
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))

@@ -14,25 +14,28 @@ import Observation
 
 enum SecurityAuditKind: String, Codable, Sendable {
     case unlocked
+    case faceRecognized
     case wrongFace
     case spoofBlocked
     case systemError
 
     var title: String {
         switch self {
-        case .unlocked:     return "Unlocked"
-        case .wrongFace:    return "Unrecognized face"
-        case .spoofBlocked: return "Spoof blocked"
-        case .systemError:  return "Unlock blocked"
+        case .unlocked:       return "Unlocked"
+        case .faceRecognized: return "Face recognized"
+        case .wrongFace:      return "Unrecognized face"
+        case .spoofBlocked:   return "Spoof blocked"
+        case .systemError:    return "Unlock blocked"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .unlocked:     return "checkmark.shield.fill"
-        case .wrongFace:    return "person.crop.circle.badge.exclamationmark"
-        case .spoofBlocked: return "exclamationmark.shield.fill"
-        case .systemError:  return "exclamationmark.triangle.fill"
+        case .unlocked:       return "checkmark.shield.fill"
+        case .faceRecognized: return "person.crop.circle.badge.checkmark"
+        case .wrongFace:      return "person.crop.circle.badge.exclamationmark"
+        case .spoofBlocked:   return "exclamationmark.shield.fill"
+        case .systemError:    return "exclamationmark.triangle.fill"
         }
     }
 }

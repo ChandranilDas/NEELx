@@ -38,6 +38,12 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Run session and liveness self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./source/tools/run_security_selftests.sh
+
       - name: Resolve Release Version
         run: |
           VERSION="$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "2.0.0-beta.6")"

@@ -225,6 +225,7 @@ struct NotchOverlayView: View {
                 // The notch's flare eats `topRadius` before any real black starts.
                 edgeInset: NotchGeometry.minimalContentEdgeInset
                     + (style == .notch ? topRadius : 0),
+                isVisualOnly: controller.isVisualOnlyRecognition,
                 lockIconSize: style == .notch
                     ? NotchGeometry.minimalNotchLockIconSize : NotchGeometry.minimalLockIconSize,
                 mediaWidth: style == .notch

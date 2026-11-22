@@ -72,6 +72,9 @@ final class NotchOverlayController {
     /// so a settings change mid-attempt can't resize the panel or change how it resolves.
     private(set) var activeUnlockStyle: UnlockAnimationStyle = .original
 
+    /// Item #38: Whether the successful match is in Zero-Password Visual-Only mode ("Face recognized").
+    private(set) var isVisualOnlyRecognition = false
+
     /// What a hover-driven activation should do — set by `arm()` (persists
     /// across scan cycles) or by one-shot `present(onRetry:)` (single use).
     private var onActivate: (() -> Void)?
@@ -178,6 +181,7 @@ final class NotchOverlayController {
     func beginScanning() {
         resolveTask?.cancel(); resolveTask = nil
         scanTimeoutTask?.cancel()
+        isVisualOnlyRecognition = false
         geometry = windowController.currentGeometry
         activeUnlockStyle = NEELxSettings.shared.effectiveUnlockAnimationStyle
         content = .scan(.idle)
@@ -274,9 +278,10 @@ final class NotchOverlayController {
     /// Resolves the current attempt. Success plays its animation and then
     /// collapses on its own; failure plays its animation and holds until
     /// either the hold expires or the user hovers to retry.
-    func finish(success: Bool) {
+    func finish(success: Bool, isVisualOnly: Bool = false) {
         resolveTask?.cancel()
         scanTimeoutTask?.cancel()
+        isVisualOnlyRecognition = success && isVisualOnly
 
         // Unlock Animation → None just skips the success/failure video; phase and
         // retry behavior are unaffected. Reads the cycle's captured style, not live settings.
