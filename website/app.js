@@ -266,9 +266,9 @@ function renderSculptedHumanFace(ctx, opts) {
     const x1 = x * cosY + z * sinY;
     const z1 = -x * sinY + z * cosY;
 
-    // Rotate X (pitch)
-    const y2 = y * cosX - z1 * sinX;
-    const z2 = y * sinX + z1 * cosX;
+    // Rotate X (pitch) - aligned with screen coordinate space (+Y is down)
+    const y2 = y * cosX + z1 * sinX;
+    const z2 = -y * sinX + z1 * cosX;
 
     const p = FOV / (FOV - z2);
     return { x: x1 * p, y: y2 * p, z: z2, p };
