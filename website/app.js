@@ -5,7 +5,6 @@
 //  - Interactive Backlit HDR Shadow Recovery before/after split demo
 //  - Interactive Studio Light & Chromatic Prism Rim simulator
 //  - Interactive Stage 3 Neural 3D Depth Inferno heatmap + cross-section
-//  - Original Windows Fluent Prism Horizon animated canvas
 //  - 1-click Copy buttons for every terminal command & SHA-256 checksum
 //  - Live GitHub Releases sync + Screenshot-capable Cloudflare/Brevo feedback form
 
@@ -46,10 +45,6 @@ function initTabs() {
 
   document.querySelectorAll("[data-go-tab]").forEach((el) => {
     el.addEventListener("click", () => {
-      const dlPlatform = el.getAttribute("data-select-dl");
-      if (dlPlatform) {
-        selectPlatformGroup("download", dlPlatform);
-      }
       activateTab(el.getAttribute("data-go-tab"));
     });
   });
@@ -60,44 +55,7 @@ function initTabs() {
   }
 }
 
-function selectPlatformGroup(group, platform) {
-  document.querySelectorAll(`.platform-pill[data-platform-group="${group}"]`).forEach((btn) => {
-    const isMatch = btn.getAttribute("data-platform") === platform;
-    btn.classList.toggle("active", isMatch);
-  });
-  ["macos", "windows"].forEach((p) => {
-    const pane = document.getElementById(`${group}-${p}`);
-    if (pane) pane.classList.toggle("active", p === platform);
-  });
-  if (group === "bench") {
-    const sub = document.getElementById("benchSub");
-    if (sub) {
-      sub.textContent =
-        platform === "windows"
-          ? "Measured on Windows 11 · ONNX Runtime DirectML (DirectX 12 GPU / Copilot+ NPU)"
-          : "Benchmarked on Apple M4 · Runs natively on M1, M2, M3, M4, M5+ & Intel";
-    }
-  }
-}
 
-function initPlatformSwitchers() {
-  document.querySelectorAll(".platform-pill[data-platform-group]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const group = btn.getAttribute("data-platform-group");
-      const platform = btn.getAttribute("data-platform");
-      if (group && platform) {
-        selectPlatformGroup(group, platform);
-      }
-    });
-  });
-
-  // Auto-select Windows download & overview pane when visiting from a Windows PC
-  if (/Windows/i.test(navigator.userAgent || "")) {
-    selectPlatformGroup("overview", "windows");
-    selectPlatformGroup("download", "windows");
-    selectPlatformGroup("bench", "windows");
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 2. 1-Click Copy Buttons (Commands & SHA-256 Checksums)
@@ -248,7 +206,6 @@ async function syncLatestRelease() {
     });
 
     const macAsset = latest.assets.find((a) => !a.name.includes("lite") && a.name.endsWith(".dmg"));
-    const winAsset = latest.assets.find((a) => a.name.includes("windows") && !a.name.includes("lite") && a.name.endsWith(".zip"));
 
     if (macAsset) {
       const mb = (macAsset.size / (1024 * 1024)).toFixed(1);
@@ -257,20 +214,13 @@ async function syncLatestRelease() {
       if (macBtn) macBtn.href = macAsset.browser_download_url;
       if (macSize) macSize.textContent = `${mb} MB · Universal`;
     }
-    if (winAsset) {
-      const mb = (winAsset.size / (1024 * 1024)).toFixed(1);
-      const winBtn = document.getElementById("btnDownloadWin") || document.getElementById("btnDownloadWinPortable");
-      const winSize = document.getElementById("winSize") || document.getElementById("winPortableSize");
-      if (winBtn) winBtn.href = winAsset.browser_download_url;
-      if (winSize) winSize.textContent = `${mb} MB · Standalone Win x64`;
-    }
   } catch {
     // Keep pre-populated links seamlessly
   }
 }
 
 // ---------------------------------------------------------------------------
-// Shared Sculpted 3D Human Face Renderer (used across macOS, Windows & Depth Lab)
+// Shared Sculpted 3D Human Face Renderer (used across macOS & Depth Lab)
 // ---------------------------------------------------------------------------
 function renderSculptedHumanFace(ctx, opts) {
   const {
@@ -1237,261 +1187,6 @@ function initDepthLab() {
   frame();
 }
 
-// ---------------------------------------------------------------------------
-// 7. Windows 11 Fluent Prism Core — Studio-Grade Kinetic 3D Orbital Renderer
-//    (Matches real Windows 11 PrismHorizonOverlay.xaml + macOS studio quality)
-// ---------------------------------------------------------------------------
-function draw3DOrbitalRing(ctx, cx, cy, radius, tiltX, rotZ, strokeColor, glowColor, lineWidth, alpha) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rotZ);
-  ctx.scale(1, Math.max(0.14, Math.abs(tiltX)));
-  ctx.globalAlpha = alpha;
-
-  // Soft motion-blur volumetric halo (matching macOS orbital glow richness)
-  ctx.strokeStyle = glowColor;
-  ctx.lineWidth = lineWidth * 2.8;
-  ctx.shadowColor = glowColor;
-  ctx.shadowBlur = 18;
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Crisp luminous core arc
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = lineWidth;
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-}
-
-/**
- * Renders the studio-grade Windows 11 Fluent Prism Core kinetic emblem.
- * mode: "scanning" | "backlit" | "verified" | "spoof"
- * animatedLoop: true for How It Works phase cards (plays full smooth transition cycle)
- */
-function drawKineticPrismCore(ctx, cx, cy, radius, mode, t, opts = {}) {
-  const {
-    yaw = 0,
-    pitch = 0,
-    animatedLoop = false,
-    blinkPhase = 0,
-  } = opts;
-
-  ctx.save();
-
-  let phase = 1;
-  let shakeX = 0;
-  if (animatedLoop) {
-    if (mode === "verified") {
-      // Calm 4.4s loop: 0..0.38 orbital spin -> 0.38..0.58 emerald circle snap -> 0.52..0.76 checkmark draw -> hold
-      phase = (t * 0.24) % 1;
-    } else if (mode === "spoof") {
-      // Calm 4.0s loop: 0..0.34 cyan scan -> 0.34..0.58 damped spring recoil + coral X -> hold
-      phase = (t * 0.26) % 1;
-      if (phase >= 0.34 && phase < 0.62) {
-        const sp = (phase - 0.34) / 0.28;
-        shakeX = Math.sin(sp * Math.PI * 4) * Math.exp(-sp * 3.4) * (radius * 0.16);
-      }
-    }
-  } else if (mode === "spoof") {
-    shakeX = Math.sin(t * 2.4) * 1.2;
-  }
-
-  ctx.translate(cx + shakeX, cy);
-
-  // Determine current color palette based on mode & animation phase
-  let primary = "#38bdf8";
-  let secondary = "#818cf8";
-  let bloomRgba = "rgba(56, 189, 248, 0.22)";
-
-  if (mode === "backlit") {
-    primary = "#fbbf24";
-    secondary = "#38bdf8";
-    bloomRgba = "rgba(251, 191, 36, 0.22)";
-  } else if (mode === "verified" && (!animatedLoop || phase >= 0.36)) {
-    primary = "#30d158";
-    secondary = "#34d399";
-    bloomRgba = "rgba(48, 209, 88, 0.26)";
-  } else if (mode === "spoof" && (!animatedLoop || phase >= 0.34)) {
-    primary = "#fb7185";
-    secondary = "#f59e0b";
-    bloomRgba = "rgba(251, 113, 133, 0.24)";
-  }
-
-  // Deep atmospheric radial bloom behind the emblem
-  const aura = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 1.45);
-  aura.addColorStop(0, bloomRgba);
-  aura.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = aura;
-  ctx.beginPath();
-  ctx.arc(0, 0, radius * 1.45, 0, Math.PI * 2);
-  ctx.fill();
-
-  const isLockedVerified = mode === "verified" && (!animatedLoop || phase >= 0.42);
-  const isLockedSpoof = mode === "spoof" && (!animatedLoop || phase >= 0.38);
-
-  // 1. Dual 3D Tilted Orbital Prism Rings (scanning) OR clean luminous Circle (verified / spoof)
-  if (!isLockedVerified && !isLockedSpoof) {
-    const speed = mode === "verified" ? 1.5 : 1.15;
-    const tiltA = 0.42 + Math.sin(t * speed) * 0.42;
-    const tiltB = 0.42 + Math.cos(t * speed * 0.85) * 0.42;
-    draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltA, t * 0.65, primary, primary, Math.max(2.6, radius * 0.055), 0.9);
-    draw3DOrbitalRing(ctx, 0, 0, radius * 0.96, tiltB, -t * 0.52 + 1.1, secondary, secondary, Math.max(2.2, radius * 0.046), 0.78);
-  } else {
-    // Soft converged outer circular glow halo
-    ctx.save();
-    ctx.strokeStyle = primary;
-    ctx.globalAlpha = 0.24;
-    ctx.lineWidth = Math.max(7, radius * 0.14);
-    ctx.shadowColor = primary;
-    ctx.shadowBlur = 24;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.94, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    // Crisp luminous circle enclosing the tick or cross
-    ctx.save();
-    ctx.strokeStyle = primary;
-    ctx.lineWidth = Math.max(3.6, radius * 0.068);
-    ctx.globalAlpha = 0.96;
-    ctx.shadowColor = primary;
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.94, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // 3. Center Biometric Emblem:
-  //    - Scanning / Backlit: Proper Sculpted 3D Human Face + volumetric depth laser sweep
-  //    - Verified: Smooth spring-drawn Emerald Checkmark
-  //    - Spoof: Bold Coral-Amber Prism X
-  if (!isLockedVerified && !isLockedSpoof) {
-    const faceScale = (radius / 76) * 1.15;
-    renderSculptedHumanFace(ctx, {
-      cx: 0,
-      cy: 0,
-      scale: faceScale,
-      yaw,
-      pitch,
-      blinkPhase,
-      strokeMain: mode === "backlit" ? "rgba(255, 240, 195, 0.95)" : "rgba(232, 246, 255, 0.94)",
-      strokeSoft: mode === "backlit" ? "rgba(251, 191, 36, 0.34)" : "rgba(56, 189, 248, 0.36)",
-      fillTop: mode === "backlit" ? "rgba(251, 191, 36, 0.26)" : "rgba(56, 189, 248, 0.24)",
-      fillMid: "rgba(129, 140, 248, 0.12)",
-      fillEdge: "rgba(8, 12, 22, 0.55)",
-      pupilColor: primary,
-      showShoulders: false,
-      showMeridians: true,
-      lineWidthScale: 1.05,
-      shadowGlow: primary,
-    });
-
-    // Calm volumetric horizontal laser scanline gliding across the sculpted 3D face
-    const scanY = Math.sin(t * 1.65) * (radius * 0.58);
-    const beamW = radius * 1.28;
-    const beamGrad = ctx.createLinearGradient(-beamW / 2, scanY, beamW / 2, scanY);
-    beamGrad.addColorStop(0, "rgba(0,0,0,0)");
-    beamGrad.addColorStop(0.5, primary);
-    beamGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.strokeStyle = beamGrad;
-    ctx.lineWidth = Math.max(2, radius * 0.036);
-    ctx.shadowColor = primary;
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.moveTo(-beamW / 2, scanY);
-    ctx.lineTo(beamW / 2, scanY);
-    ctx.stroke();
-  } else if (isLockedVerified) {
-    // Progressive smooth checkmark draw-on
-    const drawProg = animatedLoop ? Math.min(1, Math.max(0, (phase - 0.44) / 0.24)) : 1;
-    const eased = 1 - Math.pow(1 - drawProg, 3);
-    const p0 = { x: -radius * 0.34, y: radius * 0.02 };
-    const p1 = { x: -radius * 0.08, y: radius * 0.29 };
-    const p2 = { x: radius * 0.38, y: -radius * 0.26 };
-
-    ctx.save();
-    ctx.strokeStyle = "#30d158";
-    ctx.lineWidth = Math.max(4.5, radius * 0.095);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.shadowColor = "#30d158";
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    if (eased < 0.42) {
-      const f = eased / 0.42;
-      ctx.lineTo(p0.x + (p1.x - p0.x) * f, p0.y + (p1.y - p0.y) * f);
-    } else {
-      ctx.lineTo(p1.x, p1.y);
-      const f = (eased - 0.42) / 0.58;
-      ctx.lineTo(p1.x + (p2.x - p1.x) * f, p1.y + (p2.y - p1.y) * f);
-    }
-    ctx.stroke();
-    ctx.restore();
-  } else if (isLockedSpoof) {
-    // Bold Coral-Amber Spoof Blocked X
-    const drawProg = animatedLoop ? Math.min(1, Math.max(0, (phase - 0.40) / 0.20)) : 1;
-    const eased = 1 - Math.pow(1 - drawProg, 3);
-    const d = radius * 0.30 * eased;
-    ctx.save();
-    ctx.strokeStyle = "#fb7185";
-    ctx.lineWidth = Math.max(4.4, radius * 0.09);
-    ctx.lineCap = "round";
-    ctx.shadowColor = "#fb7185";
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.moveTo(-d, -d);
-    ctx.lineTo(d, d);
-    ctx.moveTo(d, -d);
-    ctx.lineTo(-d, d);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-function initWindowsPrismCanvas() {
-  const canvas = document.getElementById("windowsPrismCanvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width;
-  const H = canvas.height;
-  let t = 0;
-
-  function frame() {
-    t += 0.022;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#06080d";
-    ctx.fillRect(0, 0, W, H);
-
-    const verified = Math.sin(t * 0.42) > 0.55;
-    drawKineticPrismCore(ctx, W * 0.5, H * 0.46, 44, verified ? "verified" : "scanning", t, {
-      yaw: Math.sin(t * 0.8) * 0.45,
-      pitch: Math.cos(t * 0.6) * 0.25,
-      blinkPhase: (t * 0.14) % 1,
-    });
-
-    ctx.fillStyle = verified ? "#5ee984" : "rgba(125, 211, 252, 0.82)";
-    ctx.font = "500 10px ui-monospace, Menlo, monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      verified ? "NEELx WINDOWS · PRISM CORE VERIFIED" : "NEELx WINDOWS · DIRECTML 3D SCANNING",
-      W * 0.5,
-      H - 10
-    );
-
-    requestAnimationFrame(frame);
-  }
-
-  frame();
-}
-
 function initMacNotchArchCanvas() {
   const canvas = document.getElementById("macNotchArchCanvas");
   if (!canvas) return;
@@ -1622,240 +1317,13 @@ function initMacNotchArchCanvas() {
   frame();
 }
 
-function initWinHeroCanvas() {
-  const canvas = document.getElementById("winHeroCanvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const dpr = window.devicePixelRatio || 1;
-  const W = 380;
-  const H = 248;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  ctx.scale(dpr, dpr);
-
-  const statusEl = document.getElementById("winHeroStatus");
-
-  let mode = "scanning";
-  let t = 0;
-  let targetYaw = 0;
-  let targetPitch = 0;
-  let yaw = 0;
-  let pitch = 0;
-  let blinkPhase = 0;
-
-  canvas.addEventListener("pointermove", (e) => {
-    const r = canvas.getBoundingClientRect();
-    targetYaw = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
-    targetPitch = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
-  });
-  canvas.addEventListener("pointerleave", () => {
-    targetYaw = 0;
-    targetPitch = 0;
-  });
-
-  function setMode(m) {
-    mode = m;
-    if (!statusEl) return;
-    if (m === "verified") statusEl.innerHTML = `Identity &amp; 3D Depth Verified · <strong>DPAPI Session Unlocked</strong>`;
-    else if (m === "spoof") statusEl.innerHTML = `Flat 2D Surface Detected · <strong>Blocked by DirectML 3D Gate</strong>`;
-    else statusEl.innerHTML = `Move cursor around face · <strong>Prism 3D Active</strong>`;
-  }
-
-  document.getElementById("btnWinHeroScan")?.addEventListener("click", () => setMode("scanning"));
-  document.getElementById("btnWinHeroUnlock")?.addEventListener("click", () => setMode("verified"));
-  document.getElementById("btnWinHeroSpoof")?.addEventListener("click", () => setMode("spoof"));
-
-  function render() {
-    t += 0.022;
-    blinkPhase = (blinkPhase + 0.007) % 1;
-    yaw += (targetYaw - yaw) * 0.14;
-    pitch += (targetPitch - pitch) * 0.14;
-
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#04060a";
-    ctx.fillRect(0, 0, W, H);
-
-    drawKineticPrismCore(ctx, W * 0.5, H * 0.46, 76, mode, t, {
-      yaw,
-      pitch,
-      blinkPhase,
-      animatedLoop: false,
-    });
-
-    ctx.fillStyle = mode === "verified" ? "#5ee984" : mode === "spoof" ? "#fda4af" : "rgba(186, 230, 253, 0.72)";
-    ctx.font = "500 10.5px ui-monospace, Consolas, monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      mode === "verified"
-        ? "PRISM 3D VERIFIED · Δz nose = +0.088 · DPAPI UNLOCKED"
-        : mode === "spoof"
-          ? "FLAT 2D SPOOF BLOCKED · Δz nose = +0.004"
-          : "DIRECTML 3D MESH · MULTI-FRAME DEPTH ACTIVE",
-      W * 0.5,
-      H - 14
-    );
-
-    requestAnimationFrame(render);
-  }
-
-  render();
-}
-
-function initWinHowItWorksSimulators() {
-  const phaseConfigs = [
-    { id: "winPhaseScan", state: "scanning" },
-    { id: "winPhaseUnlock", state: "verified" },
-    { id: "winPhaseSpoof", state: "spoof" },
-  ];
-
-  const phaseCanvases = phaseConfigs
-    .map((cfg) => ({ ...cfg, el: document.getElementById(cfg.id) }))
-    .filter((item) => item.el);
-
-  const lockSim = document.getElementById("winLockSimCanvas");
-  let simState = "scanning";
-
-  document.querySelectorAll("[data-win-sim]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      simState = btn.getAttribute("data-win-sim") || "scanning";
-    });
-  });
-
-  let t = 0;
-  let blinkPhase = 0;
-  function tick() {
-    t += 0.022;
-    blinkPhase = (blinkPhase + 0.007) % 1;
-
-    // 1. Three studio-grade pure-obsidian Windows Phase Cards (matching macOS .mp4 quality & visual presence!)
-    for (const item of phaseCanvases) {
-      const ctx = item.el.getContext("2d");
-      const W = item.el.width;
-      const H = item.el.height;
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, W, H);
-
-      drawKineticPrismCore(ctx, W * 0.5, H * 0.5, 96, item.state, t, {
-        yaw: item.state === "scanning" ? Math.sin(t * 0.7) * 0.55 : 0,
-        pitch: item.state === "scanning" ? Math.cos(t * 0.5) * 0.3 : 0,
-        blinkPhase,
-        animatedLoop: true,
-      });
-    }
-
-    // 2. Full Interactive Windows 11 Lock Screen Simulator showing the exact floating Prism Core Card
-    if (lockSim) {
-      const ctx = lockSim.getContext("2d");
-      const W = lockSim.width;
-      const H = lockSim.height;
-      ctx.clearRect(0, 0, W, H);
-
-      const bg = ctx.createRadialGradient(W * 0.5, H * 0.9, 50, W * 0.5, H * 0.5, W * 0.65);
-      bg.addColorStop(
-        0,
-        simState === "verified"
-          ? "rgba(48,209,88,0.16)"
-          : simState === "spoof"
-            ? "rgba(251,113,133,0.15)"
-            : simState === "backlit"
-              ? "rgba(251,191,36,0.16)"
-              : "rgba(56,189,248,0.17)"
-      );
-      bg.addColorStop(1, "#05070c");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
-
-      // Floating Obsidian Mica Prism Core Card (exact match to Windows PrismHorizonOverlay.xaml!)
-      const cardW = 198;
-      const cardH = 164;
-      const cardX = (W - cardW) / 2;
-      const cardY = 14;
-      const borderCol =
-        simState === "verified"
-          ? "rgba(48, 209, 88, 0.5)"
-          : simState === "spoof"
-            ? "rgba(251, 113, 133, 0.5)"
-            : simState === "backlit"
-              ? "rgba(251, 191, 36, 0.5)"
-              : "rgba(56, 189, 248, 0.45)";
-
-      ctx.save();
-      ctx.fillStyle = "rgba(8, 10, 15, 0.95)";
-      ctx.strokeStyle = borderCol;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.roundRect(cardX, cardY, cardW, cardH, 22);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      drawKineticPrismCore(ctx, W * 0.5, cardY + 66, 48, simState, t, {
-        yaw: simState === "scanning" || simState === "backlit" ? Math.sin(t * 0.8) * 0.45 : 0,
-        pitch: Math.cos(t * 0.6) * 0.2,
-        blinkPhase,
-        animatedLoop: false,
-      });
-
-      const titleMap = {
-        scanning: "PRISM 3D · SCANNING",
-        backlit: "BACKLIT · HDR LIFT",
-        verified: "UNLOCKED · 3D VERIFIED",
-        spoof: "2D SPOOF BLOCKED",
-      };
-      const titleCol =
-        simState === "verified"
-          ? "#30d158"
-          : simState === "spoof"
-            ? "#fb7185"
-            : simState === "backlit"
-              ? "#fbbf24"
-              : "#38bdf8";
-
-      ctx.textAlign = "center";
-      ctx.fillStyle = titleCol;
-      ctx.font = "600 10.5px 'Segoe UI', -apple-system, sans-serif";
-      ctx.fillText(titleMap[simState] || titleMap.scanning, W * 0.5, cardY + cardH - 22);
-      ctx.fillStyle = "#8e97a8";
-      ctx.font = "400 9.5px 'Segoe UI', -apple-system, sans-serif";
-      ctx.fillText("DirectML GPU · Windows DPAPI", W * 0.5, cardY + cardH - 9);
-
-      // Windows 11 Lock Screen time & caption beneath the floating card
-      ctx.fillStyle = "rgba(255,255,255,0.88)";
-      ctx.font = "600 40px 'Segoe UI Variable Display', -apple-system, sans-serif";
-      ctx.fillText("09:41", W / 2, 224);
-
-      ctx.fillStyle = "rgba(255,255,255,0.52)";
-      ctx.font = "400 12.5px 'Segoe UI', -apple-system, sans-serif";
-      const subText =
-        simState === "verified"
-          ? "Welcome back · Signing in via NEELx Credential Provider…"
-          : simState === "spoof"
-            ? "NEELx blocked a 2D spoof · Enter PIN or look directly at webcam"
-            : simState === "backlit"
-              ? "Backlit window detected · HDR shadow recovery active"
-              : "Looking for your 3D face via DirectML…";
-      ctx.fillText(subText, W / 2, 254);
-    }
-
-    requestAnimationFrame(tick);
-  }
-
-  tick();
-}
-
-// ---------------------------------------------------------------------------
-// 8. Direct Feedback Form (Auto-detected Browser Info + Screenshots + Email Picker)
-// ---------------------------------------------------------------------------
 function detectBasicBrowserEnv() {
   const ua = navigator.userAgent || "";
   const os = /Mac OS X/i.test(ua)
     ? "macOS"
-    : /Windows/i.test(ua)
-      ? "Windows"
-      : /Linux/i.test(ua)
-        ? "Linux"
-        : "Browser";
+    : /Linux/i.test(ua)
+      ? "Linux"
+      : "Browser";
   const browser = /Edg\//.test(ua)
     ? "Edge"
     : /Chrome\//.test(ua)
@@ -2114,15 +1582,11 @@ function initFeedbackForm() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
-  initPlatformSwitchers();
   initCopyButtons();
   syncLatestRelease();
   initEnrollmentSimulator();
-  initWinHeroCanvas();
   initHowItWorksDemos();
-  initWinHowItWorksSimulators();
   initDepthLab();
-  initWindowsPrismCanvas();
   initMacNotchArchCanvas();
   initFeedbackForm();
 });
