@@ -10,6 +10,7 @@
 
 import CoreGraphics
 import Foundation
+import IOKit.ps
 
 @MainActor
 final class PresenceAutoLocker {
@@ -35,6 +36,11 @@ final class PresenceAutoLocker {
         guard settings.presenceAutoLockEnabled,
               !isChecking,
               !LockMonitor.isScreenActuallyLocked() else { return }
+
+        // Item #52: Smart Battery Policy — Pause presence auto-lock camera polling when on battery power
+        if settings.pausePresenceOnBattery && Self.isRunningOnBattery() {
+            return
+        }
 
         let now = Date()
         guard now.timeIntervalSince(lastCheckAt) >= recheckCooldown else { return }
@@ -88,6 +94,21 @@ final class PresenceAutoLocker {
         if !personPresent, !LockMonitor.isScreenActuallyLocked() {
             Self.lockScreenImmediately()
         }
+    }
+
+    /// Checks if the MacBook is currently operating on internal battery power (Item #52).
+    private static func isRunningOnBattery() -> Bool {
+        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else {
+            return false
+        }
+        for source in sources {
+            guard let desc = IOPSGetPowerSourceDescription(snapshot, source)?.takeUnretainedValue() as? [String: Any] else { continue }
+            if let state = desc[kIOPSPowerSourceStateKey] as? String, state == kIOPSBatteryPowerValue {
+                return true
+            }
+        }
+        return false
     }
 
     /// Invokes macOS's native `SACLockScreenImmediate` from `login.framework` (instant, clean lock screen).

@@ -9,6 +9,7 @@
 //
 
 import CoreML
+import CryptoKit
 import Foundation
 import Observation
 
@@ -108,11 +109,12 @@ final class DepthModelDownloader {
     private(set) var state: State = NeuralDepthAnalyzer.shared.isModelAvailable ? .installed : .idle
     private var downloadTask: Task<Void, Never>?
 
-    private let baseURL = "https://huggingface.co/apple/coreml-depth-anything-v2-small/resolve/main/DepthAnythingV2SmallF16.mlpackage"
-    private let files: [(relPath: String, approxBytes: Double)] = [
-        ("Manifest.json", 1_024),
-        ("Data/com.apple.CoreML/model.mlmodel", 400_000),
-        ("Data/com.apple.CoreML/weights/weight.bin", 49_420_000),
+    // Pinned commit revision & checksums for supply-chain integrity (Item #5)
+    private let baseURL = "https://huggingface.co/apple/coreml-depth-anything-v2-small/resolve/cfef6f6f2a70783dedc0bfae40cecbc2052285d3/DepthAnythingV2SmallF16.mlpackage"
+    private let files: [(relPath: String, approxBytes: Double, expectedSHA256: String)] = [
+        ("Manifest.json", 1_024, "2883ae290c48fe916dc5ececac03a7d847fa277165a49ef5652fa1d2b9cb55f7"),
+        ("Data/com.apple.CoreML/model.mlmodel", 400_000, "44ac97a3efcfd52113183fb2862ff59cd0368e9ec2e30a90a54980dd11407042"),
+        ("Data/com.apple.CoreML/weights/weight.bin", 49_420_000, "fa60d9b6a155734f59029ebb882fd54e549bfaee3539c1a9cbd2cbbab64a0fed"),
     ]
 
     private init() {}
@@ -182,6 +184,17 @@ final class DepthModelDownloader {
                     }
                 }
 
+                // Verify cryptographic checksum (Item #5)
+                if let actualHash = Self.computeSHA256(url: downloadedTemp),
+                   actualHash.lowercased() != item.expectedSHA256.lowercased() {
+                    try? fm.removeItem(at: downloadedTemp)
+                    throw NSError(
+                        domain: "NEELx.Downloader",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Cryptographic checksum mismatch for \(item.relPath). Expected \(item.expectedSHA256), got \(actualHash)"]
+                    )
+                }
+
                 if fm.fileExists(atPath: destFile.path) {
                     try fm.removeItem(at: destFile)
                 }
@@ -219,5 +232,17 @@ final class DepthModelDownloader {
         } catch {
             state = .failed(error.localizedDescription)
         }
+    }
+
+    private static func computeSHA256(url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while true {
+            let chunk = handle.readData(ofLength: 1024 * 512)
+            if chunk.isEmpty { break }
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

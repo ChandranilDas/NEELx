@@ -32,6 +32,8 @@ final class WelcomeBannerWindowController {
 
     func show(name: String) {
         guard NEELxSettings.shared.welcomeBannerEnabled else { return }
+        // Item #44: In Discreet Lock-Screen Privacy Mode, suppress floating name banners in public
+        guard !NEELxSettings.shared.discreetUnlockMode else { return }
 
         dismissTask?.cancel()
         dismissTask = nil

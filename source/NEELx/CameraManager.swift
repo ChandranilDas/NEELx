@@ -31,6 +31,11 @@ final class CameraManager: NSObject {
     private(set) var currentFrame: CameraFrame?
     private(set) var errorMessage: String?
 
+    /// Active camera device name (or currently resolved default)
+    var currentDeviceName: String {
+        currentInput?.device.localizedName ?? CameraDeviceCatalog.resolvedDevice()?.localizedName ?? "FaceTime HD Camera"
+    }
+
     /// Exposed read-only so `CameraPreviewView` can attach a preview layer to the same session.
     let session = AVCaptureSession()
     private let videoOutput = AVCaptureVideoDataOutput()

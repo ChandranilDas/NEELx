@@ -184,6 +184,20 @@ struct GeneralSettingsPage: View {
                         .labelsHidden()
                         .frame(width: 110)
                     }
+                    SettingsGroupDivider()
+                    SettingsRowContent(
+                        title: "Pause Presence Lock on battery",
+                        subtitle: "Conserves battery by pausing camera presence checks while unplugged from power."
+                    ) {
+                        NEELxToggle(isOn: $settings.pausePresenceOnBattery)
+                    }
+                }
+                SettingsGroupDivider()
+                SettingsRowContent(
+                    title: "Discreet public privacy mode",
+                    subtitle: "Mutes the unlock chime, suppresses the floating welcome banner with your name, and prevents bright Studio Light illumination in public places."
+                ) {
+                    NEELxToggle(isOn: $settings.discreetUnlockMode)
                 }
                 SettingsGroupDivider()
                 SettingsRowContent(title: "Haptic feedback") {

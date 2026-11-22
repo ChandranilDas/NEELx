@@ -91,6 +91,8 @@ final class ScanLightingController {
     /// hardware backlight + Studio Light rim halo until the face is clearly illuminated.
     func consider(_ image: CGImage, faceVisible: Bool = false, faceBox: CGRect? = nil) {
         guard isActive else { return }
+        // Item #44: Discreet Lock-Screen Privacy Mode suppresses bright Studio Light in public spaces
+        if !forEnrollment && NEELxSettings.shared.discreetUnlockMode { return }
         guard UserDefaults.standard.object(forKey: "NEELxSecurity.scanLightEnabled") as? Bool ?? true else {
             return
         }

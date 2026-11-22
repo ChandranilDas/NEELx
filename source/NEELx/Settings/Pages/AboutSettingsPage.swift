@@ -18,6 +18,7 @@ struct AboutSettingsPage: View {
     @State private var didCopyDiagnostics = false
     @State private var showFeedbackSheet = false
     @State private var showCheckMySetupSheet = false
+    @State private var showStorageManagementSheet = false
     @State private var showResetConfirmation = false
     private let requiredTapCount = 5
     private let tapResetInterval: TimeInterval = 1.0
@@ -54,6 +55,16 @@ struct AboutSettingsPage: View {
                 buttonTitle: "Check…"
             ) {
                 showCheckMySetupSheet = true
+            }
+
+            SettingsGroupDivider()
+
+            SettingsActionRowContent(
+                title: "Storage & Cache Management",
+                subtitle: "Inspect disk usage for neural models, biometric vault, and temporary files.",
+                buttonTitle: "Manage…"
+            ) {
+                showStorageManagementSheet = true
             }
 
             SettingsGroupDivider()
@@ -143,6 +154,9 @@ struct AboutSettingsPage: View {
         }
         .sheet(isPresented: $showCheckMySetupSheet) {
             CheckMySetupSheetView(environment: environment)
+        }
+        .sheet(isPresented: $showStorageManagementSheet) {
+            StorageManagementView()
         }
         .alert("Reset NEELx to Factory Defaults?", isPresented: $showResetConfirmation) {
             Button("Reset and Start Setup", role: .destructive) {

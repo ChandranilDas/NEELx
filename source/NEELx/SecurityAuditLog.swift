@@ -71,6 +71,11 @@ final class SecurityAuditLog {
     private(set) var entries: [SecurityAuditEntry] = []
     private let maxEntries = 50
 
+    /// Whether any audit entries currently retain an encrypted photo thumbnail (Item #4).
+    var hasAnySnapshots: Bool {
+        entries.contains { $0.snapshotJPEG != nil }
+    }
+
     private static var storageURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
@@ -110,13 +115,30 @@ final class SecurityAuditLog {
         guard NEELxSettings.shared.intruderLogEnabled else { return }
         guard SecureCredentialManager.isSessionUnlocked else { return }
 
-        // Only attach compact JPEG thumbnails for blocked intruders/spoofs (never for normal unlocks)
-        let jpeg: Data? = (kind != .unlocked) ? snapshotImage.flatMap(Self.encodeThumbnailJPEG) : nil
+        // Item #4: Photo thumbnails for blocked intruders/spoofs are gated behind the explicit
+        // saveIntruderSnapshots privacy toggle. If disabled, timestamp and reason are recorded without photos.
+        let shouldCapturePhoto = (kind != .unlocked) && NEELxSettings.shared.saveIntruderSnapshots
+        let jpeg: Data? = shouldCapturePhoto ? snapshotImage.flatMap(Self.encodeThumbnailJPEG) : nil
         let entry = SecurityAuditEntry(kind: kind, detail: detail, snapshotJPEG: jpeg)
 
         entries.insert(entry, at: 0)
         if entries.count > maxEntries {
             entries.removeLast(entries.count - maxEntries)
+        }
+        persist()
+    }
+
+    /// Item #4: Wipes all saved photo thumbnails from existing audit entries while keeping the event history intact.
+    func clearAllSnapshots() {
+        guard !entries.isEmpty else { return }
+        entries = entries.map { entry in
+            SecurityAuditEntry(
+                id: entry.id,
+                timestamp: entry.timestamp,
+                kind: entry.kind,
+                detail: entry.detail,
+                snapshotJPEG: nil
+            )
         }
         persist()
     }

@@ -11,6 +11,19 @@ import Foundation
 import CoreGraphics
 import Observation
 
+/// Item #33: Local "Last Unlock Receipt" — cryptographic/biometric telemetry of the most recent successful unlock.
+struct LastUnlockReceipt: Codable, Sendable, Equatable {
+    let timestamp: Date
+    let faceName: String
+    let similarityPercent: Int
+    let opticalSensor: String
+    let depth3DPercent: Int?
+    let depthProfileMatchPercent: Int?
+    let aneLatencyMs: Double?
+    let livenessCue: String
+    let isVisualOnly: Bool
+}
+
 @Observable
 @MainActor
 final class FaceUnlockCoordinator {
@@ -19,6 +32,9 @@ final class FaceUnlockCoordinator {
     let camera = CameraManager()
     private let scanLighting = ScanLightingController()
     let pipeline = FaceRecognitionPipeline()
+
+    /// Item #33: Most recent unlock telemetry receipt
+    private(set) var latestReceipt: LastUnlockReceipt?
 
     /// Persisted via NEELxSettings. Setting to false cancels any in-flight scan and disarms the overlay immediately.
     var isEnabled: Bool {
@@ -78,6 +94,37 @@ final class FaceUnlockCoordinator {
             Task.detached(priority: .utility) {
                 _ = NeuralDepthAnalyzer.shared.warmUp()
             }
+        }
+        if let data = UserDefaults.standard.data(forKey: "NEELx.latestUnlockReceipt"),
+           let saved = try? JSONDecoder().decode(LastUnlockReceipt.self, from: data) {
+            self.latestReceipt = saved
+        }
+    }
+
+    /// Item #33: Records cryptographic/biometric telemetry for the most recent unlock.
+    private func recordUnlockReceipt(
+        name: String,
+        similarity: Float,
+        sensor: String,
+        depthReading: NeuralDepthReading?,
+        profileSimilarity: Float?,
+        cue: LivenessCue?,
+        isVisualOnly: Bool
+    ) {
+        let receipt = LastUnlockReceipt(
+            timestamp: Date(),
+            faceName: name,
+            similarityPercent: Int((similarity * 100).rounded()),
+            opticalSensor: sensor,
+            depth3DPercent: depthReading.map { Int(($0.depth3DScore * 100).rounded()) },
+            depthProfileMatchPercent: profileSimilarity.map { Int(($0 * 100).rounded()) },
+            aneLatencyMs: depthReading?.inferenceMs,
+            livenessCue: depthReading != nil ? "3D Neural Depth (ANE)" : (cue?.title ?? "Attention & Gaze"),
+            isVisualOnly: isVisualOnly
+        )
+        self.latestReceipt = receipt
+        if let data = try? JSONEncoder().encode(receipt) {
+            UserDefaults.standard.set(data, forKey: "NEELx.latestUnlockReceipt")
         }
     }
 
@@ -723,6 +770,17 @@ final class FaceUnlockCoordinator {
                     lastOutcome = visualSummary
                     SecurityAuditLog.shared.record(kind: .faceRecognized, detail: "\(visualSummary) Touch ID or password required to sign in.")
 
+                    // Item #33: Record telemetry receipt for visual verification
+                    recordUnlockReceipt(
+                        name: faceName,
+                        similarity: readyMatch.centroidSimilarity,
+                        sensor: camera.currentDeviceName,
+                        depthReading: depthReading,
+                        profileSimilarity: depthProfileSimilarity,
+                        cue: confirmingCue,
+                        isVisualOnly: true
+                    )
+
                     scanLighting.hide()
                     NEELxSettings.shared.playUnlockFeedback()
 
@@ -761,6 +819,17 @@ final class FaceUnlockCoordinator {
 
                 // Floating "Welcome Back (Name)!" popup message right after unlocking screen
                 WelcomeBannerWindowController.shared.show(name: faceName)
+
+                // Item #33: Record telemetry receipt for confirmed unlock
+                recordUnlockReceipt(
+                    name: faceName,
+                    similarity: readyMatch.centroidSimilarity,
+                    sensor: camera.currentDeviceName,
+                    depthReading: depthReading,
+                    profileSimilarity: depthProfileSimilarity,
+                    cue: confirmingCue,
+                    isVisualOnly: false
+                )
 
                 // Log verified unlock & silently learn high-confidence 3D-verified appearance/lighting drift
                 SecurityAuditLog.shared.record(kind: .unlocked, detail: "macOS session unlocked after submission; sign-in method unavailable. \(summary)")

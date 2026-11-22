@@ -164,6 +164,9 @@ final class NEELxSettings {
         static let travelModePauseUntil = "NEELxSettings.travelModePauseUntil"
         static let lockAndPauseEnabled = "NEELxSettings.lockAndPauseEnabled"
         static let visualOnlyModeEnabled = "NEELxSettings.visualOnlyModeEnabled"
+        static let saveIntruderSnapshots = "NEELxSettings.saveIntruderSnapshots"
+        static let pausePresenceOnBattery = "NEELxSettings.pausePresenceOnBattery"
+        static let discreetUnlockMode = "NEELxSettings.discreetUnlockMode"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -425,9 +428,30 @@ final class NEELxSettings {
         didSet { defaults.set(visualOnlyModeEnabled, forKey: Key.visualOnlyModeEnabled) }
     }
 
+    /// Item #4: Privacy-guarded failed-scan photo thumbnails. When false (default), intruder/spoof events
+    /// are recorded with timestamp and reason, but without saving an image of the face.
+    var saveIntruderSnapshots: Bool {
+        didSet { defaults.set(saveIntruderSnapshots, forKey: Key.saveIntruderSnapshots) }
+    }
+
+    /// Item #52: Smart Battery Policy for Walk-Away Auto-Lock — Pauses camera presence checks
+    /// when running on battery power to conserve MacBook energy. Enabled by default.
+    var pausePresenceOnBattery: Bool {
+        didSet { defaults.set(pausePresenceOnBattery, forKey: Key.pausePresenceOnBattery) }
+    }
+
+    /// Item #44: Discreet Lock-Screen Privacy Mode — Mutes unlock chime, suppresses floating welcome
+    /// banner with user name, and suppresses bright screen illumination in public places.
+    var discreetUnlockMode: Bool {
+        didSet { defaults.set(discreetUnlockMode, forKey: Key.discreetUnlockMode) }
+    }
+
     private init() {
         lockAndPauseEnabled = defaults.object(forKey: Key.lockAndPauseEnabled) as? Bool ?? true
         visualOnlyModeEnabled = defaults.bool(forKey: Key.visualOnlyModeEnabled)
+        saveIntruderSnapshots = defaults.bool(forKey: Key.saveIntruderSnapshots)
+        pausePresenceOnBattery = defaults.object(forKey: Key.pausePresenceOnBattery) as? Bool ?? true
+        discreetUnlockMode = defaults.bool(forKey: Key.discreetUnlockMode)
         // Enabled by default — onboarding already enrolled a face and set a
         // password specifically to use Face Unlock.
         isFaceUnlockEnabled = defaults.object(forKey: Key.isFaceUnlockEnabled) as? Bool ?? true
@@ -523,11 +547,12 @@ final class NEELxSettings {
     }
 
     /// Plays spatial Trackpad haptic tap + optional soft muted glass chime synchronized with the unlock checkmark.
+    /// In Discreet Mode (Item #44), sound is muted to avoid drawing attention in public spaces.
     func playUnlockFeedback() {
         if hapticFeedbackEnabled {
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         }
-        if unlockSoundEnabled {
+        if unlockSoundEnabled && !discreetUnlockMode {
             if let sound = NSSound(named: NSSound.Name("Glass")) {
                 sound.volume = 0.22
                 sound.play()

@@ -162,11 +162,19 @@ struct RecognitionSettingsPage: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                HStack(spacing: 10) {
                     SettingsSectionTitle(text: "Encrypted Security Audit Log")
                     Spacer()
+                    if SecurityAuditLog.shared.hasAnySnapshots {
+                        Button("Delete Photos Only") {
+                            SecurityAuditLog.shared.clearAllSnapshots()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
                     if !SecurityAuditLog.shared.entries.isEmpty {
-                        Button("Clear") {
+                        Button("Clear Log") {
                             SecurityAuditLog.shared.clear()
                         }
                         .buttonStyle(.plain)
@@ -181,6 +189,16 @@ struct RecognitionSettingsPage: View {
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
                         NEELxToggle(isOn: $settings.intruderLogEnabled)
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
+                        title: "Save failed-scan photo thumbnails",
+                        subtitle: "Attaches an encrypted snapshot of blocked intruders or spoof attempts to the audit vault. Off by default for privacy.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.saveIntruderSnapshots)
                     }
 
                     if !SecurityAuditLog.shared.entries.isEmpty {
@@ -213,6 +231,85 @@ struct RecognitionSettingsPage: View {
                                             .foregroundStyle(.secondary)
                                             .lineLimit(2)
                                     }
+                                }
+                            }
+                        }
+                        .padding(12)
+                    }
+                }
+            }
+
+            if let receipt = coordinator.latestReceipt {
+                VStack(alignment: .leading, spacing: 8) {
+                    SettingsSectionTitle(text: "Last Unlock Receipt")
+                    SettingsGroup {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Label(receipt.isVisualOnly ? "Face Recognized (Visual)" : "macOS Session Unlocked", systemImage: "checkmark.seal.fill")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Color.green)
+                                Spacer()
+                                Text(receipt.timestamp.formatted(date: .abbreviated, time: .standard))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Divider()
+
+                            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                                GridRow {
+                                    Text("Identity:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(receipt.faceName)
+                                        .font(.caption.weight(.medium))
+
+                                    Text("Match Score:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(receipt.similarityPercent)%")
+                                        .font(.caption.weight(.medium))
+                                }
+
+                                GridRow {
+                                    Text("3D Depth Relief:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let depth = receipt.depth3DPercent {
+                                        let aneText = receipt.aneLatencyMs.map { " (\(Int($0))ms ANE)" } ?? ""
+                                        Text("\(depth)%\(aneText)")
+                                            .font(.caption.weight(.medium))
+                                    } else {
+                                        Text("N/A")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Text("3D Profile Match:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let profile = receipt.depthProfileMatchPercent {
+                                        Text("\(profile)%")
+                                            .font(.caption.weight(.medium))
+                                    } else {
+                                        Text("N/A")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+
+                                GridRow {
+                                    Text("Optical Sensor:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(receipt.opticalSensor)
+                                        .font(.caption.weight(.medium))
+
+                                    Text("Proof of Life:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(receipt.livenessCue)
+                                        .font(.caption.weight(.medium))
                                 }
                             }
                         }
