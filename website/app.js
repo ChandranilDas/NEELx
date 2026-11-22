@@ -230,14 +230,16 @@ function renderSculptedHumanFace(ctx, opts) {
     yaw = 0,
     pitch = 0,
     blinkPhase = 0,
-    strokeMain = "rgba(245, 245, 247, 0.90)",
-    strokeSoft = "rgba(255, 255, 255, 0.26)",
-    fillTop = "rgba(235, 238, 245, 0.22)",
-    fillMid = "rgba(120, 126, 140, 0.12)",
-    fillEdge = "rgba(20, 24, 34, 0.45)",
-    pupilColor = "#f5f5f7",
+    isComplete = false,
+    strokeMain = null,
+    strokeSoft = null,
+    fillTop = null,
+    fillMid = null,
+    fillEdge = null,
+    pupilColor = null,
     showShoulders = true,
     showMeridians = true,
+    showEars = true,
     smileBoost = 0,
     lineWidthScale = 1,
     shadowGlow = null,
@@ -249,118 +251,427 @@ function renderSculptedHumanFace(ctx, opts) {
 
   if (shadowGlow) {
     ctx.shadowColor = shadowGlow;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 12;
   }
 
-  // 3D parallax offsets (nose shifts farthest, jaw/head shifts least)
-  const headX = yaw * 6.5;
-  const headY = pitch * 5.5;
-  const midX = yaw * 12;
-  const midY = pitch * 9;
-  const noseX = yaw * 18;
-  const noseY = pitch * 13;
+  // 3D Perspective Projection Engine (True anatomical 3D projection)
+  const FOV = 320;
+  function p3d(x, y, z) {
+    const thetaY = yaw * 0.62;
+    const thetaX = pitch * 0.48;
+    const cosY = Math.cos(thetaY), sinY = Math.sin(thetaY);
+    const cosX = Math.cos(thetaX), sinX = Math.sin(thetaX);
 
-  // Neck & shoulders silhouette
+    // Rotate Y (yaw)
+    const x1 = x * cosY + z * sinY;
+    const z1 = -x * sinY + z * cosY;
+
+    // Rotate X (pitch)
+    const y2 = y * cosX - z1 * sinX;
+    const z2 = y * sinX + z1 * cosX;
+
+    const p = FOV / (FOV - z2);
+    return { x: x1 * p, y: y2 * p, z: z2, p };
+  }
+
+  // Key light vector tracking cursor/pose
+  const lightPt = p3d(-26, -38, 32);
+  const lightX = lightPt.x;
+  const lightY = lightPt.y;
+
+  // Neck & Shoulders (anatomical base)
   if (showShoulders) {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.strokeStyle = strokeSoft;
-    ctx.lineWidth = 1.1 * lineWidthScale;
+    const neckBase = p3d(0, 52, -5);
+    const neckTop = p3d(0, 32, -2);
+
+    // Trapezius / shoulders
+    ctx.fillStyle = isComplete ? "rgba(48, 209, 88, 0.08)" : "rgba(255, 255, 255, 0.06)";
     ctx.beginPath();
-    ctx.ellipse(headX * 0.45, 56 + headY * 0.25, 38, 18, 0, Math.PI, Math.PI * 2);
+    ctx.ellipse(neckBase.x * 0.6, 58 + neckBase.y * 0.35, 46, 22, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
+
+    // Cylindrical neck with throat shadow
+    const neckGrad = ctx.createLinearGradient(neckTop.x - 14, neckTop.y, neckTop.x + 14, neckTop.y);
+    neckGrad.addColorStop(0, "rgba(22, 26, 36, 0.75)");
+    neckGrad.addColorStop(0.45, "rgba(85, 92, 108, 0.45)");
+    neckGrad.addColorStop(1, "rgba(18, 20, 28, 0.85)");
+    ctx.fillStyle = neckGrad;
+    ctx.beginPath();
+    ctx.moveTo(neckTop.x - 15, neckTop.y);
+    ctx.lineTo(neckBase.x - 20, 56);
+    ctx.lineTo(neckBase.x + 20, 56);
+    ctx.lineTo(neckTop.x + 15, neckTop.y);
+    ctx.closePath();
+    ctx.fill();
   }
 
-  // Sculpted 3D head contour (forehead -> cheekbones -> tapered jaw -> chin)
-  const faceGrad = ctx.createRadialGradient(noseX - 6, noseY - 10, 4, headX, headY, 44);
-  faceGrad.addColorStop(0, fillTop);
-  faceGrad.addColorStop(0.55, fillMid);
-  faceGrad.addColorStop(1, fillEdge);
+  // 3D Ears with realistic parallax occlusion (rear ear hides behind skull, front ear expands)
+  if (showEars) {
+    const earL = p3d(-31.5, -3, -10);
+    const earR = p3d(31.5, -3, -10);
 
+    function drawEar(pt, isLeft) {
+      if ((isLeft && yaw > 0.45) || (!isLeft && yaw < -0.45)) return;
+      ctx.save();
+      const earGrad = ctx.createRadialGradient(pt.x, pt.y, 2, pt.x, pt.y, 11);
+      earGrad.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.3)" : "rgba(165, 172, 188, 0.28)");
+      earGrad.addColorStop(1, "rgba(18, 22, 30, 0.65)");
+      ctx.fillStyle = earGrad;
+      ctx.strokeStyle = strokeSoft || (isComplete ? "rgba(48, 209, 88, 0.45)" : "rgba(255, 255, 255, 0.28)");
+      ctx.lineWidth = 1.1 * lineWidthScale;
+      ctx.beginPath();
+      const dir = isLeft ? -1 : 1;
+      ctx.ellipse(pt.x, pt.y, 5.5 * pt.p, 11.5 * pt.p, dir * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Inner helix curve
+      ctx.beginPath();
+      ctx.arc(pt.x - dir * 1.5, pt.y - 1.5, 3.2, 0, Math.PI);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (yaw >= 0) {
+      drawEar(earL, true);
+      drawEar(earR, false);
+    } else {
+      drawEar(earR, false);
+      drawEar(earL, true);
+    }
+  }
+
+  // Cranium Top & Jawline Boundary (projected 3D points)
+  const topForehead = p3d(0, -36, 12);
+  const leftTemple = p3d(-26, -24, 6);
+  const rightTemple = p3d(26, -24, 6);
+  const leftCheek = p3d(-29, 2, 8);
+  const rightCheek = p3d(29, 2, 8);
+  const leftJaw = p3d(-23, 23, 7);
+  const rightJaw = p3d(23, 23, 7);
+  const chin = p3d(0, 39, 15);
+
+  // Volumetric Head Shading Gradient (Reacts dynamically to virtual key light!)
+  const faceGrad = ctx.createRadialGradient(
+    lightX, lightY, 6,
+    p3d(0, 0, 5).x, p3d(0, 0, 5).y, 48 * topForehead.p
+  );
+  if (isComplete) {
+    faceGrad.addColorStop(0, "rgba(48, 209, 88, 0.38)");
+    faceGrad.addColorStop(0.35, "rgba(35, 160, 68, 0.22)");
+    faceGrad.addColorStop(0.72, "rgba(18, 70, 32, 0.28)");
+    faceGrad.addColorStop(1, "rgba(8, 24, 14, 0.65)");
+  } else {
+    faceGrad.addColorStop(0, fillTop || "rgba(240, 243, 252, 0.32)");
+    faceGrad.addColorStop(0.32, fillMid || "rgba(145, 154, 172, 0.18)");
+    faceGrad.addColorStop(0.72, "rgba(45, 52, 68, 0.25)");
+    faceGrad.addColorStop(1, fillEdge || "rgba(14, 18, 26, 0.65)");
+  }
+
+  // Sculpted anatomical head shape
   ctx.fillStyle = faceGrad;
-  ctx.strokeStyle = strokeMain;
+  ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
   ctx.lineWidth = 1.65 * lineWidthScale;
   ctx.beginPath();
-  ctx.moveTo(headX, headY - 37);
-  ctx.bezierCurveTo(headX + 26, headY - 37, headX + 31, headY - 13, headX + 27, headY + 6);
-  ctx.bezierCurveTo(headX + 24, headY + 23, headX + 13, headY + 37, headX, headY + 40);
-  ctx.bezierCurveTo(headX - 13, headY + 37, headX - 24, headY + 23, headX - 27, headY + 6);
-  ctx.bezierCurveTo(headX - 31, headY - 13, headX - 26, headY - 37, headX, headY - 37);
+  ctx.moveTo(topForehead.x, topForehead.y);
+  ctx.bezierCurveTo(rightTemple.x, rightTemple.y - 10, rightCheek.x + 3, rightCheek.y - 8, rightCheek.x, rightCheek.y);
+  ctx.bezierCurveTo(rightCheek.x - 2, rightCheek.y + 16, rightJaw.x + 2, rightJaw.y + 4, rightJaw.x, rightJaw.y);
+  ctx.bezierCurveTo(rightJaw.x - 7, rightJaw.y + 12, chin.x + 12, chin.y + 2, chin.x, chin.y);
+  ctx.bezierCurveTo(chin.x - 12, chin.y + 2, leftJaw.x + 7, leftJaw.y + 12, leftJaw.x, leftJaw.y);
+  ctx.bezierCurveTo(leftJaw.x - 2, leftJaw.y + 4, leftCheek.x + 2, leftCheek.y + 16, leftCheek.x, leftCheek.y);
+  ctx.bezierCurveTo(leftCheek.x - 3, leftCheek.y - 8, leftTemple.x, leftTemple.y - 10, topForehead.x, topForehead.y);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
-  // Subtle 3D topographic contour meridians
-  if (showMeridians) {
-    ctx.strokeStyle = strokeSoft;
-    ctx.lineWidth = 0.9 * lineWidthScale;
-    ctx.beginPath();
-    ctx.moveTo(headX, headY - 36);
-    ctx.quadraticCurveTo(noseX, noseY, headX, headY + 39);
-    ctx.moveTo(headX - 26, headY - 6);
-    ctx.quadraticCurveTo(midX, midY - 2, headX + 26, headY - 6);
-    ctx.moveTo(headX - 23, headY + 12);
-    ctx.quadraticCurveTo(midX, midY + 16, headX + 23, headY + 12);
-    ctx.stroke();
-  }
-
-  // Sculpted eyebrows
-  ctx.strokeStyle = strokeMain;
-  ctx.lineWidth = 1.9 * lineWidthScale;
-  ctx.lineCap = "round";
+  // Cheekbone Specular Highlights (Zygomatic Prominences)
+  const cheekL = p3d(-20, 2, 16);
+  const cheekR = p3d(20, 2, 16);
+  const cheekGlowL = ctx.createRadialGradient(cheekL.x, cheekL.y, 1, cheekL.x, cheekL.y, 10);
+  cheekGlowL.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.22)" : "rgba(255, 255, 255, 0.18)");
+  cheekGlowL.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = cheekGlowL;
   ctx.beginPath();
-  ctx.moveTo(midX - 18.5, midY - 13.5);
-  ctx.quadraticCurveTo(midX - 11.5, midY - 17.5, midX - 4, midY - 13.5);
-  ctx.moveTo(midX + 4, midY - 13.5);
-  ctx.quadraticCurveTo(midX + 11.5, midY - 17.5, midX + 18.5, midY - 13.5);
-  ctx.stroke();
+  ctx.arc(cheekL.x, cheekL.y, 10, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Expressive eyes (periodic blink + pupil tracking)
-  const eyeOpen = blinkPhase > 0.94 ? 0.16 : 1.0;
-  for (const side of [-1, 1]) {
-    const ex = midX + side * 11.8;
-    const ey = midY - 6;
-    ctx.fillStyle = "rgba(8, 10, 14, 0.72)";
-    ctx.strokeStyle = strokeMain;
-    ctx.lineWidth = 1.3 * lineWidthScale;
+  const cheekGlowR = ctx.createRadialGradient(cheekR.x, cheekR.y, 1, cheekR.x, cheekR.y, 10);
+  cheekGlowR.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.22)" : "rgba(255, 255, 255, 0.18)");
+  cheekGlowR.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = cheekGlowR;
+  ctx.beginPath();
+  ctx.arc(cheekR.x, cheekR.y, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3D Apple Face ID Structured-Light Topographic Contours (Meridians & Latitudes)
+  if (showMeridians) {
+    ctx.strokeStyle = strokeSoft || (isComplete ? "rgba(48, 209, 88, 0.38)" : "rgba(255, 255, 255, 0.22)");
+    ctx.lineWidth = 0.85 * lineWidthScale;
+
+    // Vertical median contour (follows nose bridge & chin in true 3D)
+    const noseBridgeTop = p3d(0, -12, 16);
+    const noseTip = p3d(0, 7.5, 28);
+    const subNose = p3d(0, 12, 20);
+    const mouthCenter = p3d(0, 20 + smileBoost, 18);
+
     ctx.beginPath();
-    ctx.ellipse(ex, ey, 5.6, 2.8 * eyeOpen, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(topForehead.x, topForehead.y);
+    ctx.quadraticCurveTo(p3d(0, -24, 16).x, p3d(0, -24, 16).y, noseBridgeTop.x, noseBridgeTop.y);
+    ctx.lineTo(noseTip.x, noseTip.y);
+    ctx.lineTo(subNose.x, subNose.y);
+    ctx.lineTo(mouthCenter.x, mouthCenter.y);
+    ctx.quadraticCurveTo(p3d(0, 28, 17).x, p3d(0, 28, 17).y, chin.x, chin.y);
     ctx.stroke();
 
-    if (eyeOpen > 0.5) {
-      ctx.fillStyle = pupilColor;
+    // Horizontal latitude contours (curving around 3D skull, brow, cheeks, and chin)
+    const latitudes = [
+      [-22, -18, 14], // forehead
+      [-8, -5, 16],   // eye socket level
+      [14, 12, 20],   // upper lip level
+      [27, 24, 16],   // chin groove level
+    ];
+    for (const [yLev, yMid, zLev] of latitudes) {
+      const pL = p3d(-24, yLev, 8);
+      const pM = p3d(0, yMid, zLev);
+      const pR = p3d(24, yLev, 8);
       ctx.beginPath();
-      ctx.arc(ex + yaw * 1.4, ey + pitch * 0.9, 1.9, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(pL.x, pL.y);
+      ctx.quadraticCurveTo(pM.x, pM.y, pR.x, pR.y);
+      ctx.stroke();
     }
   }
 
-  // Protruding 3D nose bridge + tip + wings
-  ctx.strokeStyle = strokeMain;
-  ctx.lineWidth = 1.55 * lineWidthScale;
+  // Eye Sockets (Recessed Orbital Cavities with Depth Ambient Shadow)
+  const eyeL_center = p3d(-12.5, -6.5, 12);
+  const eyeR_center = p3d(12.5, -6.5, 12);
+
+  for (const center of [eyeL_center, eyeR_center]) {
+    const socketGrad = ctx.createRadialGradient(center.x, center.y, 1, center.x, center.y, 11);
+    socketGrad.addColorStop(0, "rgba(8, 10, 16, 0.45)");
+    socketGrad.addColorStop(1, "rgba(8, 10, 16, 0)");
+    ctx.fillStyle = socketGrad;
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, 11, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Sculpted Eyebrows (Realistic feathered arch)
+  ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
+  ctx.lineWidth = 1.95 * lineWidthScale;
+  ctx.lineCap = "round";
+
+  const browL_inner = p3d(-4.5, -14, 16);
+  const browL_arch = p3d(-12.5, -17, 14);
+  const browL_outer = p3d(-20.5, -13, 10);
   ctx.beginPath();
-  ctx.moveTo(midX, midY - 11);
-  ctx.quadraticCurveTo(noseX, noseY - 1, noseX, noseY + 7.5);
-  ctx.quadraticCurveTo(noseX - 4.2, noseY + 10.2, noseX - 5.8, noseY + 8.6);
-  ctx.moveTo(noseX, noseY + 7.5);
-  ctx.quadraticCurveTo(noseX + 4.2, noseY + 10.2, noseX + 5.8, noseY + 8.6);
+  ctx.moveTo(browL_inner.x, browL_inner.y);
+  ctx.quadraticCurveTo(browL_arch.x, browL_arch.y, browL_outer.x, browL_outer.y);
   ctx.stroke();
 
-  // Sculpted upper & lower lips
-  ctx.strokeStyle = strokeMain;
+  const browR_inner = p3d(4.5, -14, 16);
+  const browR_arch = p3d(12.5, -17, 14);
+  const browR_outer = p3d(20.5, -13, 10);
+  ctx.beginPath();
+  ctx.moveTo(browR_inner.x, browR_inner.y);
+  ctx.quadraticCurveTo(browR_arch.x, browR_arch.y, browR_outer.x, browR_outer.y);
+  ctx.stroke();
+
+  // Natural Eyelid Blinking Mechanics (Cosine curve easing: sweeps upper lid smoothly down & up)
+  let eyeAperture = 1.0;
+  if (blinkPhase > 0.92) {
+    const tBlink = (blinkPhase - 0.92) / 0.08;
+    eyeAperture = Math.max(0.08, Math.abs(Math.cos(tBlink * Math.PI)));
+  }
+
+  // Realistic Eyes (Sclera + Iris + Pupil + Specular Catchlight + Gaze Tracking)
+  const gazeX = yaw * 1.5;
+  const gazeY = pitch * 1.1;
+
+  for (const [side, center] of [[-1, eyeL_center], [1, eyeR_center]]) {
+    const eyeW = 6.2 * center.p;
+    const eyeH = 3.6 * center.p * eyeAperture;
+
+    // Eyeball Sclera (Almond shape aperture)
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y, eyeW, eyeH, side * 0.05, 0, Math.PI * 2);
+    ctx.clip();
+
+    // 3D Spherical Sclera Shading (Soft upper eyelid shadow)
+    const scleraGrad = ctx.createLinearGradient(center.x, center.y - eyeH, center.x, center.y + eyeH);
+    scleraGrad.addColorStop(0, "rgba(140, 148, 165, 0.85)");
+    scleraGrad.addColorStop(0.35, "rgba(235, 238, 246, 0.95)");
+    scleraGrad.addColorStop(1, "rgba(200, 206, 218, 0.90)");
+    ctx.fillStyle = scleraGrad;
+    ctx.fillRect(center.x - eyeW - 2, center.y - eyeH - 2, (eyeW + 2) * 2, (eyeH + 2) * 2);
+
+    if (eyeAperture > 0.28) {
+      const irisX = center.x + gazeX * center.p;
+      const irisY = center.y + gazeY * center.p;
+      const irisR = 2.8 * center.p;
+
+      // Iris Limbal Ring & Body
+      const irisGrad = ctx.createRadialGradient(irisX, irisY, 0.6, irisX, irisY, irisR);
+      if (isComplete) {
+        irisGrad.addColorStop(0, "#5ee984");
+        irisGrad.addColorStop(0.65, "#30d158");
+        irisGrad.addColorStop(1, "#0d451e");
+      } else {
+        irisGrad.addColorStop(0, pupilColor || "#8898b2");
+        irisGrad.addColorStop(0.65, "#3e4859");
+        irisGrad.addColorStop(1, "#121720");
+      }
+      ctx.fillStyle = irisGrad;
+      ctx.beginPath();
+      ctx.arc(irisX, irisY, irisR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pupil (Deep obsidian black)
+      ctx.fillStyle = "#040608";
+      ctx.beginPath();
+      ctx.arc(irisX, irisY, 1.35 * center.p, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular Corneal Catchlight (Crisp white reflection dot toward key light)
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(irisX - 0.7 * center.p, irisY - 0.7 * center.p, 0.65 * center.p, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Upper & Lower Eyelid Outline
+    ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
+    ctx.lineWidth = 1.35 * lineWidthScale;
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y, eyeW, eyeH, side * 0.05, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Supratarsal Upper Eyelid Crease
+    if (eyeAperture > 0.5) {
+      ctx.strokeStyle = strokeSoft || (isComplete ? "rgba(48, 209, 88, 0.35)" : "rgba(255, 255, 255, 0.24)");
+      ctx.lineWidth = 0.9 * lineWidthScale;
+      ctx.beginPath();
+      ctx.arc(center.x, center.y - 3.2 * center.p, eyeW * 0.9, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+    }
+  }
+
+  // Sculpted 3D Nose (Dorsum bridge, lobule tip, alar wings, nostrils)
+  const nasion = p3d(0, -9, 16);
+  const rhinion = p3d(0, 0, 21);
+  const noseTip = p3d(0, 7.5, 28); // Peaks farthest forward for authentic 3D parallax!
+  const alarL = p3d(-6.2, 7.8, 20);
+  const alarR = p3d(6.2, 7.8, 20);
+  const subNose = p3d(0, 10.5, 20);
+
+  // Dorsum Bridge Highlight
+  const bridgeGrad = ctx.createLinearGradient(nasion.x, nasion.y, noseTip.x, noseTip.y);
+  bridgeGrad.addColorStop(0, strokeSoft || (isComplete ? "rgba(48, 209, 88, 0.45)" : "rgba(255, 255, 255, 0.35)"));
+  bridgeGrad.addColorStop(1, strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.95)"));
+  ctx.strokeStyle = bridgeGrad;
+  ctx.lineWidth = 1.65 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(nasion.x, nasion.y);
+  ctx.lineTo(rhinion.x, rhinion.y);
+  ctx.lineTo(noseTip.x, noseTip.y);
+  ctx.stroke();
+
+  // Nasal Tip Specular Highlight Bulb
+  const tipGlow = ctx.createRadialGradient(noseTip.x - 1, noseTip.y - 1, 0.5, noseTip.x, noseTip.y, 4 * noseTip.p);
+  tipGlow.addColorStop(0, isComplete ? "#5ee984" : "#ffffff");
+  tipGlow.addColorStop(0.5, isComplete ? "rgba(48, 209, 88, 0.35)" : "rgba(255, 255, 255, 0.25)");
+  tipGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = tipGlow;
+  ctx.beginPath();
+  ctx.arc(noseTip.x, noseTip.y, 4 * noseTip.p, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Alar Wings (Left & Right curved nostrils)
+  ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
+  ctx.lineWidth = 1.35 * lineWidthScale;
+  ctx.beginPath();
+  // Left nostril wing
+  ctx.moveTo(noseTip.x, noseTip.y);
+  ctx.bezierCurveTo(noseTip.x - 3.5, noseTip.y + 2.2, alarL.x, alarL.y + 1.8, alarL.x, alarL.y);
+  // Right nostril wing
+  ctx.moveTo(noseTip.x, noseTip.y);
+  ctx.bezierCurveTo(noseTip.x + 3.5, noseTip.y + 2.2, alarR.x, alarR.y + 1.8, alarR.x, alarR.y);
+  ctx.stroke();
+
+  // Subnasal shadow
+  ctx.fillStyle = "rgba(10, 12, 18, 0.55)";
+  ctx.beginPath();
+  ctx.ellipse(subNose.x, subNose.y, 4.2 * subNose.p, 1.4 * subNose.p, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sculpted Lips & Philtrum (Cupid's Bow, Vermilion Border, Full Lower Lip)
+  const cupidPeakL = p3d(-3.8, 17, 18);
+  const cupidPeakR = p3d(3.8, 17, 18);
+  const cupidDip = p3d(0, 17.8, 18);
+  const lipCornerL = p3d(-9.8, 19 + smileBoost * 0.4, 14);
+  const lipCornerR = p3d(9.8, 19 + smileBoost * 0.4, 14);
+  const lowerLipBottom = p3d(0, 24 + smileBoost, 17);
+
+  // Philtrum column indentations
+  ctx.strokeStyle = strokeSoft || (isComplete ? "rgba(48, 209, 88, 0.35)" : "rgba(255, 255, 255, 0.2)");
+  ctx.lineWidth = 0.85 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(subNose.x - 1.8, subNose.y);
+  ctx.lineTo(cupidPeakL.x, cupidPeakL.y);
+  ctx.moveTo(subNose.x + 1.8, subNose.y);
+  ctx.lineTo(cupidPeakR.x, cupidPeakR.y);
+  ctx.stroke();
+
+  // Upper Lip (Cupid's bow vermilion contour)
+  ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
+  ctx.lineWidth = 1.45 * lineWidthScale;
+  ctx.beginPath();
+  ctx.moveTo(lipCornerL.x, lipCornerL.y);
+  ctx.quadraticCurveTo(cupidPeakL.x - 1, cupidPeakL.y, cupidPeakL.x, cupidPeakL.y);
+  ctx.quadraticCurveTo(cupidDip.x, cupidDip.y, cupidPeakR.x, cupidPeakR.y);
+  ctx.quadraticCurveTo(cupidPeakR.x + 1, cupidPeakR.y, lipCornerR.x, lipCornerR.y);
+  ctx.stroke();
+
+  // Oral Fissure (Center parting line between lips)
+  ctx.strokeStyle = isComplete ? "#30d158" : "rgba(18, 22, 30, 0.85)";
   ctx.lineWidth = 1.6 * lineWidthScale;
   ctx.beginPath();
-  ctx.moveTo(midX - 9.5, midY + 18.5);
-  ctx.quadraticCurveTo(midX, midY + 21 + smileBoost, midX + 9.5, midY + 18.5);
+  ctx.moveTo(lipCornerL.x, lipCornerL.y);
+  ctx.quadraticCurveTo(cupidDip.x, cupidDip.y + 1.2, lipCornerR.x, lipCornerR.y);
   ctx.stroke();
 
-  ctx.strokeStyle = strokeSoft;
-  ctx.lineWidth = 1.15 * lineWidthScale;
+  // Full Lower Lip (Volumetric contour + central light catch)
+  ctx.strokeStyle = strokeMain || (isComplete ? "rgba(48, 209, 88, 0.95)" : "rgba(245, 245, 247, 0.92)");
+  ctx.lineWidth = 1.4 * lineWidthScale;
   ctx.beginPath();
-  ctx.moveTo(midX - 5.5, midY + 22);
-  ctx.quadraticCurveTo(midX, midY + 24.2 + smileBoost * 0.5, midX + 5.5, midY + 22);
+  ctx.moveTo(lipCornerL.x + 1.2, lipCornerL.y);
+  ctx.quadraticCurveTo(lowerLipBottom.x, lowerLipBottom.y, lipCornerR.x - 1.2, lipCornerR.y);
   ctx.stroke();
+
+  // Soft specular catchlight on lower lip
+  const lipGlow = ctx.createRadialGradient(lowerLipBottom.x, lowerLipBottom.y - 1.5, 0.5, lowerLipBottom.x, lowerLipBottom.y - 1.5, 5);
+  lipGlow.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.35)" : "rgba(255, 255, 255, 0.28)");
+  lipGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = lipGlow;
+  ctx.beginPath();
+  ctx.ellipse(lowerLipBottom.x, lowerLipBottom.y - 1.5, 4.5, 1.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sublabial groove shadow + Chin Highlight (Mental Protuberance)
+  const chinCenter = p3d(0, 33, 16);
+  ctx.fillStyle = "rgba(10, 12, 18, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(p3d(0, 27, 14).x, p3d(0, 27, 14).y, 6.5, 2.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const chinGlow = ctx.createRadialGradient(chinCenter.x, chinCenter.y, 1, chinCenter.x, chinCenter.y, 8);
+  chinGlow.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.25)" : "rgba(255, 255, 255, 0.22)");
+  chinGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = chinGlow;
+  ctx.beginPath();
+  ctx.arc(chinCenter.x, chinCenter.y, 8, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
@@ -397,132 +708,41 @@ function initEnrollmentSimulator() {
     ctx.save();
     ctx.translate(cx, cy);
 
-    // Subtle dark-glass camera vignette circle behind the face
-    const bgGrad = ctx.createRadialGradient(yaw * 10, pitch * 8 - 8, 6, 0, 0, 62);
-    bgGrad.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.16)" : "rgba(255, 255, 255, 0.08)");
-    bgGrad.addColorStop(1, "rgba(8, 9, 12, 0.92)");
+    // Subtle dark-glass camera vignette lens circle behind the face
+    const bgGrad = ctx.createRadialGradient(yaw * 12, pitch * 10 - 8, 6, 0, 0, 64);
+    bgGrad.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.18)" : "rgba(255, 255, 255, 0.08)");
+    bgGrad.addColorStop(0.7, isComplete ? "rgba(20, 80, 40, 0.22)" : "rgba(18, 22, 32, 0.65)");
+    bgGrad.addColorStop(1, "rgba(6, 8, 12, 0.95)");
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
-    ctx.arc(0, 0, 61, 0, Math.PI * 2);
+    ctx.arc(0, 0, 63, 0, Math.PI * 2);
     ctx.fill();
 
     // Clip to camera lens circle
     ctx.beginPath();
-    ctx.arc(0, 0, 60, 0, Math.PI * 2);
+    ctx.arc(0, 0, 62, 0, Math.PI * 2);
     ctx.clip();
 
-    // 3D parallax offsets (closer features like nose shift more than ears/jaw)
-    const headX = yaw * 7;
-    const headY = pitch * 6;
-    const midX = yaw * 13;
-    const midY = pitch * 10;
-    const noseX = yaw * 19;
-    const noseY = pitch * 14;
-
-    const strokeMain = isComplete ? "rgba(48, 209, 88, 0.92)" : "rgba(245, 245, 247, 0.86)";
-    const strokeSoft = isComplete ? "rgba(48, 209, 88, 0.35)" : "rgba(255, 255, 255, 0.24)";
-
-    // Neck & shoulders silhouette
-    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.beginPath();
-    ctx.ellipse(headX * 0.5, 56 + headY * 0.3, 38, 19, 0, Math.PI, Math.PI * 2);
-    ctx.fill();
-
-    // Sculpted 3D head silhouette with subtle lighting gradient
-    const faceGrad = ctx.createRadialGradient(
-      noseX - 6, noseY - 10, 4,
-      headX, headY, 44
-    );
-    faceGrad.addColorStop(0, isComplete ? "rgba(48, 209, 88, 0.24)" : "rgba(235, 238, 245, 0.20)");
-    faceGrad.addColorStop(0.55, "rgba(120, 126, 140, 0.11)");
-    faceGrad.addColorStop(1, "rgba(25, 28, 36, 0.45)");
-
-    ctx.fillStyle = faceGrad;
-    ctx.strokeStyle = strokeMain;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    // Forehead -> cheeks -> tapered jawline -> chin
-    ctx.moveTo(headX, headY - 36);
-    ctx.bezierCurveTo(headX + 26, headY - 36, headX + 30, headY - 12, headX + 27, headY + 6);
-    ctx.bezierCurveTo(headX + 25, headY + 23, headX + 13, headY + 37, headX, headY + 39);
-    ctx.bezierCurveTo(headX - 13, headY + 37, headX - 25, headY + 23, headX - 27, headY + 6);
-    ctx.bezierCurveTo(headX - 30, headY - 12, headX - 26, headY - 36, headX, headY - 36);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Subtle 3D mesh contour meridians (gives true TrueDepth 3D topography feel)
-    ctx.strokeStyle = strokeSoft;
-    ctx.lineWidth = 0.85;
-    ctx.beginPath();
-    ctx.moveTo(headX, headY - 35);
-    ctx.quadraticCurveTo(noseX, noseY, headX, headY + 38);
-    ctx.moveTo(headX - 25, headY - 6);
-    ctx.quadraticCurveTo(midX, midY - 2, headX + 25, headY - 6);
-    ctx.moveTo(headX - 23, headY + 12);
-    ctx.quadraticCurveTo(midX, midY + 16, headX + 23, headY + 12);
-    ctx.stroke();
-
-    // Eyebrows
-    ctx.strokeStyle = strokeMain;
-    ctx.lineWidth = 1.8;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(midX - 18, midY - 13);
-    ctx.quadraticCurveTo(midX - 11, midY - 17, midX - 4, midY - 13);
-    ctx.moveTo(midX + 4, midY - 13);
-    ctx.quadraticCurveTo(midX + 11, midY - 17, midX + 18, midY - 13);
-    ctx.stroke();
-
-    // Expressive eyes (with natural periodic blink + pupil tracking)
-    const eyeOpen = blinkPhase > 0.94 ? 0.18 : 1.0;
-    for (const side of [-1, 1]) {
-      const ex = midX + side * 11.5;
-      const ey = midY - 6;
-      ctx.fillStyle = "rgba(10, 12, 16, 0.7)";
-      ctx.strokeStyle = strokeMain;
-      ctx.lineWidth = 1.25;
-      ctx.beginPath();
-      ctx.ellipse(ex, ey, 5.4, 2.7 * eyeOpen, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      if (eyeOpen > 0.5) {
-        ctx.fillStyle = isComplete ? "#30d158" : "#f5f5f7";
-        ctx.beginPath();
-        ctx.arc(ex + yaw * 1.4, ey + pitch * 0.9, 1.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // Sculpted 3D nose bridge + protruding tip (shifts farthest for authentic 3D parallax)
-    ctx.strokeStyle = strokeMain;
-    ctx.lineWidth = 1.45;
-    ctx.beginPath();
-    ctx.moveTo(midX, midY - 11);
-    ctx.quadraticCurveTo(noseX, noseY - 1, noseX, noseY + 7);
-    ctx.quadraticCurveTo(noseX - 4, noseY + 10, noseX - 5.5, noseY + 8.5);
-    ctx.moveTo(noseX, noseY + 7);
-    ctx.quadraticCurveTo(noseX + 4, noseY + 10, noseX + 5.5, noseY + 8.5);
-    ctx.stroke();
-
-    // Soft sculpted lips
-    ctx.strokeStyle = strokeMain;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(midX - 9, midY + 18);
-    ctx.quadraticCurveTo(midX, midY + (isComplete ? 22.5 : 20.5), midX + 9, midY + 18);
-    ctx.stroke();
-
-    // Subtle lower lip highlight
-    ctx.strokeStyle = strokeSoft;
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(midX - 5.5, midY + 21.5);
-    ctx.quadraticCurveTo(midX, midY + 23.5, midX + 5.5, midY + 21.5);
-    ctx.stroke();
-
     ctx.restore();
+
+    // Subtle procedural breathing micro-motion
+    const breath = Math.sin(Date.now() * 0.0025) * 0.02;
+
+    // Render realistic 3D sculpted human head with natural blinking & tracking
+    renderSculptedHumanFace(ctx, {
+      cx,
+      cy,
+      scale: 1.0 + breath,
+      yaw,
+      pitch,
+      blinkPhase,
+      isComplete,
+      showShoulders: true,
+      showMeridians: true,
+      showEars: true,
+      smileBoost: isComplete ? 2.5 : 0,
+      shadowGlow: isComplete ? "rgba(48, 209, 88, 0.45)" : null,
+    });
   }
 
   function render() {
@@ -1580,6 +1800,63 @@ function initFeedbackForm() {
   });
 }
 
+
+// ---------------------------------------------------------------------------
+// 8. Interactive 3D Card Perspective Tilt & Dynamic Glare Engine
+// ---------------------------------------------------------------------------
+function init3DCardTilt() {
+  const cards = document.querySelectorAll(
+    ".feature-card, .spec-tile, .notch-stage, .download-card, .demo-card, .card, .step-card"
+  );
+
+  cards.forEach((card) => {
+    if (card.dataset.tiltInitialized) return;
+    card.dataset.tiltInitialized = "true";
+    card.classList.add("tilt-3d");
+
+    let glare = card.querySelector(".card-3d-glare");
+    if (!glare) {
+      glare = document.createElement("div");
+      glare.className = "card-3d-glare";
+      card.appendChild(glare);
+    }
+
+    let rafId = null;
+
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+
+      const tiltX = (0.5 - y) * 11;
+      const tiltY = (x - 0.5) * 11;
+
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        card.style.transform = `perspective(1000px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) translateZ(6px) scale3d(1.015, 1.015, 1.015)`;
+        card.style.boxShadow = `${(-tiltY * 1.5).toFixed(1)}px ${(tiltX * 1.5 + 14).toFixed(1)}px 32px rgba(0, 0, 0, 0.45)`;
+        glare.style.opacity = "1";
+        glare.style.background = `radial-gradient(circle at ${(x * 100).toFixed(1)}% ${(y * 100).toFixed(1)}%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 75%)`;
+      });
+    });
+
+    card.addEventListener("mouseleave", () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      card.style.transition = "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1)";
+      card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale3d(1, 1, 1)";
+      card.style.boxShadow = "";
+      glare.style.opacity = "0";
+      setTimeout(() => {
+        card.style.transition = "";
+      }, 450);
+    });
+
+    card.addEventListener("mouseenter", () => {
+      card.style.transition = "transform 0.1s ease-out, box-shadow 0.1s ease-out";
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initCopyButtons();
@@ -1589,4 +1866,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initDepthLab();
   initMacNotchArchCanvas();
   initFeedbackForm();
+  init3DCardTilt();
 });

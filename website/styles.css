@@ -215,31 +215,33 @@ code {
   border-color: var(--border-strong);
 }
 
-/* Tab View Panels with Smooth Animated Transitions */
+/* Tab View Panels with Smooth 3D Perspective Transitions */
 main {
   flex: 1;
   padding: 44px 0 72px;
+  perspective: 1400px;
 }
 
 .tab-panel {
   display: none;
   opacity: 0;
-  transform: translateY(12px);
+  transform: perspective(1200px) translateZ(-42px) rotateX(2.5deg);
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tab-panel.active {
   display: block;
-  animation: panelEnter 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: panel3DEnter 0.44s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes panelEnter {
-  from {
+@keyframes panel3DEnter {
+  0% {
     opacity: 0;
-    transform: translateY(12px);
+    transform: perspective(1200px) translateZ(-50px) rotateX(3.2deg) translateY(12px);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: perspective(1200px) translateZ(0px) rotateX(0deg) translateY(0px);
   }
 }
 
@@ -351,6 +353,47 @@ h3 {
   padding: 26px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+
+/* ---------------------------------------------------------------------------
+   Interactive 3D Perspective Card Tilt & Dynamic Glare
+   --------------------------------------------------------------------------- */
+.tilt-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+
+.card-3d-glare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  border-radius: inherit;
+  z-index: 10;
+}
+
+/* 3D Floating Elements */
+@keyframes float3D {
+  0%, 100% {
+    transform: perspective(800px) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: perspective(800px) translate3d(0, -6px, 10px);
+  }
+}
+
+.floating-3d {
+  animation: float3D 4.8s ease-in-out infinite;
+}
+
+.floating-3d-delay {
+  animation: float3D 5.2s ease-in-out -2.4s infinite;
 }
 
 /* Overview Hero Grid */

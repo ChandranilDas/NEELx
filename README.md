@@ -36,10 +36,14 @@ NEELx runs completely offline on your Mac with zero cloud servers and zero telem
 - **Backlit Window HDR Shadow Recovery**: GPU Core Image tone mapping (`CIHighlightShadowAdjust`) lifts crushed facial shadows when sitting with a bright sunlit window behind you.
 - **Luxury Studio Light Softbox & Spectral Chromatic Rim (with Live Preview)**: Crystal-clear screen center surrounded by a 3800K warm champagne perimeter softbox + softened pastel cyan/magenta reflection check against 4K video replay. Preview anytime via **Settings → General → Preview**.
 - **Subtle Spatial Haptic + Optional Soft Glass Sound Cue**: Trackpad `.alignment` haptic + optional muted Glass chime (off by default).
-- **iPhone & iPad Pro Continuity Studio (Desk Stand / Studio Optics)**: Seamlessly use your iPhone (iOS 16+) or iPad Pro camera for studio-quality 4K optics, dual-path concurrent unlock, and Bluetooth LE arm's-reach proximity gating (< 1.5m). Works on any standard desk stand, wireless charger, kickstand case, or monitor mount — no proprietary laptop clip required! Includes live hardware cross-checks.
-- **Attention & Eye Gaze Verification**: Checks open eyes (`EAR`) and active gaze before unlocking.
-- **Hardcoded Zero-Compromise Security**: 3D Neural Depth (ANE), Eye Gaze, and Multi-Frame Anti-Spoofing are hardcoded active so security cannot be accidentally disabled.
-- **Silent Adaptive Learning, Encrypted Intruder Log, Walk-Away Auto-Lock & Smart Clamshell Camera**.
+- **Strict Security Mode & Multi-Model Ensemble Verification**: Raises ArcFace threshold to 0.78+, strictly requires 0.68+ physical 3D depth, tightens flat-spoof cutoff to 0.35, and evaluates multi-frame temporal feature variance consensus across micro-angles before confirming an unlock.
+- **Encrypted Intruder Security Vault & Native Notification Alerts**: Captures offline, AES-256 encrypted camera snapshots of blocked intruders or photo spoofs under your Touch ID key, provides a 1-click "Delete Photos Only" privacy wipe, and pops up a native macOS Notification Center alert upon unlock if attempts occurred while away.
+- **Lock-Screen Notch Hover Activation**: Hovering your cursor over the notch while your screen is locked instantly wakes and initiates face unlock, driven by hardware cursor coordinates even under macOS `loginwindow`.
+- **Zero-Password Visual-Only Mode**: Confirms face identity with full notch animations without storing a macOS system password — authenticate sign-in via Touch ID or manual entry.
+- **Storage & Cache Management Inspector**: Deep breakdown of disk usage for local neural weights (ArcFace 512-D 6.9MB, Depth Anything V2 49.9MB, local encrypted audit vault, compiler caches), with 1-click cache cleaning and adaptive sample reset.
+- **Studio Light Screen Halo (macOS Sequoia Style)**: Feathered perimeter softbox light with smooth atmospheric radial glow for low-light face recognition, featuring customizable color temperature (3000K Candlelight to 6500K Studio Daylight) and softbox glow spread sliders.
+- **iPhone & iPad Pro Continuity Studio (Desk Stand / Studio Optics)**: Seamlessly use your iPhone (iOS 16+) or iPad Pro camera for studio-quality 4K optics, dual-path concurrent unlock, 850ms watchdog fallback, and Bluetooth LE arm's-reach proximity gating (< 1.5m). Works on any standard desk stand, wireless charger, kickstand case, or monitor mount — no proprietary laptop clip required! Includes live hardware cross-checks.
+- **Silent Adaptive Learning, Walk-Away Auto-Lock, Discreet Public Mode & Smart Clamshell Camera**.
 - **Auto Local-Cert Signing & 1-Click GitHub Auto-Updater**: Preserves your own free local `Apple Development` certificate on upgrades so macOS Accessibility & Keychain permissions stay intact.
 
 ---
@@ -94,6 +98,10 @@ chmod +x build.sh
 | **Credential Storage** | AES-256-GCM + macOS Keychain (`WhenUnlockedThisDeviceOnly`) + Touch ID |
 | **System / Lock Integration** | Lock Screen + System Touch ID & Password Prompts (Apple Pay excluded) |
 | **Mobile & Proximity Optics** | iPhone/iPad Desk Stand Continuity Camera + Dual-Path Unlock + BLE Proximity Guard (< 1.5m) |
+| **Hardened Biometrics** | Strict Security Mode (0.78+ threshold, 0.68+ 3D depth) + Multi-Model Ensemble Consensus |
+| **Threat Auditing & Vault** | Touch ID-gated encrypted intruder snapshots vault + macOS Notification Center alerts on unlock |
+| **Screen Halo Lighting** | Studio Light screen halo with warmth (3000K–6500K) & softbox spread sliders + Chromatic Flash |
+| **Interaction & Storage** | Lock-screen notch hover wake, Zero-Password mode & Storage / Cache Inspector |
 
 > **Transparency Note**: Standard webcams capture 2D RGB frames rather than infrared dot projections (TrueDepth / IR). NEELx maximizes security within 2D webcam limits using 512-D ArcFace, Stage 3 monocular 3D Depth, multi-frame temporal depth consistency, eye attention checks, and anti-replay heuristics.
 
