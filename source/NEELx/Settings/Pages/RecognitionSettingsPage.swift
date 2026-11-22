@@ -160,6 +160,59 @@ struct RecognitionSettingsPage: View {
                     SettingsGroupDivider()
 
                     SettingsRowContent(
+                        title: "Strict Security Mode",
+                        subtitle: "Requires higher biometric confidence (76%+), strict physical 3D relief (65%+), and mandatory chromatic reflection check. Defers immediately to password if lighting or angle is suboptimal.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.strictSecurityMode)
+                            .accessibilityLabel("Strict Security Mode")
+                            .accessibilityHint("Requires higher facial match confidence and strict 3D depth evidence before unlocking.")
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
+                        title: "Alert on Blocked Intruder Attempts",
+                        subtitle: "Delivers a native macOS Notification Center alert upon unlock if an unrecognized face or photo spoof attempted to unlock your Mac while away.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.notifyOnBlockedIntruder)
+                            .accessibilityLabel("Alert on Blocked Intruder Attempts")
+                            .accessibilityHint("Notifies you upon login if an unauthorized person attempted to unlock your Mac.")
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
+                        title: "Multi-Model Ensemble Verification",
+                        subtitle: "Evaluates multi-frame feature variance across multiple temporal angles to simulate multi-model consensus before confirming an unlock.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        NEELxToggle(isOn: $settings.experimentalEnsembleEnabled)
+                            .accessibilityLabel("Multi-Model Ensemble Verification")
+                            .accessibilityHint("Runs multi-frame temporal feature variance for enhanced cross-model verification.")
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
+                        title: "Anti-Spoofing Sensitivity",
+                        subtitle: "Standard balances speed (~20ms) and photo/video rejection. Maximum enforces strict high-frequency planar and micro-depth texture validation.",
+                        subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
+                    ) {
+                        Picker("", selection: $settings.antiSpoofSensitivity) {
+                            Text("Standard").tag("standard")
+                            Text("Maximum").tag("maximum")
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 110)
+                        .accessibilityLabel("Anti-Spoofing Sensitivity")
+                    }
+
+                    SettingsGroupDivider()
+
+                    SettingsRowContent(
                         title: "Require Attention & Eye Gaze",
                         subtitle: "Verifies your eyes are open and facing the screen, alongside glare and device-bezel spoof detection.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth

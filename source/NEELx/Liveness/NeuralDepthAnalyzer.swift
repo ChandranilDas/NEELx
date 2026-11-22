@@ -101,6 +101,15 @@ nonisolated final class NeuralDepthAnalyzer: @unchecked Sendable {
         _ = warmUp()
     }
 
+    /// Item #55: Trims cached Core ML model and pixel buffers to release RAM during prolonged unlocked desktop use.
+    func trimMemory() {
+        lock.lock()
+        model = nil
+        pixelBufferPool = nil
+        didAttemptLoad = false
+        lock.unlock()
+    }
+
     /// Where the optional in-app downloader installs the compiled Core ML model on lightweight beta builds.
     static var downloadedModelURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first

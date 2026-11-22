@@ -356,6 +356,23 @@ final class CheckMySetupModel {
             action: loginAction
         ))
 
+        // Item #8: Lock-Screen Overlay Health & Headless Fallback Check
+        let overlayStatus: DiagnosticStatus
+        if NotchOverlayController.shared.overlayFailedOnLockScreen {
+            overlayStatus = .warning("Overlay Fallback Active (Headless Face Unlock)")
+        } else {
+            overlayStatus = .healthy("Active (Dynamic Notch & Pill)")
+        }
+        results.append(DiagnosticRowData(
+            id: "overlay_health",
+            title: "Lock-Screen Notch Overlay",
+            iconName: "macwindow.badge.plus",
+            status: overlayStatus,
+            detail: NotchOverlayController.shared.overlayFailedOnLockScreen ? "The visual overlay window could not be placed above the secure login window; Face Unlock operates headlessly in the background." : "Renders live lock-screen animations and status feedback above the login window.",
+            actionTitle: nil,
+            action: nil
+        ))
+
         // 8. App Version & Code Signing
         let signing = checkCodeSigning()
         let signingStatus: DiagnosticStatus
@@ -516,6 +533,8 @@ struct CheckMySetupSheetView: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.regular)
+                        .accessibilityLabel("Copy Diagnostic Report")
+                        .accessibilityHint("Copies the complete setup diagnostic report to your macOS clipboard.")
 
                         Spacer()
 
@@ -528,6 +547,8 @@ struct CheckMySetupSheetView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.regular)
+                        .accessibilityLabel("Re-run Checks")
+                        .accessibilityHint("Re-tests camera permissions, accessibility, models, and lock-screen overlay status.")
                     }
                     .padding(.top, 6)
                 }

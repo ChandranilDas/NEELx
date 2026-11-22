@@ -75,6 +75,9 @@ final class NotchOverlayController {
     /// Item #38: Whether the successful match is in Zero-Password Visual-Only mode ("Face recognized").
     private(set) var isVisualOnlyRecognition = false
 
+    /// Item #8: Whether the overlay window failed to attach on the lock screen (falls back to headless scanning)
+    private(set) var overlayFailedOnLockScreen = false
+
     /// What a hover-driven activation should do — set by `arm()` (persists
     /// across scan cycles) or by one-shot `present(onRetry:)` (single use).
     private var onActivate: (() -> Void)?
@@ -120,6 +123,14 @@ final class NotchOverlayController {
         content = .scan(.idle)
         isPillDocked = false
         windowController.show()
+        // Item #8: If lock-screen window fails to display, fall back gracefully to headless background scanning
+        if !windowController.isVisible {
+            overlayFailedOnLockScreen = true
+            isArmed = false
+            onActivate()
+            return
+        }
+        overlayFailedOnLockScreen = false
         hasPrimedWindow = true // already shown+rendered while closed, same effect as primeWindowIfNeeded
         updateInteractivity()
 

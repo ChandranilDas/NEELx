@@ -167,6 +167,10 @@ final class NEELxSettings {
         static let saveIntruderSnapshots = "NEELxSettings.saveIntruderSnapshots"
         static let pausePresenceOnBattery = "NEELxSettings.pausePresenceOnBattery"
         static let discreetUnlockMode = "NEELxSettings.discreetUnlockMode"
+        static let notifyOnBlockedIntruder = "NEELxSettings.notifyOnBlockedIntruder"
+        static let strictSecurityMode = "NEELxSettings.strictSecurityMode"
+        static let experimentalEnsembleEnabled = "NEELxSettings.experimentalEnsembleEnabled"
+        static let antiSpoofSensitivity = "NEELxSettings.antiSpoofSensitivity"
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
@@ -446,12 +450,36 @@ final class NEELxSettings {
         didSet { defaults.set(discreetUnlockMode, forKey: Key.discreetUnlockMode) }
     }
 
+    /// Item #61: Post a native macOS notification upon unlock if unauthorized intruders/spoofs were blocked.
+    var notifyOnBlockedIntruder: Bool {
+        didSet { defaults.set(notifyOnBlockedIntruder, forKey: Key.notifyOnBlockedIntruder) }
+    }
+
+    /// Item #16: Opt-in Stricter Unlock Mode (requires >= 76% ArcFace, >= 65% depth relief, mandatory chromatic flash).
+    var strictSecurityMode: Bool {
+        didSet { defaults.set(strictSecurityMode, forKey: Key.strictSecurityMode) }
+    }
+
+    /// User choice for biometric model pipeline: Experimental Ensemble Verification
+    var experimentalEnsembleEnabled: Bool {
+        didSet { defaults.set(experimentalEnsembleEnabled, forKey: Key.experimentalEnsembleEnabled) }
+    }
+
+    /// Anti-spoofing sensitivity ("standard" vs "maximum")
+    var antiSpoofSensitivity: String {
+        didSet { defaults.set(antiSpoofSensitivity, forKey: Key.antiSpoofSensitivity) }
+    }
+
     private init() {
         lockAndPauseEnabled = defaults.object(forKey: Key.lockAndPauseEnabled) as? Bool ?? true
         visualOnlyModeEnabled = defaults.bool(forKey: Key.visualOnlyModeEnabled)
         saveIntruderSnapshots = defaults.bool(forKey: Key.saveIntruderSnapshots)
         pausePresenceOnBattery = defaults.object(forKey: Key.pausePresenceOnBattery) as? Bool ?? true
         discreetUnlockMode = defaults.bool(forKey: Key.discreetUnlockMode)
+        notifyOnBlockedIntruder = defaults.object(forKey: Key.notifyOnBlockedIntruder) as? Bool ?? true
+        strictSecurityMode = defaults.bool(forKey: Key.strictSecurityMode)
+        experimentalEnsembleEnabled = defaults.bool(forKey: Key.experimentalEnsembleEnabled)
+        antiSpoofSensitivity = defaults.string(forKey: Key.antiSpoofSensitivity) ?? "standard"
         // Enabled by default — onboarding already enrolled a face and set a
         // password specifically to use Face Unlock.
         isFaceUnlockEnabled = defaults.object(forKey: Key.isFaceUnlockEnabled) as? Bool ?? true
@@ -605,6 +633,10 @@ final class NEELxSettings {
         travelModePauseUntil = nil
         lockAndPauseEnabled = true
         visualOnlyModeEnabled = false
+        notifyOnBlockedIntruder = true
+        strictSecurityMode = false
+        experimentalEnsembleEnabled = false
+        antiSpoofSensitivity = "standard"
         FaceRecognitionPipeline.minimumProminentFaceWidth = minimumFaceWidth
     }
 }

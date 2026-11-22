@@ -11,6 +11,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 import Observation
+import UserNotifications
 
 enum SecurityAuditKind: String, Codable, Sendable {
     case unlocked
@@ -76,6 +77,30 @@ final class SecurityAuditLog {
         entries.contains { $0.snapshotJPEG != nil }
     }
 
+    /// Item #61: Unacknowledged blocked intruder/spoof attempts while away from the Mac
+    var unnotifiedBlockedCount: Int {
+        get { UserDefaults.standard.integer(forKey: "NEELx.unnotifiedBlockedIntruders") }
+        set { UserDefaults.standard.set(newValue, forKey: "NEELx.unnotifiedBlockedIntruders") }
+    }
+
+    /// Item #61: Delivers a native macOS Notification Center banner upon unlock if intruders/spoofs were blocked while away.
+    func checkAndDeliverIntruderAlert() {
+        guard NEELxSettings.shared.notifyOnBlockedIntruder else { return }
+        let count = unnotifiedBlockedCount
+        guard count > 0 else { return }
+        unnotifiedBlockedCount = 0
+
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = "NEELx Security Alert"
+            content.body = "Blocked \(count) unauthorized attempt\(count > 1 ? "s" : "") to unlock your Mac while away."
+            content.sound = .default
+            let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            UNUserNotificationCenter.current().add(req)
+        }
+    }
+
     private static var storageURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
@@ -120,6 +145,11 @@ final class SecurityAuditLog {
         let shouldCapturePhoto = (kind != .unlocked) && NEELxSettings.shared.saveIntruderSnapshots
         let jpeg: Data? = shouldCapturePhoto ? snapshotImage.flatMap(Self.encodeThumbnailJPEG) : nil
         let entry = SecurityAuditEntry(kind: kind, detail: detail, snapshotJPEG: jpeg)
+
+        // Item #61: Record blocked intruder event for post-unlock alert
+        if kind == .spoofBlocked || kind == .wrongFace {
+            unnotifiedBlockedCount += 1
+        }
 
         entries.insert(entry, at: 0)
         if entries.count > maxEntries {

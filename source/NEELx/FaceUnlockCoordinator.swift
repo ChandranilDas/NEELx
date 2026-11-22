@@ -50,6 +50,26 @@ final class FaceUnlockCoordinator {
     var matchThreshold: Float {
         didSet { NEELxSettings.shared.matchThreshold = matchThreshold }
     }
+
+    /// Item #16: In Strict Security Mode, elevates threshold to 0.76+ to prevent loose matches
+    var effectiveMatchThreshold: Float {
+        if NEELxSettings.shared.strictSecurityMode {
+            return max(matchThreshold, 0.76)
+        }
+        return matchThreshold
+    }
+
+    /// Item #55: Trims Neural Depth Core ML weights after 30 minutes of idle unlocked desktop use
+    private var idleTrimTimer: Timer?
+    private func startIdleTrimTimer() {
+        idleTrimTimer?.invalidate()
+        idleTrimTimer = Timer.scheduledTimer(withTimeInterval: 30 * 60, repeats: false) { _ in
+            Task { @MainActor in
+                guard !LockMonitor.isScreenActuallyLocked() else { return }
+                NeuralDepthAnalyzer.shared.trimMemory()
+            }
+        }
+    }
     /// Shares its setting with NotchOverlayController's scanning timeout, so the background loop stops in step with the UI collapsing.
     private var scanWindowDuration: TimeInterval {
         TimeInterval(NEELxSettings.shared.faceDetectionSeconds)
@@ -218,11 +238,16 @@ final class FaceUnlockCoordinator {
                 pendingVisualOnlyWelcomeName = nil
                 WelcomeBannerWindowController.shared.show(name: name)
             }
+            // Item #61: Alert on blocked intruder attempts while away
+            SecurityAuditLog.shared.checkAndDeliverIntruderAlert()
+            // Item #55: Start idle trim timer while unlocked
+            startIdleTrimTimer()
             hasArmedForCurrentLock = false
             hasAutoRetriedForCurrentLock = false
             disarmOverlay()
             return
         }
+        idleTrimTimer?.invalidate()
         guard !lockMonitor.isSleeping else {
             hasArmedForCurrentLock = false
             disarmOverlay()
@@ -653,14 +678,16 @@ final class FaceUnlockCoordinator {
 
             let validIdentities = FaceEnrollmentStore.shared.activeIdentities.filter { $0.samples.count >= 4 }
             let scored = pipeline.score(result.embedding, against: validIdentities)
-            var matched = pipeline.bestMatch(in: scored, threshold: matchThreshold)
+            let currentThreshold = effectiveMatchThreshold
+            var matched = pipeline.bestMatch(in: scored, threshold: currentThreshold)
             var precomputedDepth: NeuralDepthReading?
 
             // 3D-Profile-Assisted Backlit Margin: when harsh glare/backlight drops ArcFace just 0.01–0.06
             // below threshold (still >= 0.61, far above any stranger's 0.15–0.38), verify with Stage 3
             // Neural 3D Depth + Personal 9-Zone 3D Profile before accepting — zero security compromise.
-            if matched == nil, neuralDepthEnabled {
-                let backlitFloor = max(Float(0.61), matchThreshold - 0.065)
+            // Disabled in Strict Security Mode (Item #16).
+            if matched == nil, neuralDepthEnabled, !NEELxSettings.shared.strictSecurityMode {
+                let backlitFloor = max(Float(0.61), currentThreshold - 0.065)
                 if let candidate = pipeline.bestMatch(in: scored, threshold: backlitFloor),
                    let enrolledProfile = candidate.identity.depthProfile {
                     let noseCenter = LivenessFeatureExtractor.normalizedNoseCenter(for: result.face)
@@ -837,8 +864,8 @@ final class FaceUnlockCoordinator {
             }
 
             if let readyMatch, livenessConfirmed, attentionVerified, !flatSpoofSuspected {
-                // Optional Active Chromatic Flash Challenge (Anti-4K Video Replay):
-                if NEELxSettings.shared.chromaticFlashEnabled {
+                // Optional Active Chromatic Flash Challenge (Anti-4K Video Replay / Strict Security Mode):
+                if NEELxSettings.shared.chromaticFlashEnabled || NEELxSettings.shared.strictSecurityMode {
                     let flashResult = await runChromaticFlashChallenge(
                         baselineFrame: frame,
                         faceBox: result.face.normalizedBoundingBox
@@ -922,6 +949,11 @@ final class FaceUnlockCoordinator {
 
                 // Floating "Welcome Back (Name)!" popup message right after unlocking screen
                 WelcomeBannerWindowController.shared.show(name: faceName)
+
+                // Item #61: Deliver security alert if intruders were blocked while away
+                SecurityAuditLog.shared.checkAndDeliverIntruderAlert()
+                // Item #55: Start idle trim timer while unlocked
+                startIdleTrimTimer()
 
                 // Item #33: Record telemetry receipt for confirmed unlock
                 recordUnlockReceipt(
