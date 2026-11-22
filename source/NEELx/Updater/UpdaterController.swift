@@ -26,6 +26,13 @@ final class UpdaterController {
     private(set) var canCheckForUpdates: Bool = true
     private(set) var isPresentingUpdateUI: Bool = false
     private(set) var statusText: String? = nil
+    private(set) var latestReleaseWebURL: String? = nil
+
+    func openLatestReleaseInBrowser() {
+        if let latestReleaseWebURL, let url = URL(string: latestReleaseWebURL) {
+            NSWorkspace.shared.open(url)
+        }
+    }
 
     private var timer: Timer?
     private var activeTask: Task<Void, Never>?
@@ -332,12 +339,17 @@ final class UpdaterController {
                 statusText = "Downloaded to Downloads — drag NEELx.app into Applications."
                 NSWorkspace.shared.open(savedDMG)
             }
+            let latestReleaseWeb = releaseURL
+            self.latestReleaseWebURL = latestReleaseWeb
         } catch {
             try? fm.removeItem(at: tempDir)
-            statusText = "Update download failed: \(error.localizedDescription)"
-            if let url = URL(string: releaseURL) {
-                NSWorkspace.shared.open(url)
+            let isTimeout = (error as NSError).code == NSURLErrorTimedOut
+            if isTimeout {
+                statusText = "Download timed out on slow connection. Click Check to retry."
+            } else {
+                statusText = "Update download failed: \(error.localizedDescription)"
             }
+            self.latestReleaseWebURL = releaseURL
         }
     }
 

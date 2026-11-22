@@ -144,7 +144,17 @@ struct RecognitionSettingsPage: View {
                         subtitle: "Automatically adapts to gradual changes (glasses, beard, lighting) from high-confidence 3D-verified unlocks.",
                         subtitleMaxWidth: SettingsMetrics.rowSubtitleMaxWidth
                     ) {
-                        NEELxToggle(isOn: $settings.adaptiveLearningEnabled)
+                        HStack(spacing: 8) {
+                            if FaceEnrollmentStore.shared.hasAnyAdaptiveSamples {
+                                Button("Reset Learned") {
+                                    FaceEnrollmentStore.shared.clearAllAdaptiveSamples()
+                                }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                            }
+                            NEELxToggle(isOn: $settings.adaptiveLearningEnabled)
+                        }
                     }
 
                     SettingsGroupDivider()

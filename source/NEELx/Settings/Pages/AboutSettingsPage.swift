@@ -98,13 +98,23 @@ struct AboutSettingsPage: View {
 
             SettingsGroupDivider()
 
-            SettingsActionRowContent(
-                title: "Check for Updates",
-                subtitle: updater.statusText,
-                buttonTitle: updater.canCheckForUpdates ? "Check" : "Checking…",
-                isEnabled: updater.canCheckForUpdates
-            ) {
-                updater.checkForUpdates()
+            SettingsRowContent(title: "Check for Updates", subtitle: updater.statusText) {
+                HStack(spacing: 8) {
+                    if updater.latestReleaseWebURL != nil {
+                        Button("Open in Browser") {
+                            updater.openLatestReleaseInBrowser()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    Button(updater.canCheckForUpdates ? "Check" : "Checking…") {
+                        updater.checkForUpdates()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!updater.canCheckForUpdates)
+                }
             }
 
             SettingsGroupDivider()

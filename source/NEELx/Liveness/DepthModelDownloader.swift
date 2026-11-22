@@ -27,8 +27,9 @@ nonisolated final class FastFileDownloader: NSObject, URLSessionDownloadDelegate
     ) async throws -> URL {
         self.onProgress = onProgress
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 300
+        config.timeoutIntervalForRequest = 180
+        config.timeoutIntervalForResource = 1800
+        config.waitsForConnectivity = true
         let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
         self.session = session
 

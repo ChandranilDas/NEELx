@@ -363,6 +363,25 @@ final class FaceEnrollmentStore {
         }
     }
 
+    /// Item #11: Clears only the learned adaptive samples for all identities, preserving the original
+    /// calibrated 360° enrollment templates and 3D baseline.
+    func clearAllAdaptiveSamples() {
+        var updated = identities
+        for i in updated.indices {
+            updated[i].samples.removeAll { $0.pose == "adaptive" }
+        }
+        if (try? SecureFaceStore.save(updated)) != nil {
+            identities = updated
+        }
+    }
+
+    /// Whether any identity currently contains learned adaptive samples
+    var hasAnyAdaptiveSamples: Bool {
+        identities.contains { identity in
+            identity.samples.contains { $0.pose == "adaptive" }
+        }
+    }
+
     func delete(_ identity: FaceIdentity) throws {
         identities.removeAll { $0.id == identity.id }
         try persist()
