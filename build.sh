@@ -72,9 +72,14 @@ fi
 if [ -f "$SCRIPT_DIR/VERSION" ]; then
     VERSION="${NEELX_VERSION:-$(cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]')}"
 else
-    VERSION="${NEELX_VERSION:-2.0.0-beta.6}"
+    VERSION="${NEELX_VERSION:-2.0.0-beta.13}"
 fi
-BUILD_NUM="${NEELX_BUILD:-7}"
+if [[ "$VERSION" =~ -beta\.([0-9]+) ]]; then
+    DEFAULT_BUILD="${BASH_REMATCH[1]}"
+else
+    DEFAULT_BUILD="13"
+fi
+BUILD_NUM="${NEELX_BUILD:-$DEFAULT_BUILD}"
 
 # Write Info.plist
 cat > "$APP_BUNDLE/Contents/Info.plist" << EOF
