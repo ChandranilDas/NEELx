@@ -558,7 +558,7 @@ final class NEELxSettings {
             defaults.set(Float(0.15), forKey: Key.minimumFaceWidth)
             defaults.set(true, forKey: "NEELx.wakeMigration1")
         }
-        retryOnHover = defaults.object(forKey: Key.retryOnHover) as? Bool ?? false
+        retryOnHover = defaults.object(forKey: Key.retryOnHover) as? Bool ?? true
         faceDetectionSeconds = (defaults.object(forKey: Key.faceDetectionSeconds) as? Int)
             .map { min(max($0, Self.faceDetectionRange.lowerBound), Self.faceDetectionRange.upperBound) }
             ?? 5
@@ -633,7 +633,7 @@ final class NEELxSettings {
         unlockAnimationStyle = .original
         showUnlockAnimation = true
         unlockTriggers = [.onWake, .onLock]
-        retryOnHover = false
+        retryOnHover = true
         faceDetectionSeconds = 5
         autoRetryOnce = false
         hapticFeedbackEnabled = true

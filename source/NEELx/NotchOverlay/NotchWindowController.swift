@@ -13,6 +13,7 @@ import AppKit
 final class NotchWindowController {
     private var window: NotchWindow?
     private var isSkyLightDelegated = false
+    private var wasMouseOverNotchOnLockScreen = false
 
     /// What the overlay controller asked for via `setInteractive(_:)`.
     private var wantsInteractive = false
@@ -72,6 +73,7 @@ final class NotchWindowController {
 
     func hide() {
         guard let window else { return }
+        wasMouseOverNotchOnLockScreen = false
         if isSkyLightDelegated, let skyLight = NotchSkyLight.shared {
             skyLight.undelegate(window)
             isSkyLightDelegated = false
@@ -117,9 +119,33 @@ final class NotchWindowController {
             window.ignoresMouseEvents = true
             return
         }
-        // Lock screen keeps the original whole-window behaviour: nothing there sits
-        // under the notch to click, and hover-to-retry must not regress.
-        guard !isSkyLightDelegated, let rect = interactiveContentRect, let hostView = window.contentView else {
+        // On the macOS lock screen (loginwindow active), AppKit tracking area events are suppressed
+        // for background apps. Poll global NSEvent.mouseLocation directly against the notch geometry!
+        if isSkyLightDelegated {
+            window.ignoresMouseEvents = false
+            guard let screen = NotchGeometry.preferredScreen() else { return }
+            let mouse = NSEvent.mouseLocation
+            let geom = currentGeometry
+            let hitWidth = max(geom.closedSize.width + 60, 240)
+            let hitHeight = max(geom.closedSize.height + 28, 52)
+            let notchHitRect = NSRect(
+                x: screen.frame.midX - hitWidth / 2,
+                y: screen.frame.maxY - hitHeight,
+                width: hitWidth,
+                height: hitHeight
+            )
+            let isOver = notchHitRect.contains(mouse)
+            if isOver && !wasMouseOverNotchOnLockScreen {
+                wasMouseOverNotchOnLockScreen = true
+                NotchOverlayController.shared.activate()
+            } else if !isOver {
+                wasMouseOverNotchOnLockScreen = false
+            }
+            return
+        }
+
+        wasMouseOverNotchOnLockScreen = false
+        guard let rect = interactiveContentRect, let hostView = window.contentView else {
             window.ignoresMouseEvents = false
             return
         }
